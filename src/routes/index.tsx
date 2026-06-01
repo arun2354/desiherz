@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform } from "motion/react";
 import { Cursor } from "@/components/Cursor";
 import { Nav } from "@/components/Nav";
-import { Section, Reveal, ParallaxText } from "@/components/Reveal";
+import { SmoothScroll } from "@/components/SmoothScroll";
+import { Section, Reveal, MaskReveal, Marquee } from "@/components/Reveal";
 
 const Scene3D = lazy(() =>
   import("@/components/Scene3D").then((m) => ({ default: m.Scene3D }))
@@ -11,7 +12,6 @@ const Scene3D = lazy(() =>
 
 const SITE = {
   name: "DesiHerz",
-  tagline: "Private Matrimony for the Discerning",
   description:
     "DesiHerz is an invitation-only matrimony house pairing rooted families with character, taste and intention.",
 };
@@ -20,11 +20,7 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "DesiHerz — Private Matrimony for the Discerning" },
-      {
-        name: "description",
-        content:
-          "DesiHerz is an invitation-only matrimony house. A quiet, considered alliance for families who value lineage, character and intention.",
-      },
+      { name: "description", content: SITE.description },
       { property: "og:title", content: "DesiHerz — Private Matrimony" },
       { property: "og:description", content: SITE.description },
       { property: "og:type", content: "website" },
@@ -33,7 +29,11 @@ export const Route = createFileRoute("/")({
       { name: "twitter:title", content: "DesiHerz — Private Matrimony" },
       { name: "twitter:description", content: SITE.description },
       { name: "theme-color", content: "#09050a" },
-      { name: "keywords", content: "private matrimony, luxury matchmaking, Indian matrimony, invitation only, bespoke matchmaking" },
+      {
+        name: "keywords",
+        content:
+          "private matrimony, luxury matchmaking, Indian matrimony, invitation only matchmaking, bespoke marriage bureau",
+      },
     ],
     links: [
       { rel: "canonical", href: "/" },
@@ -68,49 +68,58 @@ function Index() {
   return (
     <div className="relative grain vignette">
       {mounted && (
-        <Suspense fallback={null}>
-          <Scene3D />
-          <Cursor />
-        </Suspense>
+        <>
+          <SmoothScroll />
+          <Suspense fallback={null}>
+            <Scene3D />
+            <Cursor />
+          </Suspense>
+        </>
       )}
 
       <Nav />
 
       <Hero />
+      <Manifesto />
       <Philosophy />
-      <Process />
+      <PinnedProcess />
       <Stories />
+      <Numbers />
       <Join />
       <Footer />
     </div>
   );
 }
 
+/* ---------------- HERO ---------------- */
 function Hero() {
   const { scrollY } = useScroll();
-  const opacity = useTransform(scrollY, [0, 600], [1, 0]);
-  const y = useTransform(scrollY, [0, 600], [0, -80]);
+  const opacity = useTransform(scrollY, [0, 500], [1, 0]);
+  const y = useTransform(scrollY, [0, 500], [0, -60]);
 
   return (
-    <section id="top" className="relative z-10 min-h-screen flex flex-col justify-center items-center text-center px-6">
-      <motion.div style={{ opacity, y }} className="max-w-3xl">
+    <section
+      id="top"
+      className="relative z-10 min-h-[110vh] flex flex-col justify-center items-center text-center px-6"
+    >
+      <motion.div style={{ opacity, y }} className="max-w-4xl">
         <Reveal>
           <p className="eyebrow mb-8">Est. MMXXV · Invitation Only</p>
         </Reveal>
-        <Reveal delay={0.15}>
-          <h1 className="font-display text-[clamp(3rem,9vw,7.5rem)] leading-[0.95] font-light text-cream">
-            A quieter way
-            <br />
-            <span className="italic text-gold-soft">to find forever.</span>
-          </h1>
-        </Reveal>
-        <Reveal delay={0.4}>
+        <h1 className="font-display text-[clamp(3rem,10vw,8.5rem)] leading-[0.92] font-light text-cream">
+          <MaskReveal text="A quieter way" delay={0.1} />
+          <br />
+          <span className="italic text-gold-soft">
+            <MaskReveal text="to find forever." delay={0.4} />
+          </span>
+        </h1>
+        <Reveal delay={0.9}>
           <p className="mt-10 text-sm md:text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
-            DesiHerz is a private matrimony house — a considered, human alternative to the noise of the
-            modern marriage market. We work with a small circle of families each season.
+            A private matrimony house — a considered, human alternative to the noise of the modern
+            marriage market. We work with a small circle of families each season.
           </p>
         </Reveal>
-        <Reveal delay={0.6}>
+        <Reveal delay={1.1}>
           <div className="mt-14 flex flex-col sm:flex-row gap-4 justify-center items-center">
             <a
               href="#join"
@@ -131,68 +140,86 @@ function Hero() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1.4, duration: 1 }}
+        transition={{ delay: 1.6, duration: 1 }}
         className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3"
       >
         <span className="eyebrow text-muted-foreground">Scroll</span>
         <motion.div
-          animate={{ y: [0, 8, 0] }}
-          transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
-          className="w-px h-12 bg-gradient-to-b from-gold to-transparent"
+          animate={{ scaleY: [0.3, 1, 0.3] }}
+          transition={{ repeat: Infinity, duration: 2.2, ease: "easeInOut" }}
+          className="w-px h-14 bg-gradient-to-b from-gold to-transparent origin-top"
         />
       </motion.div>
     </section>
   );
 }
 
-function Philosophy() {
+/* ---------------- MANIFESTO MARQUEE ---------------- */
+function Manifesto() {
   return (
-    <Section id="philosophy" className="bg-gradient-to-b from-transparent via-background/40 to-transparent">
-      <div className="grid md:grid-cols-12 gap-12 max-w-7xl mx-auto w-full">
-        <div className="md:col-span-5">
+    <section className="relative z-10 py-32 overflow-hidden">
+      <Marquee speed={50}>
+        {["Lineage", "Character", "Discretion", "Intention", "Taste", "Patience"].map((w) => (
+          <span key={w} className="font-display italic text-[10vw] leading-none text-gold-soft/15">
+            {w} ·
+          </span>
+        ))}
+      </Marquee>
+    </section>
+  );
+}
+
+/* ---------------- PHILOSOPHY (sticky) ---------------- */
+function Philosophy() {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
+  const yLeft = useTransform(scrollYProgress, [0, 1], [60, -60]);
+  const yRight = useTransform(scrollYProgress, [0, 1], [-30, 30]);
+
+  return (
+    <Section id="philosophy">
+      <div ref={ref} className="grid md:grid-cols-12 gap-12 max-w-7xl mx-auto w-full">
+        <motion.div style={{ y: yLeft }} className="md:col-span-5 md:sticky md:top-32 md:self-start">
           <Reveal>
-            <p className="eyebrow mb-6">— Our Philosophy</p>
+            <p className="eyebrow mb-6">— Philosophy</p>
           </Reveal>
-          <Reveal delay={0.1}>
-            <h2 className="font-display text-5xl md:text-7xl leading-[1.05] font-light">
-              Marriage is an <span className="italic text-gold-soft">architecture</span>, not an algorithm.
-            </h2>
-          </Reveal>
-        </div>
-        <div className="md:col-span-6 md:col-start-7 space-y-8 self-end">
-          <Reveal delay={0.25}>
+          <h2 className="font-display text-5xl md:text-7xl leading-[1.05] font-light">
+            <MaskReveal text="Marriage is an" />
+            <br />
+            <span className="italic text-gold-soft">
+              <MaskReveal text="architecture," delay={0.2} />
+            </span>
+            <br />
+            <MaskReveal text="not an algorithm." delay={0.4} />
+          </h2>
+        </motion.div>
+        <motion.div style={{ y: yRight }} className="md:col-span-6 md:col-start-7 space-y-10 self-end">
+          <Reveal delay={0.2}>
             <p className="text-base md:text-lg leading-relaxed text-cream/75">
-              We do not sort people into swipe stacks. We read the room. Each introduction at DesiHerz is the
-              result of long conversation — with you, your parents, and the quiet network of families we keep.
+              We do not sort people into swipe stacks. We read the room. Each introduction at DesiHerz
+              is the result of long conversation — with you, your parents, and the quiet network of
+              families we keep.
             </p>
           </Reveal>
-          <Reveal delay={0.4}>
+          <Reveal delay={0.35}>
             <p className="text-base md:text-lg leading-relaxed text-cream/75">
-              Lineage, learning, faith, and humour matter to us as much as ambition. We hold space for the
-              specific — for the wedding you actually want, the in-laws you can grow with, the life you can stay in.
+              Lineage, learning, faith, and humour matter to us as much as ambition. We hold space for
+              the specific — for the wedding you actually want, the in-laws you can grow with, the life
+              you can stay in.
             </p>
           </Reveal>
-          <Reveal delay={0.55}>
-            <div className="grid grid-cols-3 gap-6 pt-10 border-t border-gold/15">
-              {[
-                ["38", "Families this season"],
-                ["1:6", "Curator to client"],
-                ["94%", "Second meeting rate"],
-              ].map(([n, l]) => (
-                <div key={l as string}>
-                  <div className="font-display text-3xl md:text-4xl text-gold-soft">{n}</div>
-                  <div className="mt-2 text-[0.6rem] tracking-[0.24em] uppercase text-muted-foreground">{l}</div>
-                </div>
-              ))}
-            </div>
-          </Reveal>
-        </div>
+        </motion.div>
       </div>
     </Section>
   );
 }
 
-function Process() {
+/* ---------------- HORIZONTAL PINNED PROCESS ---------------- */
+function PinnedProcess() {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
+  const x = useTransform(scrollYProgress, [0, 1], ["0%", "-66.66%"]);
+
   const steps = [
     {
       n: "01",
@@ -210,41 +237,47 @@ function Process() {
       d: "We walk alongside both families through meeting, courtship, and the rituals that follow — quietly, attentively, and only as long as you need us.",
     },
   ];
-  return (
-    <Section id="process">
-      <div className="max-w-6xl mx-auto w-full">
-        <Reveal>
-          <p className="eyebrow mb-6">— The Process</p>
-        </Reveal>
-        <Reveal delay={0.1}>
-          <h2 className="font-display text-5xl md:text-7xl font-light max-w-3xl">
-            Three movements,
-            <br />
-            <span className="italic text-gold-soft">one understanding.</span>
-          </h2>
-        </Reveal>
 
-        <div className="mt-24 grid md:grid-cols-3 gap-px bg-gold/10">
-          {steps.map((s, i) => (
-            <Reveal key={s.n} delay={0.15 * i}>
-              <div className="bg-background/60 backdrop-blur-sm p-10 md:p-12 h-full border-t border-gold/10">
-                <div className="flex items-start justify-between mb-12">
-                  <span className="font-display text-2xl text-gold">{s.n}</span>
-                  <span className="text-[0.55rem] tracking-[0.28em] uppercase text-muted-foreground">
-                    Phase
-                  </span>
-                </div>
-                <h3 className="font-display text-2xl md:text-3xl mb-6 text-cream">{s.t}</h3>
-                <p className="text-sm leading-relaxed text-cream/65">{s.d}</p>
-              </div>
-            </Reveal>
-          ))}
+  return (
+    <section id="process" ref={ref} className="relative z-10 h-[300vh]">
+      <div className="sticky top-0 h-screen overflow-hidden flex flex-col justify-center">
+        <div className="px-6 md:px-14 mb-12">
+          <Reveal>
+            <p className="eyebrow mb-6">— The Process</p>
+          </Reveal>
+          <Reveal delay={0.1}>
+            <h2 className="font-display text-4xl md:text-6xl font-light max-w-3xl">
+              <MaskReveal text="Three movements," />
+              <br />
+              <span className="italic text-gold-soft">
+                <MaskReveal text="one understanding." delay={0.2} />
+              </span>
+            </h2>
+          </Reveal>
         </div>
+        <motion.div style={{ x }} className="flex gap-8 px-6 md:px-14">
+          {steps.map((s) => (
+            <article
+              key={s.n}
+              className="shrink-0 w-[85vw] md:w-[60vw] bg-background/55 backdrop-blur-md border border-gold/12 p-10 md:p-14"
+            >
+              <div className="flex items-start justify-between mb-16">
+                <span className="font-display text-3xl text-gold">{s.n}</span>
+                <span className="text-[0.55rem] tracking-[0.28em] uppercase text-muted-foreground">
+                  Phase
+                </span>
+              </div>
+              <h3 className="font-display text-3xl md:text-5xl mb-8 text-cream font-light">{s.t}</h3>
+              <p className="text-base leading-relaxed text-cream/70 max-w-xl">{s.d}</p>
+            </article>
+          ))}
+        </motion.div>
       </div>
-    </Section>
+    </section>
   );
 }
 
+/* ---------------- STORIES ---------------- */
 function Stories() {
   const quotes = [
     {
@@ -262,16 +295,14 @@ function Stories() {
     <Section id="stories">
       <div className="max-w-5xl mx-auto w-full">
         <Reveal>
-          <ParallaxText range={40}>
-            <p className="eyebrow mb-6">— Quietly Spoken</p>
-          </ParallaxText>
+          <p className="eyebrow mb-6">— Quietly Spoken</p>
         </Reveal>
         <div className="space-y-32 mt-16">
           {quotes.map((q, i) => (
-            <Reveal key={i} delay={0.1}>
+            <Reveal key={i}>
               <figure className={`max-w-3xl ${i % 2 ? "ml-auto text-right" : ""}`}>
                 <blockquote className="font-display italic text-3xl md:text-5xl leading-[1.2] font-light text-cream">
-                  &ldquo;{q.q}&rdquo;
+                  <MaskReveal text={`“${q.q}”`} stagger={0.04} />
                 </blockquote>
                 <figcaption className="mt-10">
                   <div className="text-gold-soft font-display text-lg">{q.a}</div>
@@ -288,6 +319,33 @@ function Stories() {
   );
 }
 
+/* ---------------- NUMBERS ---------------- */
+function Numbers() {
+  const stats: [string, string][] = [
+    ["38", "Families this season"],
+    ["1:6", "Curator to client"],
+    ["94%", "Second meeting rate"],
+    ["XIV", "Years quietly working"],
+  ];
+  return (
+    <section className="relative z-10 py-32 px-6 md:px-14 border-y border-gold/10">
+      <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-12">
+        {stats.map(([n, l], i) => (
+          <Reveal key={l} delay={i * 0.1}>
+            <div>
+              <div className="font-display text-5xl md:text-7xl text-gold-soft font-light">{n}</div>
+              <div className="mt-4 text-[0.6rem] tracking-[0.28em] uppercase text-muted-foreground">
+                {l}
+              </div>
+            </div>
+          </Reveal>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ---------------- JOIN ---------------- */
 function Join() {
   return (
     <Section id="join">
@@ -295,21 +353,21 @@ function Join() {
         <Reveal>
           <p className="eyebrow mb-8">— Apply</p>
         </Reveal>
-        <Reveal delay={0.1}>
-          <h2 className="font-display text-5xl md:text-8xl font-light leading-[0.95]">
-            Request an
-            <br />
-            <span className="italic text-gold-soft">invitation.</span>
-          </h2>
-        </Reveal>
-        <Reveal delay={0.25}>
+        <h2 className="font-display text-5xl md:text-8xl font-light leading-[0.95]">
+          <MaskReveal text="Request an" />
+          <br />
+          <span className="italic text-gold-soft">
+            <MaskReveal text="invitation." delay={0.2} />
+          </span>
+        </h2>
+        <Reveal delay={0.4}>
           <p className="mt-10 text-cream/70 max-w-xl mx-auto leading-relaxed">
-            We accept a limited number of families each season. Tell us a little about yourself — we read every
-            note personally and reply within a fortnight.
+            We accept a limited number of families each season. Tell us a little about yourself — we
+            read every note personally and reply within a fortnight.
           </p>
         </Reveal>
 
-        <Reveal delay={0.4}>
+        <Reveal delay={0.55}>
           <form
             className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-px bg-gold/15 text-left max-w-2xl mx-auto"
             onSubmit={(e) => e.preventDefault()}
@@ -353,9 +411,10 @@ function Join() {
   );
 }
 
+/* ---------------- FOOTER ---------------- */
 function Footer() {
   return (
-    <footer className="relative z-10 border-t border-gold/10 bg-background/80 backdrop-blur-md px-6 md:px-14 py-12">
+    <footer className="relative z-10 border-t border-gold/10 bg-background/85 backdrop-blur-md px-6 md:px-14 py-12">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between gap-6 items-start md:items-center">
         <div>
           <div className="font-display text-xl">
@@ -368,7 +427,9 @@ function Footer() {
         <div className="flex gap-8 text-[0.6rem] tracking-[0.28em] uppercase text-muted-foreground">
           <a href="#" className="hover:text-gold transition-colors">Discretion</a>
           <a href="#" className="hover:text-gold transition-colors">Terms</a>
-          <a href="mailto:office@desiherz.com" className="hover:text-gold transition-colors">office@desiherz.com</a>
+          <a href="mailto:office@desiherz.com" className="hover:text-gold transition-colors">
+            office@desiherz.com
+          </a>
         </div>
       </div>
     </footer>
