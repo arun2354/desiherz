@@ -300,10 +300,11 @@ export function Scene3D() {
   useEffect(() => setReady(true), []);
   if (!ready) return null;
   return (
-    <div className="fixed inset-0 z-0 pointer-events-none">
+    <div className="fixed inset-0 z-0 pointer-events-none opacity-55">
       <Canvas camera={{ position: [0, 0, 5.2], fov: 38 }} dpr={[1, 2]} gl={{ antialias: true, alpha: false }}>
         <Scene />
       </Canvas>
     </div>
   );
 }
+
