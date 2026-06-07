@@ -100,48 +100,71 @@ function Index() {
 /* ---------------- HERO ---------------- */
 function Hero() {
   const { scrollY } = useScroll();
-  const opacity = useTransform(scrollY, [0, 500], [1, 0]);
-  const y = useTransform(scrollY, [0, 500], [0, -60]);
+  const opacity = useTransform(scrollY, [0, 600], [1, 0]);
+  const y = useTransform(scrollY, [0, 600], [0, -80]);
+  const imgY = useTransform(scrollY, [0, 800], [0, 140]);
 
   return (
     <section
       id="top"
-      className="relative z-10 min-h-[110vh] flex flex-col justify-center items-center text-center px-6"
+      className="relative z-10 min-h-screen flex flex-col justify-center px-6 md:px-14 pt-32 pb-20"
     >
-      <motion.div style={{ opacity, y }} className="max-w-4xl">
-        <Reveal>
-          <p className="eyebrow mb-8">Est. MMXXV · Invitation Only</p>
-        </Reveal>
-        <h1 className="font-display text-[clamp(3rem,10vw,8.5rem)] leading-[0.92] font-light text-cream">
-          <MaskReveal text="A quieter way" delay={0.1} />
-          <br />
-          <span className="italic text-gold-soft">
-            <MaskReveal text="to find forever." delay={0.4} />
-          </span>
-        </h1>
-        <Reveal delay={0.9}>
-          <p className="mt-10 text-sm md:text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
-            A private matrimony house — a considered, human alternative to the noise of the modern
-            marriage market. We work with a small circle of families each season.
-          </p>
-        </Reveal>
-        <Reveal delay={1.1}>
-          <div className="mt-14 flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <a
-              href="#join"
-              className="text-[0.65rem] tracking-[0.32em] uppercase bg-gold text-background px-10 py-4 hover:bg-gold-soft transition-colors"
-            >
-              Request an Invitation
-            </a>
-            <a
-              href="#philosophy"
-              className="text-[0.65rem] tracking-[0.32em] uppercase text-cream/70 hover:text-gold transition-colors"
-            >
-              Our Philosophy →
-            </a>
+      <div className="max-w-7xl mx-auto w-full grid md:grid-cols-12 gap-10 items-center">
+        <motion.div style={{ opacity, y }} className="md:col-span-7">
+          <Reveal>
+            <p className="eyebrow mb-10">Est. MMXXV · By Invitation</p>
+          </Reveal>
+          <h1 className="font-display text-[clamp(3rem,7.5vw,6rem)] leading-[1.02] font-light text-cream">
+            <MaskReveal text="A quieter way" delay={0.1} />
+            <br />
+            <span className="italic text-gold-soft font-light">
+              <MaskReveal text="to find forever." delay={0.4} />
+            </span>
+          </h1>
+          <Reveal delay={0.9}>
+            <p className="mt-10 text-base md:text-lg text-cream/65 max-w-lg leading-[1.7] font-light">
+              A private matrimony house for discerning families — a considered,
+              human alternative to the noise of the modern marriage market. We
+              accept a small circle each season.
+            </p>
+          </Reveal>
+          <Reveal delay={1.1}>
+            <div className="mt-12 flex flex-wrap gap-4 items-center">
+              <a
+                href="#join"
+                className="text-[0.7rem] tracking-[0.3em] uppercase bg-gold text-background px-9 py-4 hover:bg-gold-soft transition-colors font-medium"
+              >
+                Request an Invitation
+              </a>
+              <a
+                href="#philosophy"
+                className="text-[0.7rem] tracking-[0.3em] uppercase text-cream/75 hover:text-gold transition-colors border-b border-gold/30 pb-1"
+              >
+                Our Philosophy
+              </a>
+            </div>
+          </Reveal>
+        </motion.div>
+
+        <motion.div
+          style={{ y: imgY }}
+          initial={{ opacity: 0, scale: 1.05 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1.6, ease: [0.22, 0.61, 0.36, 1] }}
+          className="md:col-span-5 relative aspect-[3/4] overflow-hidden"
+        >
+          <img
+            src={coupleHero}
+            alt="An elegant couple introduced by DesiHerz"
+            className="w-full h-full object-cover grayscale-[15%]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/15 to-transparent" />
+          <div className="absolute bottom-6 left-6 right-6 flex justify-between items-end text-[0.55rem] tracking-[0.3em] uppercase text-cream/70">
+            <span>Pl. XIV</span>
+            <span>Mumbai · 2025</span>
           </div>
-        </Reveal>
-      </motion.div>
+        </motion.div>
+      </div>
 
       <motion.div
         initial={{ opacity: 0 }}
@@ -158,6 +181,7 @@ function Hero() {
       </motion.div>
     </section>
   );
+
 }
 
 /* ---------------- MANIFESTO MARQUEE ---------------- */
