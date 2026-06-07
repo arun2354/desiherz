@@ -120,7 +120,7 @@ function RootComponent() {
   const { queryClient } = Route$1.useRouteContext();
   return /* @__PURE__ */ jsxRuntimeExports.jsx(QueryClientProvider, { client: queryClient, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Outlet, {}) });
 }
-const $$splitComponentImporter = () => import("./index-BORlL00P.mjs");
+const $$splitComponentImporter = () => import("./index-B9b4kLUU.mjs");
 gsapWithCSS.registerPlugin(ScrollTrigger, useGSAP);
 const SITE = {
   description: "DesiHerz is an invitation-only matrimony house pairing rooted families with character, taste and intention."

@@ -206,9 +206,6 @@ function Hero() {
   const overlayRef = reactExports.useRef(null);
   useGSAP(() => {
     if (!containerRef.current || !stickyRef.current || !heartSvgRef.current) return;
-    const heart = heartSvgRef.current.querySelector("#heart-path");
-    const clipHeart = heartSvgRef.current.querySelector("#clip-heart-path");
-    if (!heart || !clipHeart) return;
     const tl = gsapWithCSS.timeline({
       scrollTrigger: {
         trigger: containerRef.current,

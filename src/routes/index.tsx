@@ -97,10 +97,6 @@ function Hero() {
     () => {
       if (!containerRef.current || !stickyRef.current || !heartSvgRef.current) return;
 
-      const heart = heartSvgRef.current.querySelector("#heart-path") as SVGPathElement;
-      const clipHeart = heartSvgRef.current.querySelector("#clip-heart-path") as SVGPathElement;
-      if (!heart || !clipHeart) return;
-
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
