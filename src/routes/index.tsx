@@ -208,12 +208,12 @@ function Philosophy() {
 
   return (
     <Section id="philosophy">
-      <div ref={ref} className="grid md:grid-cols-12 gap-12 max-w-7xl mx-auto w-full">
-        <motion.div style={{ y: yLeft }} className="md:col-span-5 md:sticky md:top-32 md:self-start">
+      <div ref={ref} className="grid md:grid-cols-12 gap-12 md:gap-20 max-w-7xl mx-auto w-full items-center">
+        <motion.div style={{ y: yLeft }} className="md:col-span-5">
           <Reveal>
-            <p className="eyebrow mb-6">— Philosophy</p>
+            <p className="eyebrow mb-8">— Philosophy</p>
           </Reveal>
-          <h2 className="font-display text-5xl md:text-7xl leading-[1.05] font-light">
+          <h2 className="font-display text-4xl md:text-6xl leading-[1.08] font-light text-cream">
             <MaskReveal text="Marriage is an" />
             <br />
             <span className="italic text-gold-soft">
@@ -222,27 +222,47 @@ function Philosophy() {
             <br />
             <MaskReveal text="not an algorithm." delay={0.4} />
           </h2>
-        </motion.div>
-        <motion.div style={{ y: yRight }} className="md:col-span-6 md:col-start-7 space-y-10 self-end">
-          <Reveal delay={0.2}>
-            <p className="text-base md:text-lg leading-relaxed text-cream/75">
-              We do not sort people into swipe stacks. We read the room. Each introduction at DesiHerz
-              is the result of long conversation — with you, your parents, and the quiet network of
-              families we keep.
+          <Reveal delay={0.5}>
+            <div className="hairline mt-10 w-24" />
+          </Reveal>
+          <Reveal delay={0.6}>
+            <p className="mt-10 text-base md:text-[17px] leading-[1.75] text-cream/70 font-light max-w-md">
+              We do not sort people into swipe stacks. We read the room. Each
+              introduction at DesiHerz is the result of long conversation — with
+              you, your parents, and the quiet network of families we keep.
             </p>
           </Reveal>
-          <Reveal delay={0.35}>
-            <p className="text-base md:text-lg leading-relaxed text-cream/75">
-              Lineage, learning, faith, and humour matter to us as much as ambition. We hold space for
-              the specific — for the wedding you actually want, the in-laws you can grow with, the life
-              you can stay in.
+          <Reveal delay={0.75}>
+            <p className="mt-6 text-base md:text-[17px] leading-[1.75] text-cream/70 font-light max-w-md">
+              Lineage, learning, faith, and humour matter to us as much as
+              ambition. We hold space for the specific — for the wedding you
+              actually want, the in-laws you can grow with, the life you can
+              stay in.
             </p>
+          </Reveal>
+        </motion.div>
+        <motion.div style={{ y: yRight }} className="md:col-span-6 md:col-start-7">
+          <Reveal>
+            <div className="relative aspect-[4/5] overflow-hidden">
+              <img
+                src={coupleHands}
+                alt="Two hands gently intertwined, henna and antique gold"
+                loading="lazy"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 ring-1 ring-inset ring-gold/15" />
+            </div>
+            <div className="mt-4 flex justify-between text-[0.55rem] tracking-[0.3em] uppercase text-muted-foreground">
+              <span>Plate II</span>
+              <span>A Quiet Promise</span>
+            </div>
           </Reveal>
         </motion.div>
       </div>
     </Section>
   );
 }
+
 
 /* ---------------- HORIZONTAL PINNED PROCESS ---------------- */
 function PinnedProcess() {
