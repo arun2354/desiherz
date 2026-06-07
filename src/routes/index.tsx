@@ -5,10 +5,15 @@ import { Cursor } from "@/components/Cursor";
 import { Nav } from "@/components/Nav";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { Section, Reveal, MaskReveal, Marquee } from "@/components/Reveal";
+import coupleHero from "@/assets/couple-hero.jpg";
+import coupleStory1 from "@/assets/couple-story-1.jpg";
+import coupleStory2 from "@/assets/couple-story-2.jpg";
+import coupleHands from "@/assets/couple-hands.jpg";
 
 const Scene3D = lazy(() =>
   import("@/components/Scene3D").then((m) => ({ default: m.Scene3D }))
 );
+
 
 const SITE = {
   name: "DesiHerz",
@@ -41,9 +46,10 @@ export const Route = createFileRoute("/")({
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: "anonymous" } as any,
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;0,700;1,400&family=Tenor+Sans&family=Jost:wght@200;300;400;500&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500&display=swap",
       },
     ],
+
     scripts: [
       {
         type: "application/ld+json",
@@ -94,48 +100,71 @@ function Index() {
 /* ---------------- HERO ---------------- */
 function Hero() {
   const { scrollY } = useScroll();
-  const opacity = useTransform(scrollY, [0, 500], [1, 0]);
-  const y = useTransform(scrollY, [0, 500], [0, -60]);
+  const opacity = useTransform(scrollY, [0, 600], [1, 0]);
+  const y = useTransform(scrollY, [0, 600], [0, -80]);
+  const imgY = useTransform(scrollY, [0, 800], [0, 140]);
 
   return (
     <section
       id="top"
-      className="relative z-10 min-h-[110vh] flex flex-col justify-center items-center text-center px-6"
+      className="relative z-10 min-h-screen flex flex-col justify-center px-6 md:px-14 pt-32 pb-20"
     >
-      <motion.div style={{ opacity, y }} className="max-w-4xl">
-        <Reveal>
-          <p className="eyebrow mb-8">Est. MMXXV · Invitation Only</p>
-        </Reveal>
-        <h1 className="font-display text-[clamp(3rem,10vw,8.5rem)] leading-[0.92] font-light text-cream">
-          <MaskReveal text="A quieter way" delay={0.1} />
-          <br />
-          <span className="italic text-gold-soft">
-            <MaskReveal text="to find forever." delay={0.4} />
-          </span>
-        </h1>
-        <Reveal delay={0.9}>
-          <p className="mt-10 text-sm md:text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
-            A private matrimony house — a considered, human alternative to the noise of the modern
-            marriage market. We work with a small circle of families each season.
-          </p>
-        </Reveal>
-        <Reveal delay={1.1}>
-          <div className="mt-14 flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <a
-              href="#join"
-              className="text-[0.65rem] tracking-[0.32em] uppercase bg-gold text-background px-10 py-4 hover:bg-gold-soft transition-colors"
-            >
-              Request an Invitation
-            </a>
-            <a
-              href="#philosophy"
-              className="text-[0.65rem] tracking-[0.32em] uppercase text-cream/70 hover:text-gold transition-colors"
-            >
-              Our Philosophy →
-            </a>
+      <div className="max-w-7xl mx-auto w-full grid md:grid-cols-12 gap-10 items-center">
+        <motion.div style={{ opacity, y }} className="md:col-span-7">
+          <Reveal>
+            <p className="eyebrow mb-10">Est. MMXXV · By Invitation</p>
+          </Reveal>
+          <h1 className="font-display text-[clamp(3rem,7.5vw,6rem)] leading-[1.02] font-light text-cream">
+            <MaskReveal text="A quieter way" delay={0.1} />
+            <br />
+            <span className="italic text-gold-soft font-light">
+              <MaskReveal text="to find forever." delay={0.4} />
+            </span>
+          </h1>
+          <Reveal delay={0.9}>
+            <p className="mt-10 text-base md:text-lg text-cream/65 max-w-lg leading-[1.7] font-light">
+              A private matrimony house for discerning families — a considered,
+              human alternative to the noise of the modern marriage market. We
+              accept a small circle each season.
+            </p>
+          </Reveal>
+          <Reveal delay={1.1}>
+            <div className="mt-12 flex flex-wrap gap-4 items-center">
+              <a
+                href="#join"
+                className="text-[0.7rem] tracking-[0.3em] uppercase bg-gold text-background px-9 py-4 hover:bg-gold-soft transition-colors font-medium"
+              >
+                Request an Invitation
+              </a>
+              <a
+                href="#philosophy"
+                className="text-[0.7rem] tracking-[0.3em] uppercase text-cream/75 hover:text-gold transition-colors border-b border-gold/30 pb-1"
+              >
+                Our Philosophy
+              </a>
+            </div>
+          </Reveal>
+        </motion.div>
+
+        <motion.div
+          style={{ y: imgY }}
+          initial={{ opacity: 0, scale: 1.05 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1.6, ease: [0.22, 0.61, 0.36, 1] }}
+          className="md:col-span-5 relative aspect-[3/4] overflow-hidden"
+        >
+          <img
+            src={coupleHero}
+            alt="An elegant couple introduced by DesiHerz"
+            className="w-full h-full object-cover grayscale-[15%]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/15 to-transparent" />
+          <div className="absolute bottom-6 left-6 right-6 flex justify-between items-end text-[0.55rem] tracking-[0.3em] uppercase text-cream/70">
+            <span>Pl. XIV</span>
+            <span>Mumbai · 2025</span>
           </div>
-        </Reveal>
-      </motion.div>
+        </motion.div>
+      </div>
 
       <motion.div
         initial={{ opacity: 0 }}
@@ -152,6 +181,7 @@ function Hero() {
       </motion.div>
     </section>
   );
+
 }
 
 /* ---------------- MANIFESTO MARQUEE ---------------- */
@@ -178,12 +208,12 @@ function Philosophy() {
 
   return (
     <Section id="philosophy">
-      <div ref={ref} className="grid md:grid-cols-12 gap-12 max-w-7xl mx-auto w-full">
-        <motion.div style={{ y: yLeft }} className="md:col-span-5 md:sticky md:top-32 md:self-start">
+      <div ref={ref} className="grid md:grid-cols-12 gap-12 md:gap-20 max-w-7xl mx-auto w-full items-center">
+        <motion.div style={{ y: yLeft }} className="md:col-span-5">
           <Reveal>
-            <p className="eyebrow mb-6">— Philosophy</p>
+            <p className="eyebrow mb-8">— Philosophy</p>
           </Reveal>
-          <h2 className="font-display text-5xl md:text-7xl leading-[1.05] font-light">
+          <h2 className="font-display text-4xl md:text-6xl leading-[1.08] font-light text-cream">
             <MaskReveal text="Marriage is an" />
             <br />
             <span className="italic text-gold-soft">
@@ -192,27 +222,47 @@ function Philosophy() {
             <br />
             <MaskReveal text="not an algorithm." delay={0.4} />
           </h2>
-        </motion.div>
-        <motion.div style={{ y: yRight }} className="md:col-span-6 md:col-start-7 space-y-10 self-end">
-          <Reveal delay={0.2}>
-            <p className="text-base md:text-lg leading-relaxed text-cream/75">
-              We do not sort people into swipe stacks. We read the room. Each introduction at DesiHerz
-              is the result of long conversation — with you, your parents, and the quiet network of
-              families we keep.
+          <Reveal delay={0.5}>
+            <div className="hairline mt-10 w-24" />
+          </Reveal>
+          <Reveal delay={0.6}>
+            <p className="mt-10 text-base md:text-[17px] leading-[1.75] text-cream/70 font-light max-w-md">
+              We do not sort people into swipe stacks. We read the room. Each
+              introduction at DesiHerz is the result of long conversation — with
+              you, your parents, and the quiet network of families we keep.
             </p>
           </Reveal>
-          <Reveal delay={0.35}>
-            <p className="text-base md:text-lg leading-relaxed text-cream/75">
-              Lineage, learning, faith, and humour matter to us as much as ambition. We hold space for
-              the specific — for the wedding you actually want, the in-laws you can grow with, the life
-              you can stay in.
+          <Reveal delay={0.75}>
+            <p className="mt-6 text-base md:text-[17px] leading-[1.75] text-cream/70 font-light max-w-md">
+              Lineage, learning, faith, and humour matter to us as much as
+              ambition. We hold space for the specific — for the wedding you
+              actually want, the in-laws you can grow with, the life you can
+              stay in.
             </p>
+          </Reveal>
+        </motion.div>
+        <motion.div style={{ y: yRight }} className="md:col-span-6 md:col-start-7">
+          <Reveal>
+            <div className="relative aspect-[4/5] overflow-hidden">
+              <img
+                src={coupleHands}
+                alt="Two hands gently intertwined, henna and antique gold"
+                loading="lazy"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 ring-1 ring-inset ring-gold/15" />
+            </div>
+            <div className="mt-4 flex justify-between text-[0.55rem] tracking-[0.3em] uppercase text-muted-foreground">
+              <span>Plate II</span>
+              <span>A Quiet Promise</span>
+            </div>
           </Reveal>
         </motion.div>
       </div>
     </Section>
   );
 }
+
 
 /* ---------------- HORIZONTAL PINNED PROCESS ---------------- */
 function PinnedProcess() {
@@ -279,37 +329,62 @@ function PinnedProcess() {
 
 /* ---------------- STORIES ---------------- */
 function Stories() {
-  const quotes = [
+  const stories = [
     {
+      img: coupleStory1,
       q: "We had given up on the apps and the aunties both. DesiHerz felt like neither — it felt like a friend who happened to know the right people.",
       a: "A. & R.",
       sub: "Married 2025 · Mumbai / London",
     },
     {
+      img: coupleStory2,
       q: "What surprised us was the slowness. Nothing was rushed. They understood that the right introduction needed to wait for the right moment.",
       a: "The Khanna Family",
-      sub: "Delhi",
+      sub: "Delhi · 2024",
     },
   ];
   return (
     <Section id="stories">
-      <div className="max-w-5xl mx-auto w-full">
+      <div className="max-w-7xl mx-auto w-full">
         <Reveal>
           <p className="eyebrow mb-6">— Quietly Spoken</p>
         </Reveal>
-        <div className="space-y-32 mt-16">
-          {quotes.map((q, i) => (
+        <Reveal delay={0.1}>
+          <h2 className="font-display text-4xl md:text-6xl font-light leading-[1.1] max-w-2xl text-cream">
+            Stories that begin{" "}
+            <span className="italic text-gold-soft">in confidence.</span>
+          </h2>
+        </Reveal>
+        <div className="space-y-28 mt-24">
+          {stories.map((s, i) => (
             <Reveal key={i}>
-              <figure className={`max-w-3xl ${i % 2 ? "ml-auto text-right" : ""}`}>
-                <blockquote className="font-display italic text-3xl md:text-5xl leading-[1.2] font-light text-cream">
-                  <MaskReveal text={`“${q.q}”`} stagger={0.04} />
-                </blockquote>
-                <figcaption className="mt-10">
-                  <div className="text-gold-soft font-display text-lg">{q.a}</div>
-                  <div className="mt-1 text-[0.6rem] tracking-[0.28em] uppercase text-muted-foreground">
-                    {q.sub}
-                  </div>
-                </figcaption>
+              <figure
+                className={`grid md:grid-cols-12 gap-10 md:gap-16 items-center ${
+                  i % 2 ? "md:[&>*:first-child]:order-2" : ""
+                }`}
+              >
+                <div className="md:col-span-6 relative aspect-[4/5] overflow-hidden">
+                  <img
+                    src={s.img}
+                    alt={`Couple introduced by DesiHerz — ${s.a}`}
+                    loading="lazy"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 ring-1 ring-inset ring-gold/15" />
+                </div>
+                <div className="md:col-span-6">
+                  <blockquote className="font-display italic text-2xl md:text-[2.1rem] leading-[1.35] font-light text-cream">
+                    “{s.q}”
+                  </blockquote>
+                  <figcaption className="mt-8 border-t border-gold/15 pt-6">
+                    <div className="text-gold-soft font-display text-xl">
+                      {s.a}
+                    </div>
+                    <div className="mt-2 text-[0.6rem] tracking-[0.3em] uppercase text-muted-foreground">
+                      {s.sub}
+                    </div>
+                  </figcaption>
+                </div>
               </figure>
             </Reveal>
           ))}
@@ -318,6 +393,7 @@ function Stories() {
     </Section>
   );
 }
+
 
 /* ---------------- NUMBERS ---------------- */
 function Numbers() {
