@@ -46,7 +46,7 @@ export const Route = createFileRoute("/")({
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: "anonymous" } as any,
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400;500&display=swap",
       },
     ],
 
@@ -114,10 +114,10 @@ function Hero() {
           <Reveal>
             <p className="eyebrow mb-10">Est. MMXXV · By Invitation</p>
           </Reveal>
-          <h1 className="font-display text-[clamp(3rem,7.5vw,6rem)] leading-[1.02] font-light text-cream">
+          <h1 className="font-display text-[clamp(3.5rem,8.5vw,7.5rem)] leading-[1.0] font-normal text-cream">
             <MaskReveal text="A quieter way" delay={0.1} />
             <br />
-            <span className="italic text-gold-soft font-light">
+            <span className="italic text-gold-soft font-normal">
               <MaskReveal text="to find forever." delay={0.4} />
             </span>
           </h1>
@@ -132,7 +132,7 @@ function Hero() {
             <div className="mt-12 flex flex-wrap gap-4 items-center">
               <a
                 href="#join"
-                className="text-[0.7rem] tracking-[0.3em] uppercase bg-gold text-background px-9 py-4 hover:bg-gold-soft transition-colors font-medium"
+                className="text-[0.65rem] tracking-[0.32em] uppercase border border-gold text-gold px-9 py-4 bg-rose/60 hover:bg-rose hover:border-gold-soft hover:text-gold-soft transition-colors font-medium"
               >
                 Request an Invitation
               </a>
@@ -476,7 +476,7 @@ function Join() {
             </label>
             <button
               type="submit"
-              className="md:col-span-2 bg-gold text-background py-5 text-[0.65rem] tracking-[0.32em] uppercase hover:bg-gold-soft transition-colors"
+              className="md:col-span-2 border border-gold bg-rose/60 text-gold py-5 text-[0.65rem] tracking-[0.32em] uppercase hover:bg-rose hover:text-gold-soft hover:border-gold-soft transition-colors"
             >
               Submit Quietly
             </button>

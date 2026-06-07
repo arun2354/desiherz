@@ -156,26 +156,26 @@ function Hearts({ progress }: { progress: { current: number } }) {
       <Float speed={1.1} rotationIntensity={0.15} floatIntensity={0.35}>
         <mesh ref={left} geometry={geom} position={[-2.6, 0, 0]}>
           <meshPhysicalMaterial
-            color="#b48cff"
-            metalness={0.55}
-            roughness={0.18}
+            color="#c9a04a"
+            metalness={0.65}
+            roughness={0.14}
             clearcoat={1}
-            clearcoatRoughness={0.1}
-            emissive="#5b2a8a"
-            emissiveIntensity={0.35}
-            envMapIntensity={1.6}
+            clearcoatRoughness={0.08}
+            emissive="#6b3a10"
+            emissiveIntensity={0.4}
+            envMapIntensity={1.8}
           />
         </mesh>
         <mesh ref={right} geometry={geom} position={[2.6, 0, 0]}>
           <meshPhysicalMaterial
-            color="#d9b8ff"
-            metalness={0.7}
-            roughness={0.12}
+            color="#e8c278"
+            metalness={0.75}
+            roughness={0.1}
             clearcoat={1}
-            clearcoatRoughness={0.08}
-            emissive="#3a1466"
-            emissiveIntensity={0.3}
-            envMapIntensity={1.8}
+            clearcoatRoughness={0.06}
+            emissive="#3d0c18"
+            emissiveIntensity={0.35}
+            envMapIntensity={2.0}
           />
         </mesh>
       </Float>
@@ -187,13 +187,13 @@ function Hearts({ progress }: { progress: { current: number } }) {
             roughness={0.04}
             transmission={1}
             ior={1.7}
-            chromaticAberration={0.45}
-            anisotropy={0.25}
+            chromaticAberration={0.35}
+            anisotropy={0.3}
             distortion={0.18}
             distortionScale={0.35}
-            color="#e8d6ff"
-            attenuationColor="#6b2bb0"
-            attenuationDistance={0.6}
+            color="#f5ede0"
+            attenuationColor="#3d0c18"
+            attenuationDistance={0.5}
             backside
           />
         </mesh>
@@ -237,11 +237,11 @@ function Petals({ progress }: { progress: { current: number } }) {
         <mesh key={i} position={[it.x, it.y, it.z]} scale={0}>
           <octahedronGeometry args={[0.08, 0]} />
           <meshPhysicalMaterial
-            color="#f3e9ff"
-            metalness={0.4}
-            roughness={0.2}
-            emissive="#b48cff"
-            emissiveIntensity={1.1}
+            color="#f5ede0"
+            metalness={0.5}
+            roughness={0.15}
+            emissive="#c9a04a"
+            emissiveIntensity={1.0}
           />
         </mesh>
       ))}
@@ -253,12 +253,12 @@ function Scene() {
   const progress = useScrollProgress();
   return (
     <>
-      <color attach="background" args={["#0a0418"]} />
-      <fog attach="fog" args={["#0a0418", 7, 20]} />
-      <ambientLight intensity={0.25} />
-      <directionalLight position={[4, 6, 4]} intensity={1.2} color="#d9b8ff" />
-      <directionalLight position={[-5, -2, 3]} intensity={0.7} color="#6b2bb0" />
-      <pointLight position={[0, 0, 3]} intensity={1.4} color="#f3e9ff" />
+      <color attach="background" args={["#09050a"]} />
+      <fog attach="fog" args={["#09050a", 7, 20]} />
+      <ambientLight intensity={0.2} />
+      <directionalLight position={[4, 6, 4]} intensity={1.3} color="#e8c278" />
+      <directionalLight position={[-5, -2, 3]} intensity={0.6} color="#3d0c18" />
+      <pointLight position={[0, 0, 3]} intensity={1.2} color="#f5ede0" />
       <Suspense fallback={null}>
         <Environment preset="night" />
         <CameraRig progress={progress} />
@@ -269,8 +269,8 @@ function Scene() {
           scale={[14, 8, 6]}
           size={2.4}
           speed={0.25}
-          color="#d9b8ff"
-          opacity={0.6}
+          color="#e8c278"
+          opacity={0.5}
         />
         <ContactShadows
           position={[0, -1.6, 0]}

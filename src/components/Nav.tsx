@@ -37,7 +37,7 @@ export function Nav() {
       </ul>
       <a
         href="#join"
-        className="text-[0.6rem] tracking-[0.28em] uppercase border border-gold/50 text-gold px-5 py-2.5 hover:bg-gold hover:text-background transition-colors"
+        className="text-[0.6rem] tracking-[0.28em] uppercase border border-gold/50 text-gold px-5 py-2.5 bg-rose/40 hover:bg-rose hover:border-gold hover:text-gold-soft transition-colors"
       >
         Private Invite
       </a>
