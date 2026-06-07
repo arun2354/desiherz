@@ -1,19 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { motion, useScroll, useTransform } from "motion/react";
+import { useEffect, useRef, useState } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
 import { Cursor } from "@/components/Cursor";
 import { Nav } from "@/components/Nav";
 import { SmoothScroll } from "@/components/SmoothScroll";
-import { Section, Reveal, MaskReveal, Marquee } from "@/components/Reveal";
 import coupleHero from "@/assets/couple-hero.jpg";
 import coupleStory1 from "@/assets/couple-story-1.jpg";
 import coupleStory2 from "@/assets/couple-story-2.jpg";
 import coupleHands from "@/assets/couple-hands.jpg";
 
-const Scene3D = lazy(() =>
-  import("@/components/Scene3D").then((m) => ({ default: m.Scene3D }))
-);
-
+gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 const SITE = {
   name: "DesiHerz",
@@ -29,10 +27,6 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "DesiHerz — Private Matrimony" },
       { property: "og:description", content: SITE.description },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "/" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "DesiHerz — Private Matrimony" },
-      { name: "twitter:description", content: SITE.description },
       { name: "theme-color", content: "#09050a" },
       {
         name: "keywords",
@@ -41,15 +35,13 @@ export const Route = createFileRoute("/")({
       },
     ],
     links: [
-      { rel: "canonical", href: "/" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: "anonymous" } as any,
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400;500&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&family=Inter:wght@300;400;500&display=swap",
       },
     ],
-
     scripts: [
       {
         type: "application/ld+json",
@@ -72,440 +64,928 @@ function Index() {
   useEffect(() => setMounted(true), []);
 
   return (
-    <div className="relative grain vignette">
+    <div className="relative grain">
       {mounted && (
         <>
           <SmoothScroll />
-          <Suspense fallback={null}>
-            <Scene3D />
-            <Cursor />
-          </Suspense>
+          <Cursor />
         </>
       )}
-
       <Nav />
-
       <Hero />
-      <Manifesto />
-      <Philosophy />
-      <PinnedProcess />
-      <Stories />
-      <Numbers />
-      <Join />
+      <About />
+      <Pledges />
+      <Process />
+      <Testimonials />
+      <Contact />
       <Footer />
     </div>
   );
 }
 
-/* ---------------- HERO ---------------- */
+/* ─────────────────────────────────────────────
+   HERO — pinned GSAP heart-expand scroll scene
+───────────────────────────────────────────── */
 function Hero() {
-  const { scrollY } = useScroll();
-  const opacity = useTransform(scrollY, [0, 600], [1, 0]);
-  const y = useTransform(scrollY, [0, 600], [0, -80]);
-  const imgY = useTransform(scrollY, [0, 800], [0, 140]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const stickyRef = useRef<HTMLDivElement>(null);
+  const heartSvgRef = useRef<SVGSVGElement>(null);
+  const textRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(
+    () => {
+      if (!containerRef.current || !stickyRef.current || !heartSvgRef.current) return;
+
+      const heart = heartSvgRef.current.querySelector("#heart-path") as SVGPathElement;
+      const clipHeart = heartSvgRef.current.querySelector("#clip-heart-path") as SVGPathElement;
+      if (!heart || !clipHeart) return;
+
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top top",
+          end: "bottom bottom",
+          scrub: 1.2,
+          pin: stickyRef.current,
+          anticipatePin: 1,
+        },
+      });
+
+      // Phase 1 (0–40%): heart outline pulses and text fades
+      tl.to(
+        textRef.current,
+        { opacity: 0, y: -30, ease: "power2.in", duration: 0.25 },
+        0,
+      );
+
+      // Phase 2 (25–100%): heart scales up massively
+      tl.to(
+        heartSvgRef.current,
+        {
+          scale: 18,
+          ease: "power1.inOut",
+          duration: 0.75,
+          transformOrigin: "center center",
+        },
+        0.1,
+      );
+
+      // Phase 3 (50–100%): overlay image fades in as heart fills screen
+      tl.to(
+        overlayRef.current,
+        { opacity: 1, ease: "power2.inOut", duration: 0.5 },
+        0.4,
+      );
+    },
+    { scope: containerRef },
+  );
+
+  // Entrance animation
+  useGSAP(
+    () => {
+      gsap.from(textRef.current, {
+        opacity: 0,
+        y: 40,
+        duration: 1.4,
+        ease: "power3.out",
+        delay: 0.3,
+      });
+      gsap.from(heartSvgRef.current, {
+        opacity: 0,
+        scale: 0.8,
+        duration: 1.8,
+        ease: "elastic.out(1, 0.6)",
+        delay: 0.6,
+        transformOrigin: "center center",
+      });
+    },
+    { scope: containerRef },
+  );
 
   return (
-    <section
-      id="top"
-      className="relative z-10 min-h-screen flex flex-col justify-center px-6 md:px-14 pt-32 pb-20"
-    >
-      <div className="max-w-7xl mx-auto w-full grid md:grid-cols-12 gap-10 items-center">
-        <motion.div style={{ opacity, y }} className="md:col-span-7">
-          <Reveal>
-            <p className="eyebrow mb-10">Est. MMXXV · By Invitation</p>
-          </Reveal>
-          <h1 className="font-display text-[clamp(3.5rem,8.5vw,7.5rem)] leading-[1.0] font-normal text-cream">
-            <MaskReveal text="A quieter way" delay={0.1} />
-            <br />
-            <span className="italic text-gold-soft font-normal">
-              <MaskReveal text="to find forever." delay={0.4} />
-            </span>
-          </h1>
-          <Reveal delay={0.9}>
-            <p className="mt-10 text-base md:text-lg text-cream/65 max-w-lg leading-[1.7] font-light">
-              A private matrimony house for discerning families — a considered,
-              human alternative to the noise of the modern marriage market. We
-              accept a small circle each season.
-            </p>
-          </Reveal>
-          <Reveal delay={1.1}>
-            <div className="mt-12 flex flex-wrap gap-4 items-center">
-              <a
-                href="#join"
-                className="text-[0.65rem] tracking-[0.32em] uppercase border border-gold text-gold px-9 py-4 bg-rose/60 hover:bg-rose hover:border-gold-soft hover:text-gold-soft transition-colors font-medium"
-              >
-                Request an Invitation
-              </a>
-              <a
-                href="#philosophy"
-                className="text-[0.7rem] tracking-[0.3em] uppercase text-cream/75 hover:text-gold transition-colors border-b border-gold/30 pb-1"
-              >
-                Our Philosophy
-              </a>
-            </div>
-          </Reveal>
-        </motion.div>
-
-        <motion.div
-          style={{ y: imgY }}
-          initial={{ opacity: 0, scale: 1.05 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.6, ease: [0.22, 0.61, 0.36, 1] }}
-          className="md:col-span-5 relative aspect-[3/4] overflow-hidden"
+    <section ref={containerRef} id="top" className="relative" style={{ height: "320vh" }}>
+      <div
+        ref={stickyRef}
+        className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center"
+        style={{ background: "var(--background)" }}
+      >
+        {/* Full-screen couple image revealed by heart */}
+        <div
+          ref={overlayRef}
+          className="absolute inset-0 opacity-0"
+          style={{ zIndex: 1 }}
         >
           <img
             src={coupleHero}
-            alt="An elegant couple introduced by DesiHerz"
-            className="w-full h-full object-cover grayscale-[15%]"
+            alt="A couple united through DesiHerz"
+            className="w-full h-full object-cover"
+            style={{ filter: "brightness(0.55) sepia(0.2)" }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/15 to-transparent" />
-          <div className="absolute bottom-6 left-6 right-6 flex justify-between items-end text-[0.55rem] tracking-[0.3em] uppercase text-cream/70">
-            <span>Pl. XIV</span>
-            <span>Mumbai · 2025</span>
-          </div>
-        </motion.div>
-      </div>
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(ellipse at center, rgba(9,5,10,0.1) 0%, rgba(9,5,10,0.7) 100%)",
+            }}
+          />
+        </div>
 
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.6, duration: 1 }}
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3"
-      >
-        <span className="eyebrow text-muted-foreground">Scroll</span>
-        <motion.div
-          animate={{ scaleY: [0.3, 1, 0.3] }}
-          transition={{ repeat: Infinity, duration: 2.2, ease: "easeInOut" }}
-          className="w-px h-14 bg-gradient-to-b from-gold to-transparent origin-top"
-        />
-      </motion.div>
-    </section>
-  );
-
-}
-
-/* ---------------- MANIFESTO MARQUEE ---------------- */
-function Manifesto() {
-  return (
-    <section className="relative z-10 py-32 overflow-hidden">
-      <Marquee speed={50}>
-        {["Lineage", "Character", "Discretion", "Intention", "Taste", "Patience"].map((w) => (
-          <span key={w} className="font-display italic text-[10vw] leading-none text-gold-soft/15">
-            {w} ·
-          </span>
-        ))}
-      </Marquee>
-    </section>
-  );
-}
-
-/* ---------------- PHILOSOPHY (sticky) ---------------- */
-function Philosophy() {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
-  const yLeft = useTransform(scrollYProgress, [0, 1], [60, -60]);
-  const yRight = useTransform(scrollYProgress, [0, 1], [-30, 30]);
-
-  return (
-    <Section id="philosophy">
-      <div ref={ref} className="grid md:grid-cols-12 gap-12 md:gap-20 max-w-7xl mx-auto w-full items-center">
-        <motion.div style={{ y: yLeft }} className="md:col-span-5">
-          <Reveal>
-            <p className="eyebrow mb-8">— Philosophy</p>
-          </Reveal>
-          <h2 className="font-display text-4xl md:text-6xl leading-[1.08] font-light text-cream">
-            <MaskReveal text="Marriage is an" />
-            <br />
-            <span className="italic text-gold-soft">
-              <MaskReveal text="architecture," delay={0.2} />
-            </span>
-            <br />
-            <MaskReveal text="not an algorithm." delay={0.4} />
-          </h2>
-          <Reveal delay={0.5}>
-            <div className="hairline mt-10 w-24" />
-          </Reveal>
-          <Reveal delay={0.6}>
-            <p className="mt-10 text-base md:text-[17px] leading-[1.75] text-cream/70 font-light max-w-md">
-              We do not sort people into swipe stacks. We read the room. Each
-              introduction at DesiHerz is the result of long conversation — with
-              you, your parents, and the quiet network of families we keep.
-            </p>
-          </Reveal>
-          <Reveal delay={0.75}>
-            <p className="mt-6 text-base md:text-[17px] leading-[1.75] text-cream/70 font-light max-w-md">
-              Lineage, learning, faith, and humour matter to us as much as
-              ambition. We hold space for the specific — for the wedding you
-              actually want, the in-laws you can grow with, the life you can
-              stay in.
-            </p>
-          </Reveal>
-        </motion.div>
-        <motion.div style={{ y: yRight }} className="md:col-span-6 md:col-start-7">
-          <Reveal>
-            <div className="relative aspect-[4/5] overflow-hidden">
-              <img
-                src={coupleHands}
-                alt="Two hands gently intertwined, henna and antique gold"
-                loading="lazy"
-                className="w-full h-full object-cover"
+        {/* Heart SVG */}
+        <svg
+          ref={heartSvgRef}
+          className="absolute"
+          style={{ zIndex: 2, width: "min(340px, 55vw)", height: "auto" }}
+          viewBox="0 0 200 190"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <defs>
+            <clipPath id="heartClipDef">
+              <path
+                id="clip-heart-path"
+                d="M100 170 C100 170 15 110 15 55 C15 28 35 10 60 10 C75 10 88 18 100 30 C112 18 125 10 140 10 C165 10 185 28 185 55 C185 110 100 170 100 170 Z"
               />
-              <div className="absolute inset-0 ring-1 ring-inset ring-gold/15" />
-            </div>
-            <div className="mt-4 flex justify-between text-[0.55rem] tracking-[0.3em] uppercase text-muted-foreground">
-              <span>Plate II</span>
-              <span>A Quiet Promise</span>
-            </div>
-          </Reveal>
-        </motion.div>
-      </div>
-    </Section>
-  );
-}
+            </clipPath>
+          </defs>
 
+          {/* Image inside heart */}
+          <image
+            href={coupleHands}
+            x="0"
+            y="0"
+            width="200"
+            height="190"
+            preserveAspectRatio="xMidYMid slice"
+            clipPath="url(#heartClipDef)"
+            style={{ filter: "brightness(0.7) sepia(0.15)" }}
+          />
 
-/* ---------------- HORIZONTAL PINNED PROCESS ---------------- */
-function PinnedProcess() {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
-  const x = useTransform(scrollYProgress, [0, 1], ["0%", "-66.66%"]);
+          {/* Gold border */}
+          <path
+            id="heart-path"
+            d="M100 170 C100 170 15 110 15 55 C15 28 35 10 60 10 C75 10 88 18 100 30 C112 18 125 10 140 10 C165 10 185 28 185 55 C185 110 100 170 100 170 Z"
+            stroke="#c9a04a"
+            strokeWidth="1.5"
+            fill="none"
+            opacity="0.9"
+          />
 
-  const steps = [
-    {
-      n: "01",
-      t: "The Conversation",
-      d: "We meet — at length, in person where possible. We listen to what you don't say, and to what your family does. No forms, no checklists.",
-    },
-    {
-      n: "02",
-      t: "The Circle",
-      d: "A handful of considered introductions, drawn from families who already know ours. No browsing. No public profile. No noise.",
-    },
-    {
-      n: "03",
-      t: "The Alliance",
-      d: "We walk alongside both families through meeting, courtship, and the rituals that follow — quietly, attentively, and only as long as you need us.",
-    },
-  ];
+          {/* Inner gold glow stroke */}
+          <path
+            d="M100 165 C100 165 20 108 20 57 C20 32 38 14 62 14 C77 14 89 22 100 33 C111 22 123 14 138 14 C162 14 180 32 180 57 C180 108 100 165 100 165 Z"
+            stroke="#c9a04a"
+            strokeWidth="0.5"
+            fill="none"
+            opacity="0.35"
+          />
+        </svg>
 
-  return (
-    <section id="process" ref={ref} className="relative z-10 h-[300vh]">
-      <div className="sticky top-0 h-screen overflow-hidden flex flex-col justify-center">
-        <div className="px-6 md:px-14 mb-12">
-          <Reveal>
-            <p className="eyebrow mb-6">— The Process</p>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <h2 className="font-display text-4xl md:text-6xl font-light max-w-3xl">
-              <MaskReveal text="Three movements," />
-              <br />
-              <span className="italic text-gold-soft">
-                <MaskReveal text="one understanding." delay={0.2} />
-              </span>
-            </h2>
-          </Reveal>
-        </div>
-        <motion.div style={{ x }} className="flex gap-8 px-6 md:px-14">
-          {steps.map((s) => (
-            <article
-              key={s.n}
-              className="shrink-0 w-[85vw] md:w-[60vw] bg-background/55 backdrop-blur-md border border-gold/12 p-10 md:p-14"
-            >
-              <div className="flex items-start justify-between mb-16">
-                <span className="font-display text-3xl text-gold">{s.n}</span>
-                <span className="text-[0.55rem] tracking-[0.28em] uppercase text-muted-foreground">
-                  Phase
-                </span>
-              </div>
-              <h3 className="font-display text-3xl md:text-5xl mb-8 text-cream font-light">{s.t}</h3>
-              <p className="text-base leading-relaxed text-cream/70 max-w-xl">{s.d}</p>
-            </article>
-          ))}
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-/* ---------------- STORIES ---------------- */
-function Stories() {
-  const stories = [
-    {
-      img: coupleStory1,
-      q: "We had given up on the apps and the aunties both. DesiHerz felt like neither — it felt like a friend who happened to know the right people.",
-      a: "A. & R.",
-      sub: "Married 2025 · Mumbai / London",
-    },
-    {
-      img: coupleStory2,
-      q: "What surprised us was the slowness. Nothing was rushed. They understood that the right introduction needed to wait for the right moment.",
-      a: "The Khanna Family",
-      sub: "Delhi · 2024",
-    },
-  ];
-  return (
-    <Section id="stories">
-      <div className="max-w-7xl mx-auto w-full">
-        <Reveal>
-          <p className="eyebrow mb-6">— Quietly Spoken</p>
-        </Reveal>
-        <Reveal delay={0.1}>
-          <h2 className="font-display text-4xl md:text-6xl font-light leading-[1.1] max-w-2xl text-cream">
-            Stories that begin{" "}
-            <span className="italic text-gold-soft">in confidence.</span>
-          </h2>
-        </Reveal>
-        <div className="space-y-28 mt-24">
-          {stories.map((s, i) => (
-            <Reveal key={i}>
-              <figure
-                className={`grid md:grid-cols-12 gap-10 md:gap-16 items-center ${
-                  i % 2 ? "md:[&>*:first-child]:order-2" : ""
-                }`}
-              >
-                <div className="md:col-span-6 relative aspect-[4/5] overflow-hidden">
-                  <img
-                    src={s.img}
-                    alt={`Couple introduced by DesiHerz — ${s.a}`}
-                    loading="lazy"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 ring-1 ring-inset ring-gold/15" />
-                </div>
-                <div className="md:col-span-6">
-                  <blockquote className="font-display italic text-2xl md:text-[2.1rem] leading-[1.35] font-light text-cream">
-                    “{s.q}”
-                  </blockquote>
-                  <figcaption className="mt-8 border-t border-gold/15 pt-6">
-                    <div className="text-gold-soft font-display text-xl">
-                      {s.a}
-                    </div>
-                    <div className="mt-2 text-[0.6rem] tracking-[0.3em] uppercase text-muted-foreground">
-                      {s.sub}
-                    </div>
-                  </figcaption>
-                </div>
-              </figure>
-            </Reveal>
-          ))}
-        </div>
-      </div>
-    </Section>
-  );
-}
-
-
-/* ---------------- NUMBERS ---------------- */
-function Numbers() {
-  const stats: [string, string][] = [
-    ["38", "Families this season"],
-    ["1:6", "Curator to client"],
-    ["94%", "Second meeting rate"],
-    ["XIV", "Years quietly working"],
-  ];
-  return (
-    <section className="relative z-10 py-32 px-6 md:px-14 border-y border-gold/10">
-      <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-12">
-        {stats.map(([n, l], i) => (
-          <Reveal key={l} delay={i * 0.1}>
-            <div>
-              <div className="font-display text-5xl md:text-7xl text-gold-soft font-light">{n}</div>
-              <div className="mt-4 text-[0.6rem] tracking-[0.28em] uppercase text-muted-foreground">
-                {l}
-              </div>
-            </div>
-          </Reveal>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* ---------------- JOIN ---------------- */
-function Join() {
-  return (
-    <Section id="join">
-      <div className="max-w-4xl mx-auto w-full text-center">
-        <Reveal>
-          <p className="eyebrow mb-8">— Apply</p>
-        </Reveal>
-        <h2 className="font-display text-5xl md:text-8xl font-light leading-[0.95]">
-          <MaskReveal text="Request an" />
-          <br />
-          <span className="italic text-gold-soft">
-            <MaskReveal text="invitation." delay={0.2} />
-          </span>
-        </h2>
-        <Reveal delay={0.4}>
-          <p className="mt-10 text-cream/70 max-w-xl mx-auto leading-relaxed">
-            We accept a limited number of families each season. Tell us a little about yourself — we
-            read every note personally and reply within a fortnight.
-          </p>
-        </Reveal>
-
-        <Reveal delay={0.55}>
-          <form
-            className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-px bg-gold/15 text-left max-w-2xl mx-auto"
-            onSubmit={(e) => e.preventDefault()}
+        {/* Hero text */}
+        <div
+          ref={textRef}
+          className="absolute inset-0 flex flex-col items-center justify-end pb-20 md:pb-24"
+          style={{ zIndex: 3, pointerEvents: "none" }}
+        >
+          <p className="eyebrow mb-5 text-center tracking-[0.38em]">Est. MMXXV · By Invitation</p>
+          <h1
+            className="font-display text-center font-normal"
+            style={{
+              fontSize: "clamp(2.2rem, 5.5vw, 5rem)",
+              lineHeight: 1.08,
+              letterSpacing: "-0.025em",
+              color: "var(--cream)",
+              maxWidth: "720px",
+            }}
           >
-            {[
-              { l: "Full Name", t: "text", n: "name" },
-              { l: "Family Email", t: "email", n: "email" },
-              { l: "City", t: "text", n: "city" },
-              { l: "Year of Birth", t: "text", n: "yob" },
-            ].map((f) => (
-              <label key={f.n} className="bg-background/70 backdrop-blur-sm p-6 block">
-                <span className="block text-[0.55rem] tracking-[0.28em] uppercase text-muted-foreground mb-3">
-                  {f.l}
-                </span>
-                <input
-                  type={f.t}
-                  name={f.n}
-                  className="w-full bg-transparent border-b border-gold/20 focus:border-gold outline-none text-cream py-1 font-display text-lg"
-                />
-              </label>
-            ))}
-            <label className="bg-background/70 backdrop-blur-sm p-6 block md:col-span-2">
-              <span className="block text-[0.55rem] tracking-[0.28em] uppercase text-muted-foreground mb-3">
-                A few lines about you
-              </span>
-              <textarea
-                rows={4}
-                className="w-full bg-transparent border-b border-gold/20 focus:border-gold outline-none text-cream py-1 resize-none"
-              />
-            </label>
-            <button
-              type="submit"
-              className="md:col-span-2 border border-gold bg-rose/60 text-gold py-5 text-[0.65rem] tracking-[0.32em] uppercase hover:bg-rose hover:text-gold-soft hover:border-gold-soft transition-colors"
-            >
-              Submit Quietly
-            </button>
-          </form>
-        </Reveal>
+            Two hearts.{" "}
+            <em style={{ color: "var(--gold-soft)", fontStyle: "italic" }}>One quiet</em>
+            <br />
+            introduction.
+          </h1>
+          <div className="mt-8 hairline w-16 mx-auto" />
+          <p
+            className="mt-6 text-center font-sans"
+            style={{
+              fontSize: "0.8rem",
+              letterSpacing: "0.28em",
+              textTransform: "uppercase",
+              color: "rgba(245,237,224,0.5)",
+            }}
+          >
+            Scroll to reveal
+          </p>
+        </div>
+
+        {/* Radial vignette */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            zIndex: 10,
+            background:
+              "radial-gradient(ellipse at center, transparent 30%, rgba(9,5,10,0.65) 100%)",
+          }}
+        />
       </div>
-    </Section>
+    </section>
   );
 }
 
-/* ---------------- FOOTER ---------------- */
+/* ─────────────────────────────────────────────
+   ABOUT
+───────────────────────────────────────────── */
+function About() {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useGSAP(
+    () => {
+      gsap.from(".about-left", {
+        x: -60,
+        opacity: 0,
+        duration: 1.1,
+        ease: "power3.out",
+        scrollTrigger: { trigger: ref.current, start: "top 75%", toggleActions: "play none none none" },
+      });
+      gsap.from(".about-right", {
+        x: 60,
+        opacity: 0,
+        duration: 1.1,
+        ease: "power3.out",
+        delay: 0.15,
+        scrollTrigger: { trigger: ref.current, start: "top 75%", toggleActions: "play none none none" },
+      });
+    },
+    { scope: ref },
+  );
+
+  return (
+    <section ref={ref} id="about" className="section-pad" style={{ background: "var(--background)" }}>
+      <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-16 md:gap-24 items-center">
+        {/* Left */}
+        <div className="about-left">
+          <p className="eyebrow mb-8">— About</p>
+          <h2
+            className="font-display font-normal"
+            style={{ fontSize: "clamp(2.8rem, 5vw, 4.5rem)", lineHeight: 1.05 }}
+          >
+            Not an app.
+            <br />
+            Not a database.
+            <br />
+            <em style={{ color: "var(--gold-soft)" }}>A trusted house.</em>
+          </h2>
+          <div className="hairline mt-10 w-20" />
+          <p className="mt-10 font-sans leading-relaxed" style={{ color: "rgba(245,237,224,0.62)", fontSize: "1.05rem", maxWidth: "480px" }}>
+            DesiHerz is not a platform. It is a house — a quiet room where families with intention
+            find one another. We carry no advertisements, no swipe logic, and no algorithms.
+          </p>
+          <p className="mt-6 font-sans leading-relaxed" style={{ color: "rgba(245,237,224,0.62)", fontSize: "1.05rem", maxWidth: "480px" }}>
+            Each season, we accept a small number of families. What follows is a conversation —
+            careful, human, and unhurried.
+          </p>
+          <a
+            href="#contact"
+            className="inline-block mt-12"
+            style={{
+              fontSize: "0.62rem",
+              letterSpacing: "0.35em",
+              textTransform: "uppercase",
+              color: "var(--gold)",
+              borderBottom: "1px solid rgba(201,160,74,0.4)",
+              paddingBottom: "4px",
+              transition: "color 0.3s, border-color 0.3s",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.color = "var(--gold-soft)";
+              (e.currentTarget as HTMLElement).style.borderBottomColor = "var(--gold-soft)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.color = "var(--gold)";
+              (e.currentTarget as HTMLElement).style.borderBottomColor = "rgba(201,160,74,0.4)";
+            }}
+          >
+            Begin a conversation
+          </a>
+        </div>
+
+        {/* Right — image */}
+        <div className="about-right relative">
+          <div
+            className="relative overflow-hidden"
+            style={{ aspectRatio: "4/5", border: "1px solid rgba(201,160,74,0.14)" }}
+          >
+            <img
+              src={coupleStory1}
+              alt="A couple introduced by DesiHerz"
+              className="w-full h-full object-cover"
+              style={{ filter: "brightness(0.75) sepia(0.1)" }}
+            />
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  "linear-gradient(to top, rgba(9,5,10,0.7) 0%, transparent 50%)",
+              }}
+            />
+          </div>
+          <div
+            className="absolute"
+            style={{
+              bottom: "-1.5rem",
+              right: "-1.5rem",
+              width: "45%",
+              aspectRatio: "3/4",
+              border: "1px solid rgba(201,160,74,0.2)",
+              overflow: "hidden",
+            }}
+          >
+            <img
+              src={coupleHands}
+              alt="Couple's hands"
+              className="w-full h-full object-cover"
+              style={{ filter: "brightness(0.65) sepia(0.15)" }}
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   PLEDGES
+───────────────────────────────────────────── */
+const PLEDGES = [
+  {
+    n: "01",
+    title: "Absolute Privacy",
+    body: "No profile is ever published. No name is shared without explicit consent. What you tell us stays within these walls.",
+  },
+  {
+    n: "02",
+    title: "Verified Members",
+    body: "Every family we work with has been personally vetted. We do not accept introductions sight unseen.",
+  },
+  {
+    n: "03",
+    title: "Human Curation",
+    body: "No automated suggestions. Every introduction is considered by a human curator who knows both families.",
+  },
+  {
+    n: "04",
+    title: "Family-Aware",
+    body: "We understand that a marriage is not between two people alone. We hold space for the full picture.",
+  },
+];
+
+function Pledges() {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useGSAP(
+    () => {
+      gsap.from(".pledge-card", {
+        y: 50,
+        opacity: 0,
+        duration: 0.9,
+        ease: "power3.out",
+        stagger: 0.12,
+        scrollTrigger: {
+          trigger: ref.current,
+          start: "top 70%",
+          toggleActions: "play none none none",
+        },
+      });
+    },
+    { scope: ref },
+  );
+
+  return (
+    <section
+      ref={ref}
+      id="pledges"
+      className="section-pad"
+      style={{
+        background: "linear-gradient(160deg, #110408 0%, var(--background) 100%)",
+        borderTop: "1px solid rgba(201,160,74,0.1)",
+        borderBottom: "1px solid rgba(201,160,74,0.1)",
+      }}
+    >
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-16 md:mb-20">
+          <p className="eyebrow mb-6">— Our Pledges</p>
+          <h2
+            className="font-display font-normal"
+            style={{ fontSize: "clamp(2.2rem, 4vw, 3.8rem)", maxWidth: "600px" }}
+          >
+            Four pledges —{" "}
+            <em style={{ color: "var(--gold-soft)" }}>sealed,</em>
+            <br />
+            not advertised.
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-px" style={{ background: "rgba(201,160,74,0.08)" }}>
+          {PLEDGES.map((p) => (
+            <div key={p.n} className="pledge-card">
+              <div className="flex items-start justify-between mb-8">
+                <span
+                  className="font-display"
+                  style={{ fontSize: "2.5rem", color: "var(--gold)", fontWeight: 400, lineHeight: 1 }}
+                >
+                  {p.n}
+                </span>
+                <div className="hairline" style={{ width: "2rem", marginTop: "1.2rem" }} />
+              </div>
+              <h3
+                className="font-display font-normal mb-4"
+                style={{ fontSize: "1.6rem", color: "var(--cream)", lineHeight: 1.15 }}
+              >
+                {p.title}
+              </h3>
+              <p
+                className="font-sans leading-relaxed"
+                style={{ color: "rgba(245,237,224,0.58)", fontSize: "0.95rem" }}
+              >
+                {p.body}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   PROCESS — vertical timeline
+───────────────────────────────────────────── */
+const STEPS = [
+  {
+    roman: "I",
+    title: "The First Letter",
+    body: "You write to us — briefly, honestly. No forms. No questionnaires. A few lines about who you are and what you seek.",
+  },
+  {
+    roman: "II",
+    title: "The Conversation",
+    body: "We meet — in person where possible, by call when not. We listen carefully to what you say, and to what you leave unsaid.",
+  },
+  {
+    roman: "III",
+    title: "The Introduction",
+    body: "A single, considered introduction. Not a shortlist. One family we believe understands yours.",
+  },
+  {
+    roman: "IV",
+    title: "The Meeting",
+    body: "Both families meet at their own pace. We remain available — as a quiet presence, never as an intermediary who crowds the room.",
+  },
+  {
+    roman: "V",
+    title: "The Alliance",
+    body: "If both families wish to proceed, we walk alongside through the rituals that follow — for as long as you need us.",
+  },
+];
+
+function Process() {
+  const ref = useRef<HTMLDivElement>(null);
+  const lineRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(
+    () => {
+      // Draw the timeline line
+      gsap.from(lineRef.current, {
+        scaleY: 0,
+        transformOrigin: "top center",
+        duration: 1.8,
+        ease: "power2.inOut",
+        scrollTrigger: {
+          trigger: ref.current,
+          start: "top 65%",
+          toggleActions: "play none none none",
+        },
+      });
+
+      // Stagger each step
+      gsap.from(".process-step", {
+        opacity: 0,
+        x: (i) => (i % 2 === 0 ? -50 : 50),
+        duration: 0.9,
+        ease: "power3.out",
+        stagger: 0.18,
+        scrollTrigger: {
+          trigger: ref.current,
+          start: "top 65%",
+          toggleActions: "play none none none",
+        },
+      });
+    },
+    { scope: ref },
+  );
+
+  return (
+    <section ref={ref} id="process" className="section-pad" style={{ background: "var(--background)" }}>
+      <div className="max-w-5xl mx-auto">
+        <div className="mb-16 md:mb-20 text-center">
+          <p className="eyebrow mb-6">— The Process</p>
+          <h2
+            className="font-display font-normal"
+            style={{ fontSize: "clamp(2.2rem, 4vw, 3.8rem)" }}
+          >
+            Five unhurried{" "}
+            <em style={{ color: "var(--gold-soft)" }}>steps.</em>
+          </h2>
+        </div>
+
+        {/* Timeline */}
+        <div className="relative" style={{ paddingTop: "2rem", paddingBottom: "2rem" }}>
+          {/* Central gold line */}
+          <div className="hidden md:block absolute" style={{ left: "50%", top: 0, bottom: 0, transform: "translateX(-50%)" }}>
+            <div
+              ref={lineRef}
+              style={{
+                width: "1px",
+                height: "100%",
+                background: "linear-gradient(180deg, transparent 0%, var(--gold) 8%, var(--gold) 92%, transparent 100%)",
+              }}
+            />
+          </div>
+
+          <div className="space-y-12 md:space-y-0">
+            {STEPS.map((s, i) => (
+              <div
+                key={s.roman}
+                className={`process-step relative md:grid md:grid-cols-2 md:gap-16 items-center ${
+                  i % 2 === 0 ? "" : "md:[direction:rtl]"
+                }`}
+                style={{ paddingTop: "2.5rem", paddingBottom: "2.5rem" }}
+              >
+                <div style={{ direction: "ltr" }}>
+                  {/* Dot on timeline */}
+                  <div
+                    className="hidden md:block absolute"
+                    style={{
+                      left: "50%",
+                      top: "50%",
+                      transform: "translate(-50%, -50%)",
+                      width: "11px",
+                      height: "11px",
+                      borderRadius: "50%",
+                      background: "var(--gold)",
+                      boxShadow: "0 0 12px rgba(201,160,74,0.6)",
+                    }}
+                  />
+                  <p className="step-numeral mb-3">{s.roman}</p>
+                  <h3
+                    className="font-display font-normal mb-4"
+                    style={{ fontSize: "clamp(1.4rem, 2.5vw, 1.9rem)", color: "var(--cream)" }}
+                  >
+                    {s.title}
+                  </h3>
+                  <p
+                    className="font-sans leading-relaxed"
+                    style={{ color: "rgba(245,237,224,0.58)", fontSize: "0.95rem", maxWidth: "360px" }}
+                  >
+                    {s.body}
+                  </p>
+                </div>
+                {/* Spacer column for alternate alignment */}
+                <div className="hidden md:block" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   TESTIMONIALS
+───────────────────────────────────────────── */
+const TESTIMONIALS = [
+  {
+    quote:
+      "We had given up on the apps and the aunties both. DesiHerz felt like neither — it felt like a friend who happened to know the right people.",
+    name: "A. & R.",
+    detail: "Married 2025 · Mumbai / London",
+  },
+  {
+    quote:
+      "What surprised us was the slowness. Nothing was rushed. They understood that the right introduction needed to wait for the right moment.",
+    name: "The Khanna Family",
+    detail: "Delhi · 2024",
+  },
+  {
+    quote:
+      "Three seasons passed before they made our introduction. When it came, it was the only introduction we needed.",
+    name: "S. & P.",
+    detail: "Karachi · Lahore · 2025",
+  },
+];
+
+function Testimonials() {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useGSAP(
+    () => {
+      gsap.from(".quote-card", {
+        y: 40,
+        opacity: 0,
+        duration: 1,
+        ease: "power3.out",
+        stagger: 0.16,
+        scrollTrigger: {
+          trigger: ref.current,
+          start: "top 70%",
+          toggleActions: "play none none none",
+        },
+      });
+    },
+    { scope: ref },
+  );
+
+  return (
+    <section
+      ref={ref}
+      id="testimonials"
+      className="section-pad"
+      style={{
+        background: "linear-gradient(160deg, var(--background) 0%, #110408 100%)",
+        borderTop: "1px solid rgba(201,160,74,0.1)",
+      }}
+    >
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-16 md:mb-20">
+          <p className="eyebrow mb-6">— Testimonials</p>
+          <h2
+            className="font-display font-normal"
+            style={{ fontSize: "clamp(2.2rem, 4vw, 3.8rem)", maxWidth: "640px" }}
+          >
+            Spoken softly,{" "}
+            <em style={{ color: "var(--gold-soft)" }}>with permission.</em>
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-px" style={{ background: "rgba(201,160,74,0.08)" }}>
+          {TESTIMONIALS.map((t, i) => (
+            <div key={i} className="quote-card">
+              <blockquote
+                className="font-display font-normal"
+                style={{
+                  fontSize: "clamp(1.05rem, 1.5vw, 1.2rem)",
+                  lineHeight: 1.55,
+                  color: "var(--cream)",
+                  marginTop: "1.75rem",
+                }}
+              >
+                "{t.quote}"
+              </blockquote>
+              <div
+                className="mt-8 pt-6"
+                style={{ borderTop: "1px solid rgba(201,160,74,0.15)" }}
+              >
+                <p
+                  className="font-display"
+                  style={{ color: "var(--gold-soft)", fontSize: "1.1rem" }}
+                >
+                  {t.name}
+                </p>
+                <p
+                  className="mt-1 font-sans"
+                  style={{
+                    fontSize: "0.58rem",
+                    letterSpacing: "0.28em",
+                    textTransform: "uppercase",
+                    color: "rgba(245,237,224,0.42)",
+                  }}
+                >
+                  {t.detail}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Couple photo strip */}
+        <div className="mt-16 grid grid-cols-2 gap-px" style={{ background: "rgba(201,160,74,0.08)" }}>
+          {[coupleStory2, coupleHero].map((src, i) => (
+            <div key={i} className="relative overflow-hidden" style={{ aspectRatio: "16/7" }}>
+              <img
+                src={src}
+                alt="Couple united by DesiHerz"
+                className="w-full h-full object-cover"
+                style={{ filter: "brightness(0.55) sepia(0.15)", transition: "transform 0.8s ease" }}
+                onMouseEnter={(e) => ((e.currentTarget as HTMLImageElement).style.transform = "scale(1.04)")}
+                onMouseLeave={(e) => ((e.currentTarget as HTMLImageElement).style.transform = "scale(1)")}
+              />
+              <div
+                className="absolute inset-0"
+                style={{ background: "linear-gradient(to top, rgba(9,5,10,0.5) 0%, transparent 60%)" }}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   CONTACT
+───────────────────────────────────────────── */
+function Contact() {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useGSAP(
+    () => {
+      gsap.from(".contact-inner > *", {
+        y: 35,
+        opacity: 0,
+        duration: 1,
+        ease: "power3.out",
+        stagger: 0.12,
+        scrollTrigger: {
+          trigger: ref.current,
+          start: "top 72%",
+          toggleActions: "play none none none",
+        },
+      });
+    },
+    { scope: ref },
+  );
+
+  return (
+    <section
+      ref={ref}
+      id="contact"
+      className="section-pad"
+      style={{
+        background: "var(--background)",
+        borderTop: "1px solid rgba(201,160,74,0.1)",
+      }}
+    >
+      <div className="max-w-3xl mx-auto text-center contact-inner">
+        <p className="eyebrow mb-8">— Apply</p>
+        <h2
+          className="font-display font-normal"
+          style={{ fontSize: "clamp(2.8rem, 5.5vw, 5rem)", lineHeight: 1.0 }}
+        >
+          Send a single line.
+          <br />
+          <em style={{ color: "var(--gold-soft)" }}>We'll write back.</em>
+        </h2>
+        <p
+          className="mt-8 font-sans leading-relaxed mx-auto"
+          style={{ color: "rgba(245,237,224,0.58)", fontSize: "1rem", maxWidth: "460px" }}
+        >
+          We accept a limited circle each season. Tell us who you are — we read every note
+          personally and respond within a fortnight.
+        </p>
+
+        <form
+          className="mt-14 text-left"
+          style={{ maxWidth: "560px", margin: "3.5rem auto 0" }}
+          onSubmit={(e) => e.preventDefault()}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            {[
+              { label: "Full Name", type: "text", name: "name", placeholder: "Your name" },
+              { label: "Family Email", type: "email", name: "email", placeholder: "email@family.com" },
+              { label: "City", type: "text", name: "city", placeholder: "Where you are" },
+              { label: "Year of Birth", type: "text", name: "yob", placeholder: "YYYY" },
+            ].map((f) => (
+              <div key={f.name}>
+                <label
+                  className="block font-sans mb-2"
+                  style={{
+                    fontSize: "0.55rem",
+                    letterSpacing: "0.3em",
+                    textTransform: "uppercase",
+                    color: "rgba(245,237,224,0.45)",
+                  }}
+                >
+                  {f.label}
+                </label>
+                <input
+                  type={f.type}
+                  name={f.name}
+                  placeholder={f.placeholder}
+                  className="form-input"
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="mb-10">
+            <label
+              className="block font-sans mb-2"
+              style={{
+                fontSize: "0.55rem",
+                letterSpacing: "0.3em",
+                textTransform: "uppercase",
+                color: "rgba(245,237,224,0.45)",
+              }}
+            >
+              A few lines about you
+            </label>
+            <textarea
+              rows={4}
+              placeholder="Tell us a little about yourself and what you seek..."
+              className="form-input resize-none"
+              style={{ lineHeight: 1.7 }}
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full font-sans"
+            style={{
+              padding: "1.1rem",
+              fontSize: "0.62rem",
+              letterSpacing: "0.38em",
+              textTransform: "uppercase",
+              color: "var(--gold)",
+              border: "1px solid rgba(201,160,74,0.5)",
+              background: "rgba(61,12,24,0.55)",
+              cursor: "pointer",
+              transition: "background 0.3s, border-color 0.3s, color 0.3s",
+            }}
+            onMouseEnter={(e) => {
+              const el = e.currentTarget;
+              el.style.background = "var(--maroon)";
+              el.style.borderColor = "var(--gold)";
+              el.style.color = "var(--gold-soft)";
+            }}
+            onMouseLeave={(e) => {
+              const el = e.currentTarget;
+              el.style.background = "rgba(61,12,24,0.55)";
+              el.style.borderColor = "rgba(201,160,74,0.5)";
+              el.style.color = "var(--gold)";
+            }}
+          >
+            Submit Quietly
+          </button>
+        </form>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   FOOTER
+───────────────────────────────────────────── */
 function Footer() {
   return (
-    <footer className="relative z-10 border-t border-gold/10 bg-background/85 backdrop-blur-md px-6 md:px-14 py-12">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between gap-6 items-start md:items-center">
+    <footer
+      className="relative"
+      style={{
+        borderTop: "1px solid rgba(201,160,74,0.1)",
+        background: "#09050a",
+        padding: "3rem 1.5rem",
+      }}
+    >
+      <div
+        className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6"
+        style={{ paddingLeft: "clamp(0px, 2rem, 2rem)", paddingRight: "clamp(0px, 2rem, 2rem)" }}
+      >
         <div>
-          <div className="font-display text-xl">
-            Desi<span className="italic text-gold">Herz</span>
+          <div className="font-display" style={{ fontSize: "1.4rem", color: "var(--cream)", letterSpacing: "-0.01em" }}>
+            Desi
+            <span style={{ color: "var(--gold)" }}>♥</span>
+            Herz
           </div>
-          <p className="text-[0.6rem] tracking-[0.28em] uppercase text-muted-foreground mt-2">
+          <p
+            className="mt-2 font-sans"
+            style={{ fontSize: "0.58rem", letterSpacing: "0.28em", textTransform: "uppercase", color: "rgba(245,237,224,0.38)" }}
+          >
             © MMXXV · A Private House
           </p>
         </div>
-        <div className="flex gap-8 text-[0.6rem] tracking-[0.28em] uppercase text-muted-foreground">
-          <a href="#" className="hover:text-gold transition-colors">Discretion</a>
-          <a href="#" className="hover:text-gold transition-colors">Terms</a>
-          <a href="mailto:office@desiherz.com" className="hover:text-gold transition-colors">
-            office@desiherz.com
-          </a>
+
+        <div className="flex flex-wrap gap-8">
+          {[
+            { label: "Discretion", href: "#" },
+            { label: "Terms", href: "#" },
+            { label: "office@desiherz.com", href: "mailto:office@desiherz.com" },
+          ].map((l) => (
+            <a
+              key={l.label}
+              href={l.href}
+              className="font-sans"
+              style={{
+                fontSize: "0.58rem",
+                letterSpacing: "0.28em",
+                textTransform: "uppercase",
+                color: "rgba(245,237,224,0.38)",
+                transition: "color 0.3s",
+              }}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--gold)")}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(245,237,224,0.38)")}
+            >
+              {l.label}
+            </a>
+          ))}
         </div>
       </div>
     </footer>
