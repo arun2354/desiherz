@@ -5,10 +5,15 @@ import { Cursor } from "@/components/Cursor";
 import { Nav } from "@/components/Nav";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { Section, Reveal, MaskReveal, Marquee } from "@/components/Reveal";
+import coupleHero from "@/assets/couple-hero.jpg";
+import coupleStory1 from "@/assets/couple-story-1.jpg";
+import coupleStory2 from "@/assets/couple-story-2.jpg";
+import coupleHands from "@/assets/couple-hands.jpg";
 
 const Scene3D = lazy(() =>
   import("@/components/Scene3D").then((m) => ({ default: m.Scene3D }))
 );
+
 
 const SITE = {
   name: "DesiHerz",
