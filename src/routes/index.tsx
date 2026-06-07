@@ -329,37 +329,62 @@ function PinnedProcess() {
 
 /* ---------------- STORIES ---------------- */
 function Stories() {
-  const quotes = [
+  const stories = [
     {
+      img: coupleStory1,
       q: "We had given up on the apps and the aunties both. DesiHerz felt like neither — it felt like a friend who happened to know the right people.",
       a: "A. & R.",
       sub: "Married 2025 · Mumbai / London",
     },
     {
+      img: coupleStory2,
       q: "What surprised us was the slowness. Nothing was rushed. They understood that the right introduction needed to wait for the right moment.",
       a: "The Khanna Family",
-      sub: "Delhi",
+      sub: "Delhi · 2024",
     },
   ];
   return (
     <Section id="stories">
-      <div className="max-w-5xl mx-auto w-full">
+      <div className="max-w-7xl mx-auto w-full">
         <Reveal>
           <p className="eyebrow mb-6">— Quietly Spoken</p>
         </Reveal>
-        <div className="space-y-32 mt-16">
-          {quotes.map((q, i) => (
+        <Reveal delay={0.1}>
+          <h2 className="font-display text-4xl md:text-6xl font-light leading-[1.1] max-w-2xl text-cream">
+            Stories that begin{" "}
+            <span className="italic text-gold-soft">in confidence.</span>
+          </h2>
+        </Reveal>
+        <div className="space-y-28 mt-24">
+          {stories.map((s, i) => (
             <Reveal key={i}>
-              <figure className={`max-w-3xl ${i % 2 ? "ml-auto text-right" : ""}`}>
-                <blockquote className="font-display italic text-3xl md:text-5xl leading-[1.2] font-light text-cream">
-                  <MaskReveal text={`“${q.q}”`} stagger={0.04} />
-                </blockquote>
-                <figcaption className="mt-10">
-                  <div className="text-gold-soft font-display text-lg">{q.a}</div>
-                  <div className="mt-1 text-[0.6rem] tracking-[0.28em] uppercase text-muted-foreground">
-                    {q.sub}
-                  </div>
-                </figcaption>
+              <figure
+                className={`grid md:grid-cols-12 gap-10 md:gap-16 items-center ${
+                  i % 2 ? "md:[&>*:first-child]:order-2" : ""
+                }`}
+              >
+                <div className="md:col-span-6 relative aspect-[4/5] overflow-hidden">
+                  <img
+                    src={s.img}
+                    alt={`Couple introduced by DesiHerz — ${s.a}`}
+                    loading="lazy"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 ring-1 ring-inset ring-gold/15" />
+                </div>
+                <div className="md:col-span-6">
+                  <blockquote className="font-display italic text-2xl md:text-[2.1rem] leading-[1.35] font-light text-cream">
+                    “{s.q}”
+                  </blockquote>
+                  <figcaption className="mt-8 border-t border-gold/15 pt-6">
+                    <div className="text-gold-soft font-display text-xl">
+                      {s.a}
+                    </div>
+                    <div className="mt-2 text-[0.6rem] tracking-[0.3em] uppercase text-muted-foreground">
+                      {s.sub}
+                    </div>
+                  </figcaption>
+                </div>
               </figure>
             </Reveal>
           ))}
@@ -368,6 +393,7 @@ function Stories() {
     </Section>
   );
 }
+
 
 /* ---------------- NUMBERS ---------------- */
 function Numbers() {
