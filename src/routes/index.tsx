@@ -33,11 +33,13 @@ const FILMS = {
   commit: "",
 };
 
-const GOLD = "#c9a04a";
-const BLACK = "#09050a";
-const PANEL = "#120b15";
-const MAROON = "#3d0c18";
-const CREAM = "#f5ede0";
+const GOLD = "#d8b36a";
+const BLACK = "#13060d";
+const PANEL = "#24101b";
+const MAROON = "#7a1d3d";
+const CREAM = "#f6efe7";
+const PURPLE = "#6b3fa0";
+const BURGUNDY = "#a22755";
 
 const remote = (id: string, w = 2600, q = 78) =>
   `https://images.unsplash.com/${id}?auto=format&fit=crop&fm=jpg&q=${q}&w=${w}`;
@@ -192,7 +194,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "DesiHerz — Private Matrimony" },
       { property: "og:description", content: SITE.description },
       { property: "og:type", content: "website" },
-      { name: "theme-color", content: BLACK },
+      { name: "theme-color", content: "#13060d" },
       {
         name: "keywords",
         content:
@@ -872,11 +874,12 @@ function GlobalDesignCSS() {
       html { scroll-behavior: smooth; background: var(--black); }
       body { background: var(--black); }
       .dh-root {
-        min-height: 100vh;
-        background:
-          radial-gradient(circle at 10% 10%, rgba(61,12,24,.45), transparent 34rem),
-          radial-gradient(circle at 80% 20%, rgba(201,160,74,.07), transparent 28rem),
-          var(--black);
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 15% 18%, rgba(162,39,85,.28), transparent 36rem),
+    radial-gradient(circle at 82% 18%, rgba(107,63,160,.18), transparent 34rem),
+    radial-gradient(circle at 50% 82%, rgba(122,29,61,.22), transparent 40rem),
+    linear-gradient(180deg, #1a0711 0%, #13060d 45%, #1b0a18 100%);
         color: var(--cream);
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         overflow-x: clip;
