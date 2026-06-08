@@ -995,7 +995,7 @@ function GlobalDesignCSS() {
         inset: 76px 0 0 0;
         z-index: 0;
         overflow: hidden;
-        background: #050206;
+        background: #6b0030;
       }
       .hero-media img,
       .hero-media video {
