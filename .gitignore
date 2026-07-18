@@ -17,6 +17,9 @@ dist-ssr
 .vercel
 *.local
 
+# Raw source footage — only the extracted frames in public/frames get committed
+video-source/
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
