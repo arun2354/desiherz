@@ -5,10 +5,11 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { Cursor } from "@/components/Cursor";
 import { SmoothScroll } from "@/components/SmoothScroll";
+import { ScrollVideo } from "@/components/ScrollVideo";
 import coupleHero from "@/assets/couple-hero.jpg";
+import coupleHands from "@/assets/couple-hands.jpg";
 import coupleStory1 from "@/assets/couple-story-1.jpg";
 import coupleStory2 from "@/assets/couple-story-2.jpg";
-import coupleHands from "@/assets/couple-hands.jpg";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -19,77 +20,26 @@ const SITE = {
 };
 
 /*
-  Optional production / generated films.
-  Keep these empty until you have real video files. When ready, place videos in /public/desiherz-films/
-  and use paths like "/desiherz-films/01-consultation.mp4".
+  Drop finished clips into /public/videos/ using these exact filenames and
+  they take over automatically — nothing else needs to change. Until a file
+  exists at a path, that slot renders a still frame (or a quiet cinema-slate
+  mark) instead of a broken player.
 */
 const FILMS = {
-  hero: "",
-  listen: "",
-  verify: "",
-  curate: "",
-  introduce: "",
-  align: "",
-  commit: "",
+  hero: "/videos/hero.mp4",
+  listen: "/videos/listen.mp4",
+  verify: "/videos/verify.mp4",
+  curate: "/videos/curate.mp4",
+  introduce: "/videos/introduce.mp4",
+  align: "/videos/align.mp4",
+  commit: "/videos/commit.mp4",
 };
 
-const GOLD = "#b98a2f";
-const BLACK = "#f8f1e6";
-const PANEL = "#fffaf2";
-const MAROON = "#6f1d2e";
-const CREAM = "#21170f";
-const PURPLE = "#7b5d2b";
-const BURGUNDY = "#6f1d2e";
-
-const remote = (id: string, w = 2600, q = 78) =>
-  `https://images.unsplash.com/${id}?auto=format&fit=crop&fm=jpg&q=${q}&w=${w}`;
-
 const MEDIA = {
-  hero: {
-    src: remote("photo-1532712938310-34cb3982ef74", 3000),
-    fallback: coupleHero,
-    alt: "A couple walking through open landscape, used as a cinematic opening image for private matrimony.",
-  },
-  hands: {
-    src: remote("photo-1520854221256-17451cc331bf", 2600),
-    fallback: coupleHands,
-    alt: "Close-up of wedding hands held gently together.",
-  },
-  consultation: {
-    src: coupleStory1,
-    fallback: coupleStory1,
-    alt: "A quiet couple portrait representing the first private conversation.",
-  },
-  verification: {
-    src: remote("photo-1583939003579-730e3918a45a", 2600),
-    fallback: coupleStory2,
-    alt: "A wedding couple scene used to represent careful verification and trust.",
-  },
-  curation: {
-    src: remote("photo-1511795409834-ef04bbd61622", 2600),
-    fallback: coupleStory1,
-    alt: "An elegant table setting with flowers and glassware, representing deliberate curation.",
-  },
-  introduction: {
-    src: remote("photo-1529636798458-92182e662485", 2600),
-    fallback: coupleStory2,
-    alt: "A wedding arch detail representing a prepared first introduction.",
-  },
-  alignment: {
-    src: remote("photo-1523438885200-e635ba2c371e", 2200),
-    fallback: coupleHero,
-    alt: "A quiet ceremonial gazebo arranged for a family-aware commitment.",
-  },
-  commitment: {
-    src: remote("photo-1469371670807-013ccf25f16a", 2800),
-    fallback: coupleHands,
-    alt: "A flower-lined wedding aisle representing commitment.",
-  },
-  hall: {
-    src: remote("photo-1510076857177-7470076d4098", 2800),
-    fallback: coupleStory2,
-    alt: "A warmly lit wedding hall with a dress hanging in the center.",
-  },
+  hero: { src: coupleHero, alt: "A couple walking together, the opening image for DesiHerz." },
+  hands: { src: coupleHands, alt: "Close-up of hands held gently together." },
+  storyOne: { src: coupleStory1, alt: "A quiet couple portrait." },
+  storyTwo: { src: coupleStory2, alt: "A couple portrait representing a considered introduction." },
 };
 
 const PROCESS = [
@@ -98,72 +48,60 @@ const PROCESS = [
     step: "01",
     eyebrow: "The first conversation",
     title: "We begin with what no app can hear.",
-    body:
-      "A private call or meeting where we understand temperament, family rhythm, values, pace and what a dignified introduction should feel like.",
+    body: "A private call or meeting where we understand temperament, family rhythm, values, pace and what a dignified introduction should feel like.",
     cta: "Private intake",
-    image: MEDIA.consultation,
     film: FILMS.listen,
-    visual: "listen" as const,
+    alt: "A private consultation conversation.",
   },
   {
     key: "verify",
     step: "02",
     eyebrow: "Quiet verification",
     title: "Trust is designed before anyone is introduced.",
-    body:
-      "Identity, intent and essential background are reviewed discreetly. No public profiles. No browsing. No exposure.",
+    body: "Identity, intent and essential background are reviewed discreetly. No public profiles. No browsing. No exposure.",
     cta: "Reviewed privately",
-    image: MEDIA.verification,
     film: FILMS.verify,
-    visual: "verify" as const,
+    alt: "A discreet verification process.",
   },
   {
     key: "curate",
     step: "03",
     eyebrow: "Human curation",
     title: "We reduce noise until only the right signal remains.",
-    body:
-      "Compatibility is considered through context: character, priorities, culture, family expectations, geography and the life each person is building.",
+    body: "Compatibility is considered through context: character, priorities, culture, family expectations, geography and the life each person is building.",
     cta: "Two or three names",
-    image: MEDIA.curation,
     film: FILMS.curate,
-    visual: "curate" as const,
+    alt: "A curator reviewing a small set of considered introductions.",
   },
   {
     key: "introduce",
     step: "04",
     eyebrow: "The introduction",
     title: "A meeting is arranged like a scene, not a notification.",
-    body:
-      "When both sides feel ready, we arrange the introduction with care: location, pace, boundaries and privacy all handled before the first hello.",
+    body: "When both sides feel ready, we arrange the introduction with care: location, pace, boundaries and privacy all handled before the first hello.",
     cta: "Introduced with care",
-    image: MEDIA.introduction,
     film: FILMS.introduce,
-    visual: "introduce" as const,
+    alt: "Two people meeting for a considered first introduction.",
   },
   {
     key: "align",
     step: "05",
     eyebrow: "The wider circle",
     title: "Families may be involved without taking over the story.",
-    body:
-      "Where appropriate, we help align expectations with tact. Tradition is respected, but choice remains personal.",
+    body: "Where appropriate, we help align expectations with tact. Tradition is respected, but choice remains personal.",
     cta: "Family-aware",
-    image: MEDIA.alignment,
     film: FILMS.align,
-    visual: "align" as const,
+    alt: "A family conversation handled with tact.",
   },
   {
     key: "commit",
     step: "06",
     eyebrow: "Commitment",
     title: "The outcome should feel calm, not manufactured.",
-    body:
-      "If it becomes something lasting, we remain nearby — discreetly, practically and without turning your life into content.",
+    body: "If it becomes something lasting, we remain nearby — discreetly, practically and without turning your life into content.",
     cta: "A life, not a lead",
-    image: MEDIA.commitment,
     film: FILMS.commit,
-    visual: "commit" as const,
+    alt: "A calm, quietly arranged commitment.",
   },
 ];
 
@@ -186,6 +124,24 @@ const PLEDGES = [
   },
 ];
 
+const TESTIMONIALS = [
+  {
+    quote: "The process felt private without feeling cold. We were introduced with context, care and no pressure to perform.",
+    who: "M. & A.",
+    city: "Frankfurt",
+  },
+  {
+    quote: "They understood that our families mattered, but they never let the family conversation overpower our own choice.",
+    who: "N. & R.",
+    city: "Munich",
+  },
+  {
+    quote: "It was the opposite of an app. No noise, no public profile, just one introduction that made sense.",
+    who: "S. & K.",
+    city: "Berlin",
+  },
+];
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -194,7 +150,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "DesiHerz — Private Matrimony" },
       { property: "og:description", content: SITE.description },
       { property: "og:type", content: "website" },
-      { name: "theme-color", content: "#f8f1e6" },
+      { name: "theme-color", content: "#0a0908" },
       {
         name: "keywords",
         content:
@@ -203,10 +159,10 @@ export const Route = createFileRoute("/")({
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: "anonymous" } as any,
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" } as any,
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,650;0,700;1,400;1,500;1,700&family=Inter:wght@300;400;500;600&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Manrope:wght@300;400;500;600;700;800&display=swap",
       },
     ],
     scripts: [
@@ -237,8 +193,7 @@ function Index() {
   }, []);
 
   return (
-    <div className="dh-root relative min-h-screen selection:bg-[#b98a2f] selection:text-[#fffaf2]">
-      <GlobalDesignCSS />
+    <div className="dh-root grain relative min-h-screen selection:bg-[#c8a35d] selection:text-[#14100c]">
       {mounted && (
         <>
           <SmoothScroll />
@@ -276,7 +231,7 @@ function TopNav() {
     <header ref={ref} className="dh-nav">
       <a href="#top" className="dh-logo" aria-label="DesiHerz home">
         <span>Desi</span>
-        <span className="dh-logo-heart">♥</span>
+        <em className="dh-logo-heart">♥</em>
         <span>Herz</span>
       </a>
       <nav className="dh-nav-links" aria-label="Primary navigation">
@@ -293,70 +248,79 @@ function TopNav() {
 
 function Hero() {
   const ref = useRef<HTMLElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [videoReady, setVideoReady] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
+  const hasVideo = videoReady && !videoFailed;
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(FILMS.hero, { method: "HEAD" })
+      .then((res) => {
+        if (!cancelled && res.ok) setVideoReady(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useGSAP(
     () => {
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      gsap.fromTo(
+        ".hero-copy > *",
+        { y: 32, opacity: 0 },
+        { y: 0, opacity: 1, duration: 1.15, ease: "power3.out", stagger: 0.1, delay: 0.1 }
+      );
+
       if (reduce) return;
 
       gsap.fromTo(
         ".hero-media img, .hero-media video",
-        { scale: 1.08, yPercent: 0 },
+        { scale: 1.08 },
         {
           scale: 1,
-          yPercent: 5,
           ease: "none",
           scrollTrigger: { trigger: ref.current, start: "top top", end: "bottom top", scrub: true },
         }
       );
 
-      gsap.fromTo(
-        ".hero-copy > *",
-        { y: 36, opacity: 0 },
-        { y: 0, opacity: 1, duration: 1.15, ease: "power3.out", stagger: 0.1, delay: 0.1 }
-      );
-
-      gsap.to(".hero-orbit", {
-        rotate: 360,
-        duration: 28,
-        repeat: -1,
-        ease: "none",
-      });
-
-      gsap.to(".hero-thread", {
-        strokeDashoffset: 0,
-        duration: 2.4,
-        ease: "power2.out",
-        delay: 0.35,
-      });
+      const video = videoRef.current;
+      if (video && hasVideo) {
+        const bindScrub = () => {
+          if (!video.duration) return;
+          gsap.to(video, {
+            currentTime: video.duration,
+            ease: "none",
+            scrollTrigger: { trigger: ref.current, start: "top top", end: "bottom top", scrub: 0.4 },
+          });
+        };
+        if (video.readyState >= 1) bindScrub();
+        else video.addEventListener("loadedmetadata", bindScrub, { once: true });
+      }
     },
-    { scope: ref }
+    { scope: ref, dependencies: [hasVideo] }
   );
 
   return (
     <section ref={ref} id="top" className="hero-section">
-      <div className="structural-grid" aria-hidden="true" />
       <div className="hero-media" aria-hidden="true">
-        {FILMS.hero ? (
-          <video src={FILMS.hero} autoPlay muted loop playsInline />
+        {hasVideo ? (
+          <video
+            ref={videoRef}
+            src={FILMS.hero}
+            muted
+            playsInline
+            preload="auto"
+            onError={() => setVideoFailed(true)}
+          />
         ) : (
-          <ImageWithFallback image={MEDIA.hero} className="hero-img" />
+          <img src={MEDIA.hero.src} alt={MEDIA.hero.alt} loading="eager" decoding="async" />
         )}
         <div className="hero-vignette" />
       </div>
-
-      <svg className="hero-linework" viewBox="0 0 1200 760" fill="none" aria-hidden="true">
-        <path
-          className="hero-thread"
-          d="M154 470 C 320 250, 520 250, 640 386 S 950 520, 1070 265"
-          stroke="rgba(201,160,74,.48)"
-          strokeWidth="1"
-          strokeDasharray="1400"
-          strokeDashoffset="1400"
-        />
-        <circle className="hero-orbit" cx="332" cy="380" r="168" stroke="rgba(201,160,74,.16)" strokeWidth="1" />
-        <circle className="hero-orbit" cx="332" cy="380" r="228" stroke="rgba(201,160,74,.08)" strokeWidth="1" />
-      </svg>
 
       <div className="hero-copy">
         <p className="dh-kicker">Private matrimony / Germany and beyond</p>
@@ -393,7 +357,7 @@ function Belief() {
       if (reduce) return;
       gsap.from(".belief-card, .belief-text > *", {
         opacity: 0,
-        y: 34,
+        y: 32,
         duration: 1,
         ease: "power3.out",
         stagger: 0.08,
@@ -405,12 +369,9 @@ function Belief() {
 
   return (
     <section ref={ref} id="about" className="belief-section">
-      <div className="structural-grid" aria-hidden="true" />
       <div className="belief-title">
         <p className="dh-kicker">Not a platform</p>
-        <h2>
-          A private house for modern commitment.
-        </h2>
+        <h2>A private house for modern commitment.</h2>
       </div>
       <div className="belief-text">
         <p>
@@ -418,13 +379,13 @@ function Belief() {
           speaks about family, handles pressure, protects privacy and imagines the home they are quietly building.
         </p>
         <p>
-          DesiHerz is built for people who want the dignity of a human process without the exposure of an app. We listen
-          first, verify carefully, curate slowly and introduce only when the match feels worth your attention.
+          DesiHerz is built for people who want the dignity of a human process without the exposure of an app. We
+          listen first, verify carefully, curate slowly and introduce only when the match feels worth your attention.
         </p>
       </div>
       <div className="belief-card">
         <div className="belief-card-media">
-          <ImageWithFallback image={MEDIA.hands} />
+          <img src={MEDIA.hands.src} alt={MEDIA.hands.alt} loading="lazy" decoding="async" />
         </div>
         <div className="belief-card-copy">
           <span>House standard</span>
@@ -449,7 +410,6 @@ function ProcessFilm() {
 
       gsap.set(scenes, { autoAlpha: 0, y: 24, scale: 0.985 });
       gsap.set(scenes[0], { autoAlpha: 1, y: 0, scale: 1 });
-      gsap.set(".motion-piece", { transformOrigin: "center center" });
 
       if (reduce) {
         gsap.set(scenes, { autoAlpha: 1, y: 0, scale: 1, position: "relative" });
@@ -460,12 +420,11 @@ function ProcessFilm() {
         gsap.set(scenes, { autoAlpha: 1, y: 0, scale: 1, position: "relative" });
         scenes.forEach((scene, i) => {
           const media = scene.querySelector(".film-media-inner");
-          const pieces = scene.querySelectorAll(".motion-piece");
           const copy = scene.querySelectorAll(".scene-copy > *");
 
           gsap.fromTo(
             scene,
-            { opacity: 0.72, y: 44, scale: 0.975 },
+            { opacity: 0.7, y: 44, scale: 0.975 },
             {
               opacity: 1,
               y: 0,
@@ -485,10 +444,10 @@ function ProcessFilm() {
           if (media) {
             gsap.fromTo(
               media,
-              { scale: 1.1, filter: "brightness(.9) saturate(.98)" },
+              { scale: 1.1, filter: "brightness(.88) saturate(.95)" },
               {
                 scale: 1,
-                filter: "brightness(1.08) saturate(1.08)",
+                filter: "brightness(1.05) saturate(1.05)",
                 ease: "none",
                 scrollTrigger: { trigger: scene, start: "top bottom", end: "bottom top", scrub: true },
               }
@@ -504,19 +463,6 @@ function ProcessFilm() {
               ease: "power2.out",
               stagger: 0.04,
               scrollTrigger: { trigger: scene, start: "top 72%", end: "top 42%", scrub: 0.45 },
-            }
-          );
-
-          gsap.fromTo(
-            pieces,
-            { opacity: 0, y: 18, scale: 0.96 },
-            {
-              opacity: 1,
-              y: 0,
-              scale: 1,
-              ease: "power2.out",
-              stagger: 0.035,
-              scrollTrigger: { trigger: scene, start: "top 74%", end: "center 48%", scrub: 0.55 },
             }
           );
         });
@@ -542,18 +488,15 @@ function ProcessFilm() {
 
       scenes.forEach((scene, i) => {
         const media = scene.querySelector(".film-media-inner");
-        const pieces = scene.querySelectorAll(".motion-piece");
         const copy = scene.querySelectorAll(".scene-copy > *");
         if (i === 0) {
           tl.fromTo(media, { scale: 1.08 }, { scale: 1, duration: 0.9 }, 0);
-          tl.fromTo(pieces, { opacity: 0, y: 24, rotate: -3 }, { opacity: 1, y: 0, rotate: 0, duration: 0.75, stagger: 0.04 }, 0.1);
           return;
         }
         tl.to(scenes[i - 1], { autoAlpha: 0, y: -32, scale: 0.975, duration: 0.55 }, ">+=0.08");
         tl.fromTo(scene, { autoAlpha: 0, y: 36, scale: 1.025 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.75 }, "<");
-        tl.fromTo(media, { scale: 1.08, filter: "brightness(.72)" }, { scale: 1, filter: "brightness(1)", duration: 0.8 }, "<");
+        tl.fromTo(media, { scale: 1.08, filter: "brightness(.7)" }, { scale: 1, filter: "brightness(1)", duration: 0.8 }, "<");
         tl.fromTo(copy, { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.45, stagger: 0.03 }, "<0.12");
-        tl.fromTo(pieces, { opacity: 0, y: 30, rotate: -4 }, { opacity: 1, y: 0, rotate: 0, duration: 0.75, stagger: 0.04 }, "<0.16");
       });
     },
     { scope: ref, dependencies: [] }
@@ -561,7 +504,6 @@ function ProcessFilm() {
 
   return (
     <section ref={ref} id="process" className="film-section">
-      <div className="structural-grid" aria-hidden="true" />
       <aside className="film-rail" aria-label="Process steps">
         {PROCESS.map((item, i) => (
           <button
@@ -590,14 +532,13 @@ function ProcessFilm() {
             <article key={scene.key} className={`film-scene scene-${scene.key}`}>
               <div className="film-media">
                 <div className="film-media-inner">
-                  {scene.film ? (
-                    <video src={scene.film} autoPlay muted loop playsInline />
-                  ) : (
-                    <ImageWithFallback image={scene.image} />
-                  )}
+                  <ScrollVideo slot={{ video: scene.film, alt: scene.alt }} />
                   <div className="film-media-shade" />
                 </div>
-                <KineticVisual type={scene.visual} step={scene.step} />
+                <div className="film-frame" aria-hidden="true">
+                  <span /><span /><span /><span />
+                </div>
+                <span className="film-scene-mark" aria-hidden="true">{scene.step}</span>
               </div>
 
               <div className="scene-copy">
@@ -620,106 +561,6 @@ function ProcessFilm() {
   );
 }
 
-type KineticType = "listen" | "verify" | "curate" | "introduce" | "align" | "commit";
-
-function KineticVisual({ type, step }: { type: KineticType; step: string }) {
-  if (type === "listen") {
-    return (
-      <div className="kinetic kinetic-listen" aria-hidden="true">
-        <span className="motion-piece pulse p1" />
-        <span className="motion-piece pulse p2" />
-        <div className="motion-piece audio-card">
-          <b>{step}</b>
-          <span>listening</span>
-          <i />
-          <i />
-          <i />
-        </div>
-      </div>
-    );
-  }
-
-  if (type === "verify") {
-    return (
-      <div className="kinetic kinetic-verify" aria-hidden="true">
-        <div className="motion-piece lock-ring">
-          <svg viewBox="0 0 80 80" fill="none">
-            <circle cx="40" cy="40" r="35" stroke="rgba(201,160,74,.45)" />
-            <path d="M28 37h24v20H28z" stroke="rgba(201,160,74,.8)" />
-            <path d="M33 37v-8c0-5 3-10 7-10s7 5 7 10v8" stroke="rgba(201,160,74,.8)" />
-          </svg>
-        </div>
-        <div className="motion-piece redacted-card c1"><span /><span /><span /></div>
-        <div className="motion-piece redacted-card c2"><span /><span /><span /></div>
-      </div>
-    );
-  }
-
-  if (type === "curate") {
-    return (
-      <div className="kinetic kinetic-curate" aria-hidden="true">
-        {[0, 1, 2].map((i) => (
-          <div key={i} className={`motion-piece profile-card pc${i}`}>
-            <span />
-            <b>{i === 0 ? "Values" : i === 1 ? "Pace" : "Family"}</b>
-            <i />
-            <i />
-          </div>
-        ))}
-        <svg className="motion-piece match-wire" viewBox="0 0 360 200" fill="none">
-          <path d="M40 138 C 122 28, 236 32, 318 92" stroke="rgba(201,160,74,.7)" strokeWidth="1" />
-          <circle cx="40" cy="138" r="5" fill={GOLD} />
-          <circle cx="318" cy="92" r="5" fill={GOLD} />
-        </svg>
-      </div>
-    );
-  }
-
-  if (type === "introduce") {
-    return (
-      <div className="kinetic kinetic-introduce" aria-hidden="true">
-        <div className="motion-piece intro-person left"><span />A</div>
-        <svg className="motion-piece intro-line" viewBox="0 0 420 150" fill="none">
-          <path d="M82 76 C 160 20, 255 126, 338 70" stroke="rgba(201,160,74,.75)" strokeWidth="1.5" />
-          <circle cx="210" cy="76" r="8" fill={GOLD} />
-        </svg>
-        <div className="motion-piece intro-person right"><span />B</div>
-        <div className="motion-piece invitation-slip">introduction accepted</div>
-      </div>
-    );
-  }
-
-  if (type === "align") {
-    return (
-      <div className="kinetic kinetic-align" aria-hidden="true">
-        {["values", "family", "city", "pace"].map((label, i) => (
-          <div key={label} className={`motion-piece align-node n${i}`}>
-            <span>{label}</span>
-          </div>
-        ))}
-        <svg className="motion-piece align-orbit" viewBox="0 0 320 320" fill="none">
-          <circle cx="160" cy="160" r="110" stroke="rgba(201,160,74,.25)" />
-          <circle cx="160" cy="160" r="58" stroke="rgba(201,160,74,.5)" />
-          <path d="M60 160H260M160 60v200" stroke="rgba(201,160,74,.15)" />
-        </svg>
-      </div>
-    );
-  }
-
-  return (
-    <div className="kinetic kinetic-commit" aria-hidden="true">
-      <svg className="motion-piece rings" viewBox="0 0 280 180" fill="none">
-        <circle cx="116" cy="92" r="48" stroke="rgba(201,160,74,.8)" strokeWidth="2" />
-        <circle cx="164" cy="92" r="48" stroke="rgba(201,160,74,.55)" strokeWidth="2" />
-      </svg>
-      {Array.from({ length: 18 }).map((_, i) => (
-        <span key={i} className={`motion-piece petal petal-${i}`} />
-      ))}
-      <div className="motion-piece final-seal">quietly arranged</div>
-    </div>
-  );
-}
-
 function Pledges() {
   const ref = useRef<HTMLElement>(null);
 
@@ -729,8 +570,7 @@ function Pledges() {
       if (reduce) return;
       gsap.from(".pledge-panel", {
         opacity: 0,
-        y: 28,
-        rotateX: -8,
+        y: 26,
         duration: 0.9,
         ease: "power3.out",
         stagger: 0.08,
@@ -739,7 +579,7 @@ function Pledges() {
       gsap.fromTo(
         ".pledge-media-strip img",
         { xPercent: 0 },
-        { xPercent: -12, ease: "none", scrollTrigger: { trigger: ref.current, start: "top bottom", end: "bottom top", scrub: true } }
+        { xPercent: -10, ease: "none", scrollTrigger: { trigger: ref.current, start: "top bottom", end: "bottom top", scrub: true } }
       );
     },
     { scope: ref }
@@ -747,7 +587,6 @@ function Pledges() {
 
   return (
     <section ref={ref} id="pledges" className="pledges-section">
-      <div className="structural-grid" aria-hidden="true" />
       <div className="section-heading compact">
         <p className="dh-kicker">Why us</p>
         <h2>Four rules that protect the story.</h2>
@@ -768,9 +607,8 @@ function Pledges() {
           ))}
         </div>
         <div className="pledge-media-strip" aria-hidden="true">
-          <ImageWithFallback image={MEDIA.hall} />
-          <ImageWithFallback image={MEDIA.hands} />
-          <ImageWithFallback image={MEDIA.commitment} />
+          <img src={MEDIA.storyOne.src} alt={MEDIA.storyOne.alt} loading="lazy" decoding="async" />
+          <img src={MEDIA.storyTwo.src} alt={MEDIA.storyTwo.alt} loading="lazy" decoding="async" />
         </div>
       </div>
     </section>
@@ -779,29 +617,7 @@ function Pledges() {
 
 function Proof() {
   const ref = useRef<HTMLElement>(null);
-  const quotes = useMemo(
-    () => [
-      {
-        quote:
-          "The process felt private without feeling cold. We were introduced with context, care and no pressure to perform.",
-        who: "M. & A.",
-        city: "Frankfurt",
-      },
-      {
-        quote:
-          "They understood that our families mattered, but they never let the family conversation overpower our own choice.",
-        who: "N. & R.",
-        city: "Munich",
-      },
-      {
-        quote:
-          "It was the opposite of an app. No noise, no public profile, just one introduction that made sense.",
-        who: "S. & K.",
-        city: "Berlin",
-      },
-    ],
-    []
-  );
+  const quotes = useMemo(() => TESTIMONIALS, []);
 
   useGSAP(
     () => {
@@ -826,7 +642,6 @@ function Proof() {
 
   return (
     <section ref={ref} id="story" className="proof-section">
-      <div className="structural-grid" aria-hidden="true" />
       <div className="proof-copy">
         <p className="dh-kicker">Proof, softly</p>
         <h2>People remember how the introduction felt.</h2>
@@ -834,7 +649,7 @@ function Proof() {
       <div className="quote-track">
         {quotes.map((q) => (
           <article key={q.who} className="quote-card">
-            <span>“</span>
+            <span>&ldquo;</span>
             <p>{q.quote}</p>
             <footer>{q.who} / {q.city}</footer>
           </article>
@@ -852,7 +667,7 @@ function Contact() {
       if (reduce) return;
       gsap.from(".contact-panel > *", {
         opacity: 0,
-        y: 24,
+        y: 22,
         duration: 0.9,
         ease: "power3.out",
         stagger: 0.07,
@@ -864,15 +679,14 @@ function Contact() {
 
   return (
     <section ref={ref} id="contact" className="contact-section">
-      <div className="structural-grid" aria-hidden="true" />
       <div className="contact-panel">
         <p className="dh-kicker">Begin privately</p>
         <h2>
-          Send a single line. <em>We’ll write back.</em>
+          Send a single line. <em>We&rsquo;ll write back.</em>
         </h2>
         <p>
-          No public profile is created. Your details are seen only by the principal matchmaker and are never shared as
-          browseable data.
+          No public profile is created. Your details are seen only by the principal matchmaker and are never shared
+          as browseable data.
         </p>
         <form onSubmit={(e) => e.preventDefault()} className="contact-form">
           <label>
@@ -907,1117 +721,5 @@ function Footer() {
         <span>hello@desiherz.com</span>
       </div>
     </footer>
-  );
-}
-
-function ImageWithFallback({ image, className = "" }: { image: { src: string; fallback: string; alt: string }; className?: string }) {
-  return (
-    <img
-      src={image.src}
-      alt={image.alt}
-      className={className}
-      loading="eager"
-      decoding="async"
-      onError={(event) => {
-        if (event.currentTarget.src !== image.fallback) event.currentTarget.src = image.fallback;
-      }}
-    />
-  );
-}
-
-function GlobalDesignCSS() {
-  return (
-    <style>{`
-      :root {
-        --black: ${BLACK};
-        --panel: ${PANEL};
-        --gold: ${GOLD};
-        --maroon: ${MAROON};
-        --cream: ${CREAM};
-        --line: rgba(201,160,74,.16);
-        --line-soft: rgba(245,237,224,.06);
-      }
-
-      html { scroll-behavior: smooth; background: var(--black); }
-      body { background: var(--black); }
-      .dh-root {
-  min-height: 100vh;
-  background:
-    radial-gradient(circle at 15% 18%, rgba(162,39,85,.28), transparent 36rem),
-    radial-gradient(circle at 82% 18%, rgba(107,63,160,.18), transparent 34rem),
-    radial-gradient(circle at 50% 82%, rgba(122,29,61,.22), transparent 40rem),
-    linear-gradient(180deg, #1a0711 0%, #13060d 45%, #1b0a18 100%);
-        color: var(--cream);
-        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        overflow-x: clip;
-      }
-      .dh-root * { box-sizing: border-box; }
-      .dh-root a { color: inherit; text-decoration: none; }
-      .structural-grid {
-        pointer-events: none;
-        position: absolute;
-        inset: 0;
-        background-image:
-          linear-gradient(to right, rgba(245,237,224,.045) 1px, transparent 1px),
-          linear-gradient(to bottom, rgba(245,237,224,.035) 1px, transparent 1px);
-        background-size: 25vw 100%, 100% 25vh;
-        mask-image: linear-gradient(to bottom, rgba(0,0,0,.85), rgba(0,0,0,.32));
-        z-index: 1;
-      }
-      .dh-kicker {
-        margin: 0;
-        font: 700 clamp(.66rem, .75vw, .82rem)/1.4 Inter, sans-serif;
-        letter-spacing: .36em;
-        text-transform: uppercase;
-        color: var(--gold);
-      }
-      .dh-button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 3.3rem;
-        padding: 0 1.45rem;
-        border: 1px solid rgba(201,160,74,.46);
-        font: 800 .68rem/1 Inter, sans-serif;
-        letter-spacing: .24em;
-        text-transform: uppercase;
-        transition: transform .35s cubic-bezier(.2,.8,.2,1), background .35s ease, color .35s ease, border-color .35s ease;
-      }
-      .dh-button:hover { transform: translateY(-2px); border-color: rgba(201,160,74,.86); }
-      .dh-button.primary { background: var(--gold); color: #120b15; border-color: var(--gold); }
-      .dh-button.secondary { background: rgba(9,5,10,.28); color: var(--gold); backdrop-filter: blur(14px); }
-
-      .dh-nav {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 76px;
-        z-index: 80;
-        display: grid;
-        grid-template-columns: minmax(180px, 1fr) auto minmax(180px, 1fr);
-        align-items: center;
-        padding: 0 2rem;
-        color: var(--gold);
-        border-bottom: 1px solid rgba(201,160,74,.13);
-        background: rgba(9,5,10,.55);
-        backdrop-filter: blur(18px);
-        transition: background .35s ease, height .35s ease, border-color .35s ease;
-      }
-      .dh-nav.is-scrolled { height: 66px; background: rgba(9,5,10,.86); border-bottom-color: rgba(201,160,74,.22); }
-      .dh-logo {
-        justify-self: start;
-        display: inline-flex;
-        align-items: center;
-        gap: .45rem;
-        font-family: "Playfair Display", Georgia, serif;
-        font-size: clamp(1.6rem, 2.1vw, 2.2rem);
-        letter-spacing: .025em;
-        white-space: nowrap;
-      }
-      .dh-logo-heart {
-        width: 1.32rem;
-        height: 1.32rem;
-        border: 1px solid rgba(201,160,74,.4);
-        border-radius: 999px;
-        display: inline-grid;
-        place-items: center;
-        font-size: .68rem;
-        line-height: 1;
-      }
-      .dh-nav-links {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: clamp(1.4rem, 3.4vw, 3.4rem);
-      }
-      .dh-nav-links a,
-      .dh-nav-cta {
-        font: 800 .72rem/1 Inter, sans-serif;
-        letter-spacing: .32em;
-        text-transform: uppercase;
-        color: var(--gold);
-      }
-      .dh-nav-links a { opacity: .86; transition: opacity .25s ease; }
-      .dh-nav-links a:hover { opacity: 1; }
-      .dh-nav-cta {
-        justify-self: end;
-        border: 1px solid rgba(201,160,74,.32);
-        padding: 1.05rem 1.5rem;
-        transition: border-color .25s ease, background .25s ease;
-      }
-      .dh-nav-cta:hover { border-color: rgba(201,160,74,.76); background: rgba(201,160,74,.08); }
-
-      .hero-section {
-        position: relative;
-        min-height: 100svh;
-        padding: 9rem 4.8vw 4.2rem;
-        display: grid;
-        align-items: end;
-        isolation: isolate;
-        overflow: hidden;
-      }
-      .hero-media {
-        position: absolute;
-        inset: 76px 0 0 0;
-        z-index: 0;
-        overflow: hidden;
-        background: #050206;
-      }
-      .hero-media img,
-      .hero-media video {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        object-position: center 42%;
-        filter: saturate(.76) contrast(1.05) brightness(.74);
-      }
-      .hero-vignette {
-        position: absolute;
-        inset: 0;
-        background:
-          linear-gradient(90deg, rgba(9,5,10,.92) 0%, rgba(9,5,10,.68) 34%, rgba(9,5,10,.28) 68%, rgba(9,5,10,.82) 100%),
-          linear-gradient(0deg, rgba(9,5,10,.88) 0%, rgba(9,5,10,.08) 42%, rgba(9,5,10,.78) 100%);
-      }
-      .hero-linework {
-        position: absolute;
-        z-index: 2;
-        inset: 76px 0 auto 0;
-        width: 100%;
-        height: calc(100svh - 76px);
-        opacity: .9;
-        pointer-events: none;
-      }
-      .hero-copy {
-        position: relative;
-        z-index: 3;
-        max-width: min(880px, 64vw);
-        padding-bottom: clamp(1rem, 3vh, 3rem);
-      }
-      .hero-copy h1 {
-        margin: 1rem 0 1.05rem;
-        max-width: 13ch;
-        font-family: "Playfair Display", Georgia, serif;
-        font-size: clamp(3.4rem, 7.2vw, 7.2rem);
-        line-height: .93;
-        letter-spacing: -.065em;
-        font-weight: 500;
-        color: var(--cream);
-      }
-      .hero-copy h1 em { color: var(--gold); font-style: italic; font-weight: 500; }
-      .hero-body {
-        max-width: 680px;
-        margin: 0;
-        color: rgba(245,237,224,.76);
-        font-size: clamp(1rem, 1.22vw, 1.25rem);
-        line-height: 1.7;
-        letter-spacing: .015em;
-      }
-      .hero-actions { display: flex; flex-wrap: wrap; gap: .9rem; margin-top: 2rem; }
-      .hero-trust-panel {
-        position: absolute;
-        z-index: 3;
-        right: 3.2vw;
-        bottom: 3.1rem;
-        width: min(40vw, 650px);
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        background: rgba(9,5,10,.54);
-        border: 1px solid rgba(201,160,74,.18);
-        backdrop-filter: blur(18px);
-      }
-      .hero-trust-panel > div { padding: 1.25rem 1.2rem; border-left: 1px solid rgba(201,160,74,.14); }
-      .hero-trust-panel > div:first-child { border-left: 0; }
-      .hero-trust-panel span { display: block; color: var(--gold); font-size: .68rem; letter-spacing: .26em; font-weight: 800; }
-      .hero-trust-panel strong { display: block; margin: .55rem 0 .35rem; font-family: "Playfair Display", Georgia, serif; font-size: 1.35rem; font-weight: 500; }
-      .hero-trust-panel small { display: block; color: rgba(245,237,224,.58); font-size: .74rem; line-height: 1.45; }
-      .hero-scroll { position: absolute; right: 3.4vw; bottom: 9rem; z-index: 3; color: var(--gold); font-size: .62rem; letter-spacing: .33em; text-transform: uppercase; font-weight: 800; writing-mode: vertical-rl; }
-
-      .belief-section {
-        position: relative;
-        display: grid;
-        grid-template-columns: 0.9fr 1fr;
-        gap: clamp(2rem, 5vw, 6rem);
-        padding: clamp(6rem, 11vw, 11rem) 4.8vw;
-        overflow: hidden;
-        background: linear-gradient(180deg, #09050a 0%, #0d0610 100%);
-      }
-      .belief-title,
-      .belief-text,
-      .belief-card { position: relative; z-index: 3; }
-      .belief-title h2 {
-        margin: 1rem 0 0;
-        max-width: 10ch;
-        font-family: "Playfair Display", Georgia, serif;
-        font-size: clamp(3.1rem, 6vw, 6.3rem);
-        letter-spacing: -.055em;
-        line-height: .98;
-        font-weight: 500;
-      }
-      .belief-text {
-        max-width: 680px;
-        align-self: center;
-        color: rgba(245,237,224,.7);
-        font-size: clamp(1rem, 1.15vw, 1.22rem);
-        line-height: 1.85;
-      }
-      .belief-text p + p { margin-top: 1.5rem; }
-      .belief-card {
-        grid-column: 2;
-        display: grid;
-        grid-template-columns: 42% 1fr;
-        min-height: 300px;
-        border: 1px solid rgba(201,160,74,.18);
-        background: rgba(18,11,21,.64);
-        backdrop-filter: blur(18px);
-        overflow: hidden;
-      }
-      .belief-card-media { min-height: 300px; overflow: hidden; }
-      .belief-card-media img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.75) brightness(.7); }
-      .belief-card-copy { padding: clamp(1.5rem, 4vw, 3rem); display: flex; flex-direction: column; justify-content: center; }
-      .belief-card-copy span { color: var(--gold); font-size: .64rem; letter-spacing: .3em; text-transform: uppercase; font-weight: 800; }
-      .belief-card-copy strong { display: block; margin: .9rem 0 1rem; font-family: "Playfair Display", Georgia, serif; font-size: clamp(1.9rem, 3vw, 3rem); line-height: 1.02; font-weight: 500; }
-      .belief-card-copy p { margin: 0; color: rgba(245,237,224,.64); line-height: 1.7; }
-
-      .film-section {
-        position: relative;
-        min-height: 100svh;
-        overflow: hidden;
-        background:
-          radial-gradient(circle at 84% 18%, rgba(201,160,74,.07), transparent 28rem),
-          radial-gradient(circle at 18% 70%, rgba(61,12,24,.34), transparent 32rem),
-          #080409;
-      }
-      .film-rail {
-        position: absolute;
-        z-index: 14;
-        left: 3.3vw;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 220px;
-        display: flex;
-        flex-direction: column;
-        border-left: 1px solid rgba(201,160,74,.28);
-      }
-      .film-rail button {
-        position: relative;
-        appearance: none;
-        background: transparent;
-        color: rgba(245,237,224,.42);
-        border: 0;
-        border-bottom: 1px solid rgba(245,237,224,.06);
-        text-align: left;
-        padding: 1rem 0 1rem 1.55rem;
-        cursor: pointer;
-        transition: color .3s ease, transform .3s ease;
-      }
-      .film-rail button::before {
-        content: "";
-        position: absolute;
-        left: -4px;
-        top: 1.18rem;
-        width: 7px;
-        height: 7px;
-        border-radius: 999px;
-        background: rgba(201,160,74,.25);
-        transition: transform .3s ease, background .3s ease, box-shadow .3s ease;
-      }
-      .film-rail button.active { color: var(--cream); transform: translateX(3px); }
-      .film-rail button.active::before { background: var(--gold); transform: scale(1.35); box-shadow: 0 0 28px rgba(201,160,74,.45); }
-      .film-rail span { display: block; color: var(--gold); font-size: .65rem; letter-spacing: .26em; font-weight: 800; }
-      .film-rail strong { display: block; margin-top: .42rem; font-size: .68rem; letter-spacing: .28em; text-transform: uppercase; line-height: 1.55; }
-
-      .film-stage {
-        position: relative;
-        z-index: 3;
-        height: 100svh;
-        min-height: 760px;
-        padding: 6.2rem 4.8vw 3.2rem calc(3.3vw + 260px);
-        display: grid;
-        grid-template-rows: auto 1fr auto;
-        gap: 1.2rem;
-      }
-      .film-stage-header {
-        display: flex;
-        align-items: end;
-        justify-content: space-between;
-        gap: 2rem;
-      }
-      .film-stage-header h2 {
-        margin: 0;
-        max-width: 650px;
-        font-family: "Playfair Display", Georgia, serif;
-        font-size: clamp(2.6rem, 4.4vw, 5rem);
-        line-height: .98;
-        letter-spacing: -.055em;
-        font-weight: 500;
-        text-align: right;
-      }
-      .film-scenes {
-        position: relative;
-        min-height: 0;
-        border: 1px solid rgba(201,160,74,.16);
-        background: rgba(18,11,21,.42);
-        box-shadow: 0 60px 140px rgba(0,0,0,.32);
-        overflow: hidden;
-      }
-      .film-scene {
-        position: absolute;
-        inset: 0;
-        display: grid;
-        grid-template-columns: minmax(0, 1.12fr) minmax(360px, .88fr);
-        gap: clamp(1.4rem, 3vw, 3.2rem);
-        align-items: center;
-        padding: clamp(1.4rem, 3vw, 3rem);
-      }
-      .film-media {
-        position: relative;
-        height: 100%;
-        min-height: 500px;
-        overflow: hidden;
-        border: 1px solid rgba(201,160,74,.14);
-        background: #050206;
-      }
-      .film-media-inner { position: absolute; inset: 0; overflow: hidden; }
-      .film-media img,
-      .film-media video { width: 100%; height: 100%; object-fit: cover; filter: saturate(.78) contrast(1.08) brightness(.76); }
-      .film-media-shade { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(9,5,10,.82), rgba(9,5,10,.06) 45%, rgba(9,5,10,.5)); }
-      .scene-copy { position: relative; z-index: 4; max-width: 560px; padding-right: .5rem; }
-      .scene-eyebrow { margin: 0 0 1rem; color: var(--gold); font-size: .68rem; letter-spacing: .32em; text-transform: uppercase; font-weight: 800; }
-      .scene-copy h3 {
-        margin: 0 0 1rem;
-        font-family: "Playfair Display", Georgia, serif;
-        font-size: clamp(2.45rem, 4.2vw, 4.8rem);
-        line-height: .98;
-        letter-spacing: -.052em;
-        font-weight: 500;
-      }
-      .scene-copy > p:not(.scene-eyebrow) { margin: 0; color: rgba(245,237,224,.7); font-size: clamp(.98rem, 1.05vw, 1.13rem); line-height: 1.75; }
-      .scene-tag { display: inline-flex; margin-top: 1.6rem; padding: .72rem .9rem; border: 1px solid rgba(201,160,74,.24); color: var(--gold); font-size: .64rem; letter-spacing: .22em; text-transform: uppercase; font-weight: 800; }
-      .film-progress { display: grid; grid-template-columns: repeat(6, 1fr); gap: .6rem; }
-      .film-progress span { height: 2px; background: rgba(245,237,224,.08); overflow: hidden; }
-      .film-progress span::after { content: ""; display: block; height: 100%; transform: scaleX(0); transform-origin: left; background: var(--gold); transition: transform .32s ease; }
-      .film-progress span.filled::after { transform: scaleX(1); }
-
-      .kinetic { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
-      .kinetic-listen .pulse { position: absolute; left: 12%; bottom: 12%; width: 180px; height: 180px; border-radius: 50%; border: 1px solid rgba(201,160,74,.26); animation: dhPulse 3.5s ease-out infinite; }
-      .kinetic-listen .p2 { animation-delay: .9s; width: 280px; height: 280px; opacity: .7; }
-      .audio-card { position: absolute; left: 8%; bottom: 10%; width: 230px; padding: 1rem; background: rgba(9,5,10,.72); border: 1px solid rgba(201,160,74,.22); backdrop-filter: blur(16px); }
-      .audio-card b { color: var(--gold); letter-spacing: .22em; font-size: .7rem; }
-      .audio-card span { display: block; margin: .45rem 0 .9rem; color: rgba(245,237,224,.76); text-transform: uppercase; letter-spacing: .22em; font-size: .62rem; }
-      .audio-card i { display: block; height: 2px; margin: .36rem 0; background: linear-gradient(90deg, var(--gold), transparent); }
-      .kinetic-verify .lock-ring { position: absolute; right: 10%; top: 12%; width: 110px; height: 110px; }
-      .redacted-card { position: absolute; right: 8%; bottom: 14%; width: 260px; height: 120px; padding: 1rem; background: rgba(9,5,10,.72); border: 1px solid rgba(201,160,74,.22); backdrop-filter: blur(14px); }
-      .redacted-card.c2 { right: 18%; bottom: 22%; transform: rotate(-4deg); opacity: .78; }
-      .redacted-card span { display: block; height: 10px; margin-bottom: 13px; background: rgba(245,237,224,.16); }
-      .redacted-card span:nth-child(2) { width: 72%; }
-      .redacted-card span:nth-child(3) { width: 48%; background: rgba(201,160,74,.28); }
-      .profile-card { position: absolute; top: 18%; width: 180px; min-height: 220px; padding: 1.1rem; background: rgba(9,5,10,.75); border: 1px solid rgba(201,160,74,.22); backdrop-filter: blur(14px); box-shadow: 0 32px 70px rgba(0,0,0,.32); }
-      .profile-card span { display: block; width: 52px; height: 52px; border-radius: 999px; border: 1px solid rgba(201,160,74,.34); margin-bottom: 1.1rem; }
-      .profile-card b { color: var(--gold); font-family: "Playfair Display", Georgia, serif; font-size: 1.45rem; font-weight: 500; }
-      .profile-card i { display: block; height: 2px; margin-top: .9rem; background: rgba(245,237,224,.14); }
-      .pc0 { left: 10%; transform: rotate(-8deg); }
-      .pc1 { left: 25%; top: 24%; transform: rotate(4deg); }
-      .pc2 { left: 40%; transform: rotate(-1deg); }
-      .match-wire { position: absolute; right: 6%; bottom: 12%; width: 360px; max-width: 45%; }
-      .intro-person { position: absolute; top: 26%; width: 140px; height: 174px; background: rgba(9,5,10,.75); border: 1px solid rgba(201,160,74,.24); backdrop-filter: blur(14px); display: grid; place-items: center; color: var(--gold); font-family: "Playfair Display", Georgia, serif; font-size: 2.3rem; }
-      .intro-person span { position: absolute; top: 26px; width: 52px; height: 52px; border: 1px solid rgba(201,160,74,.35); border-radius: 999px; }
-      .intro-person.left { left: 13%; }
-      .intro-person.right { right: 13%; }
-      .intro-line { position: absolute; left: 50%; top: 33%; transform: translateX(-50%); width: min(430px, 54%); }
-      .invitation-slip { position: absolute; left: 50%; bottom: 15%; transform: translateX(-50%); padding: .8rem 1rem; background: rgba(9,5,10,.76); border: 1px solid rgba(201,160,74,.24); color: var(--gold); font-size: .64rem; letter-spacing: .24em; text-transform: uppercase; font-weight: 800; }
-      .align-orbit { position: absolute; left: 50%; top: 50%; width: min(380px, 62%); transform: translate(-50%, -50%); }
-      .align-node { position: absolute; width: 110px; height: 110px; border-radius: 999px; border: 1px solid rgba(201,160,74,.28); background: rgba(9,5,10,.68); backdrop-filter: blur(14px); display: grid; place-items: center; color: var(--gold); font-size: .61rem; text-transform: uppercase; letter-spacing: .2em; }
-      .align-node.n0 { left: 12%; top: 18%; }
-      .align-node.n1 { right: 12%; top: 18%; }
-      .align-node.n2 { left: 18%; bottom: 14%; }
-      .align-node.n3 { right: 18%; bottom: 14%; }
-      .rings { position: absolute; left: 50%; top: 42%; width: 310px; transform: translate(-50%, -50%); filter: drop-shadow(0 0 34px rgba(201,160,74,.25)); }
-      .final-seal { position: absolute; left: 50%; bottom: 13%; transform: translateX(-50%); padding: .88rem 1.1rem; background: rgba(9,5,10,.7); border: 1px solid rgba(201,160,74,.24); color: var(--gold); font-size: .64rem; letter-spacing: .24em; text-transform: uppercase; font-weight: 800; }
-      .petal { position: absolute; top: -20px; width: 7px; height: 12px; border-radius: 999px 999px 999px 0; background: rgba(245,237,224,.72); animation: dhPetal 7s linear infinite; opacity: .7; }
-      ${Array.from({ length: 18 }).map((_, i) => `.petal-${i}{left:${8 + ((i * 11) % 84)}%;animation-delay:${(i * .37).toFixed(2)}s;animation-duration:${(5.5 + (i % 6) * .5).toFixed(2)}s;}`).join("\n")}
-
-      .pledges-section {
-        position: relative;
-        padding: clamp(5.2rem, 9vw, 9rem) 4.8vw;
-        overflow: hidden;
-        background: linear-gradient(180deg, #080409, #0b050c 72%, #09050a);
-      }
-      .section-heading { position: relative; z-index: 3; max-width: 1120px; display: grid; grid-template-columns: .85fr 1fr; align-items: end; gap: clamp(1.5rem, 5vw, 6rem); margin-bottom: clamp(2rem, 4vw, 4rem); }
-      .section-heading h2 { margin: .8rem 0 0; font-family: "Playfair Display", Georgia, serif; font-size: clamp(2.8rem, 5.1vw, 5.8rem); line-height: 1; letter-spacing: -.055em; font-weight: 500; }
-      .section-heading p:not(.dh-kicker) { color: rgba(245,237,224,.68); line-height: 1.75; font-size: clamp(.98rem, 1.1vw, 1.13rem); }
-      .pledge-content { position: relative; z-index: 3; display: grid; grid-template-columns: minmax(0, .95fr) minmax(360px, .8fr); gap: 1.2rem; align-items: stretch; }
-      .pledge-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: rgba(201,160,74,.18); border: 1px solid rgba(201,160,74,.18); }
-      .pledge-panel { min-height: 240px; padding: clamp(1.3rem, 3vw, 2.6rem); background: rgba(18,11,21,.88); }
-      .pledge-panel span { color: var(--gold); font-size: .68rem; letter-spacing: .28em; font-weight: 800; }
-      .pledge-panel h3 { margin: 1.2rem 0 .75rem; font-family: "Playfair Display", Georgia, serif; font-size: clamp(1.75rem, 2.5vw, 2.65rem); line-height: 1.05; font-weight: 500; }
-      .pledge-panel p { margin: 0; color: rgba(245,237,224,.64); line-height: 1.72; }
-      .pledge-media-strip { position: relative; min-height: 482px; overflow: hidden; border: 1px solid rgba(201,160,74,.18); background: #050206; }
-      .pledge-media-strip img { position: absolute; width: 62%; height: 62%; object-fit: cover; filter: saturate(.72) brightness(.72); border: 1px solid rgba(201,160,74,.15); }
-      .pledge-media-strip img:nth-child(1) { left: 6%; top: 7%; width: 70%; height: 58%; }
-      .pledge-media-strip img:nth-child(2) { right: 5%; bottom: 8%; width: 54%; height: 46%; }
-      .pledge-media-strip img:nth-child(3) { left: 9%; bottom: 6%; width: 38%; height: 36%; }
-
-      .proof-section {
-        position: relative;
-        min-height: 100svh;
-        padding: clamp(5rem, 8vw, 8rem) 4.8vw;
-        overflow: hidden;
-        background: #09050a;
-      }
-      .proof-copy { position: relative; z-index: 3; max-width: 840px; }
-      .proof-copy h2 { margin: .9rem 0 0; font-family: "Playfair Display", Georgia, serif; font-size: clamp(2.9rem, 5vw, 5.8rem); line-height: .98; letter-spacing: -.055em; font-weight: 500; }
-      .quote-track { position: relative; z-index: 3; display: flex; gap: 1.2rem; width: max-content; margin-top: clamp(3rem, 7vw, 7rem); padding-bottom: 2rem; }
-      .quote-card { width: min(560px, 82vw); min-height: 340px; padding: clamp(1.5rem, 3vw, 3rem); border: 1px solid rgba(201,160,74,.18); background: rgba(18,11,21,.72); display: flex; flex-direction: column; justify-content: space-between; }
-      .quote-card span { color: var(--gold); font-family: "Playfair Display", Georgia, serif; font-size: 4rem; line-height: .55; }
-      .quote-card p { margin: 0; font-family: "Playfair Display", Georgia, serif; font-size: clamp(1.5rem, 2.3vw, 2.4rem); line-height: 1.22; font-style: italic; }
-      .quote-card footer { color: var(--gold); font-size: .67rem; letter-spacing: .25em; text-transform: uppercase; font-weight: 800; }
-
-      .contact-section { position: relative; padding: clamp(5.5rem, 10vw, 10rem) 4.8vw; background: radial-gradient(circle at 72% 40%, rgba(61,12,24,.45), transparent 38rem), #09050a; }
-      .contact-panel { position: relative; z-index: 3; max-width: 980px; margin: 0 auto; padding: clamp(2rem, 5vw, 5rem); border: 1px solid rgba(201,160,74,.22); background: rgba(18,11,21,.58); box-shadow: 0 40px 110px rgba(0,0,0,.34); }
-      .contact-panel h2 { margin: 1rem 0 1.1rem; font-family: "Playfair Display", Georgia, serif; font-size: clamp(2.9rem, 5.6vw, 6.5rem); line-height: .96; letter-spacing: -.06em; font-weight: 500; }
-      .contact-panel h2 em { color: var(--gold); font-style: italic; }
-      .contact-panel > p { margin: 0; max-width: 620px; color: rgba(245,237,224,.66); line-height: 1.75; }
-      .contact-form { margin-top: 3rem; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.4rem; }
-      .contact-form label { display: block; }
-      .contact-form label.full { grid-column: 1 / -1; }
-      .contact-form span { display: block; margin-bottom: .8rem; color: var(--gold); font-size: .64rem; letter-spacing: .26em; text-transform: uppercase; font-weight: 800; }
-      .contact-form input { width: 100%; height: 3.6rem; background: transparent; border: 0; border-bottom: 1px solid rgba(201,160,74,.28); color: var(--cream); outline: 0; font-size: 1rem; transition: border-color .25s ease, box-shadow .25s ease; }
-      .contact-form input:focus { border-bottom-color: var(--gold); box-shadow: 0 10px 32px rgba(201,160,74,.08); }
-      .contact-form button { grid-column: 1 / -1; justify-self: end; margin-top: 1rem; min-height: 3.5rem; padding: 0 1.55rem; border: 1px solid var(--gold); background: var(--gold); color: #120b15; font-weight: 900; font-size: .68rem; letter-spacing: .22em; text-transform: uppercase; }
-      .contact-form button span { display: inline; color: inherit; margin-left: .75rem; letter-spacing: 0; }
-
-      .dh-footer { display: grid; grid-template-columns: 1fr auto; gap: 2rem; padding: 3rem 4.8vw; border-top: 1px solid rgba(201,160,74,.14); background: #050206; color: rgba(245,237,224,.62); }
-      .dh-footer strong { display: block; color: var(--gold); font-family: "Playfair Display", Georgia, serif; font-size: 1.9rem; font-weight: 500; margin-bottom: .6rem; }
-      .dh-footer p { margin: 0; max-width: 420px; line-height: 1.6; }
-      .dh-footer div:last-child { display: grid; gap: .5rem; text-align: right; font-size: .68rem; letter-spacing: .18em; text-transform: uppercase; }
-
-      @keyframes dhPulse { 0% { transform: scale(.62); opacity: .9; } 80%,100% { transform: scale(1.22); opacity: 0; } }
-      @keyframes dhPetal { 0% { transform: translate3d(0,-20px,0) rotate(0deg); opacity: 0; } 10% { opacity: .7; } 100% { transform: translate3d(60px,720px,0) rotate(230deg); opacity: 0; } }
-
-      @media (max-width: 1100px) {
-        .dh-nav { grid-template-columns: auto 1fr auto; }
-        .dh-nav-links { display: none; }
-        .film-rail { display: none; }
-        .film-stage { padding-left: 4.8vw; }
-        .hero-trust-panel { width: min(640px, 88vw); left: 4.8vw; right: auto; }
-        .belief-section, .section-heading, .pledge-content { grid-template-columns: 1fr; }
-        .belief-card { grid-column: auto; }
-      }
-
-      /* ─────────────────────────────────────────────
-         FINAL THEME OVERRIDE — IVORY / CHAMPAGNE GOLD
-         Removed purple-pink dominance. Stronger dark text.
-         Brighter hero image. Warm white luxury base.
-      ───────────────────────────────────────────── */
-
-      :root {
-        --black: #f8f1e6;
-        --panel: #fffaf2;
-        --gold: #b98a2f;
-        --gold-soft: #d8b971;
-        --maroon: #6f1d2e;
-        --cream: #21170f;
-        --ink: #21170f;
-        --muted: #5f5041;
-        --line: rgba(185,138,47,.22);
-        --line-soft: rgba(33,23,15,.08);
-      }
-
-      html,
-      body {
-        background: #f8f1e6 !important;
-        color: #21170f !important;
-      }
-
-      .dh-root {
-        color: #21170f !important;
-        background:
-          radial-gradient(circle at 12% 14%, rgba(216,185,113,.28), transparent 34rem),
-          radial-gradient(circle at 88% 10%, rgba(111,29,46,.10), transparent 34rem),
-          radial-gradient(circle at 55% 92%, rgba(185,138,47,.15), transparent 46rem),
-          linear-gradient(135deg, #fffaf2 0%, #f8f1e6 45%, #efe1cc 100%) !important;
-      }
-
-      .structural-grid {
-        background-image:
-          linear-gradient(to right, rgba(33,23,15,.055) 1px, transparent 1px),
-          linear-gradient(to bottom, rgba(33,23,15,.04) 1px, transparent 1px) !important;
-        mask-image: linear-gradient(to bottom, rgba(0,0,0,.7), rgba(0,0,0,.18)) !important;
-      }
-
-      .dh-kicker,
-      .scene-eyebrow,
-      .contact-form span,
-      .pledge-panel span,
-      .film-rail span,
-      .quote-card footer,
-      .dh-nav-links a,
-      .dh-nav-cta,
-      .hero-scroll,
-      .scene-tag,
-      .belief-card-copy span {
-        color: #9a6f1f !important;
-      }
-
-      .dh-nav {
-        color: #9a6f1f !important;
-        background: rgba(255,250,242,.80) !important;
-        border-bottom: 1px solid rgba(185,138,47,.25) !important;
-        box-shadow: 0 18px 50px rgba(63,44,22,.06) !important;
-      }
-
-      .dh-nav.is-scrolled {
-        background: rgba(255,250,242,.94) !important;
-        border-bottom-color: rgba(185,138,47,.34) !important;
-      }
-
-      .dh-logo,
-      .dh-logo-heart {
-        color: #9a6f1f !important;
-      }
-
-      .dh-logo-heart {
-        border-color: rgba(185,138,47,.46) !important;
-        background: rgba(255,255,255,.45) !important;
-      }
-
-      .dh-nav-cta {
-        border-color: rgba(185,138,47,.42) !important;
-        background: rgba(185,138,47,.08) !important;
-      }
-
-      .dh-nav-cta:hover {
-        background: rgba(185,138,47,.15) !important;
-      }
-
-      .hero-section {
-        background: #f8f1e6 !important;
-      }
-
-      .hero-media {
-        background: #efe1cc !important;
-      }
-
-      .hero-media img,
-      .hero-media video {
-        filter: brightness(1.12) contrast(1.04) saturate(1.08) !important;
-        opacity: 1 !important;
-      }
-
-      .hero-vignette {
-        background:
-          linear-gradient(90deg,
-            rgba(255,250,242,.92) 0%,
-            rgba(255,250,242,.78) 34%,
-            rgba(255,250,242,.20) 68%,
-            rgba(255,250,242,.26) 100%
-          ),
-          linear-gradient(0deg,
-            rgba(248,241,230,.70) 0%,
-            rgba(248,241,230,.05) 48%,
-            rgba(248,241,230,.42) 100%
-          ) !important;
-      }
-
-      .hero-copy h1,
-      .belief-title h2,
-      .film-stage-header h2,
-      .scene-copy h3,
-      .section-heading h2,
-      .proof-copy h2,
-      .contact-panel h2,
-      .pledge-panel h3,
-      .belief-card-copy strong,
-      .quote-card p,
-      .dh-footer strong {
-        color: #21170f !important;
-      }
-
-      .hero-copy h1 em,
-      .contact-panel h2 em {
-        color: #a67824 !important;
-      }
-
-      .hero-body,
-      .belief-text,
-      .scene-copy > p:not(.scene-eyebrow),
-      .section-heading p:not(.dh-kicker),
-      .pledge-panel p,
-      .contact-panel > p,
-      .belief-card-copy p,
-      .dh-footer,
-      .dh-footer p {
-        color: #514235 !important;
-      }
-
-      .dh-button.primary {
-        background: #b98a2f !important;
-        border-color: #b98a2f !important;
-        color: #fffaf2 !important;
-        box-shadow: 0 18px 40px rgba(185,138,47,.20) !important;
-      }
-
-      .dh-button.secondary {
-        color: #8c651c !important;
-        background: rgba(255,250,242,.62) !important;
-        border-color: rgba(185,138,47,.46) !important;
-      }
-
-      .hero-trust-panel,
-      .contact-panel,
-      .belief-card,
-      .quote-card,
-      .film-scenes,
-      .pledge-panel {
-        background:
-          linear-gradient(180deg, rgba(255,255,255,.78), rgba(255,250,242,.58)) !important;
-        border-color: rgba(185,138,47,.24) !important;
-        box-shadow: 0 28px 80px rgba(72,48,20,.08) !important;
-        backdrop-filter: blur(18px) !important;
-      }
-
-      .hero-trust-panel strong,
-      .hero-trust-panel small {
-        color: #21170f !important;
-      }
-
-      .hero-trust-panel small {
-        color: #665747 !important;
-      }
-
-      .hero-trust-panel > div {
-        border-left-color: rgba(185,138,47,.18) !important;
-      }
-
-      .belief-section {
-        background:
-          radial-gradient(circle at 15% 8%, rgba(185,138,47,.16), transparent 32rem),
-          linear-gradient(180deg, #fffaf2 0%, #f8f1e6 100%) !important;
-      }
-
-      .belief-card-media img {
-        filter: brightness(1.08) contrast(1.03) saturate(1.04) !important;
-      }
-
-      .film-section {
-        background:
-          radial-gradient(circle at 18% 20%, rgba(216,185,113,.24), transparent 30rem),
-          radial-gradient(circle at 84% 24%, rgba(111,29,46,.08), transparent 34rem),
-          linear-gradient(180deg, #f8f1e6 0%, #fffaf2 48%, #efe1cc 100%) !important;
-      }
-
-      .film-stage {
-        color: #21170f !important;
-      }
-
-      .film-scenes {
-        background:
-          linear-gradient(180deg, rgba(255,250,242,.92), rgba(246,237,222,.78)) !important;
-      }
-
-      .film-media {
-        background: #e9dcc6 !important;
-        border-color: rgba(185,138,47,.24) !important;
-        box-shadow: 0 30px 80px rgba(72,48,20,.11) !important;
-      }
-
-      .film-media img,
-      .film-media video {
-        filter: brightness(1.13) contrast(1.04) saturate(1.08) !important;
-      }
-
-      .film-media-shade {
-        background:
-          linear-gradient(0deg, rgba(33,23,15,.22), rgba(255,250,242,0) 54%, rgba(255,250,242,.12)) !important;
-      }
-
-      .film-rail {
-        border-left-color: rgba(185,138,47,.30) !important;
-      }
-
-      .film-rail button {
-        color: #8a7a68 !important;
-        border-bottom-color: rgba(33,23,15,.08) !important;
-      }
-
-      .film-rail button.active {
-        color: #21170f !important;
-      }
-
-      .film-rail button::before {
-        background: rgba(185,138,47,.35) !important;
-      }
-
-      .film-rail button.active::before {
-        background: #b98a2f !important;
-        box-shadow: 0 0 28px rgba(185,138,47,.42) !important;
-      }
-
-      .film-progress span {
-        background: rgba(33,23,15,.11) !important;
-      }
-
-      .film-progress span::after {
-        background: #b98a2f !important;
-      }
-
-      .kinetic .audio-card,
-      .kinetic .redacted-card,
-      .kinetic .profile-card,
-      .kinetic .intro-person,
-      .kinetic .invitation-slip,
-      .kinetic .align-node,
-      .kinetic .final-seal {
-        background: rgba(255,250,242,.78) !important;
-        color: #9a6f1f !important;
-        border-color: rgba(185,138,47,.30) !important;
-        box-shadow: 0 20px 55px rgba(72,48,20,.10) !important;
-      }
-
-      .kinetic svg circle,
-      .kinetic svg path {
-        stroke: rgba(185,138,47,.72) !important;
-      }
-
-      .pledges-section {
-        background:
-          radial-gradient(circle at 78% 10%, rgba(185,138,47,.18), transparent 30rem),
-          linear-gradient(180deg, #efe1cc 0%, #fffaf2 44%, #f8f1e6 100%) !important;
-      }
-
-      .pledge-grid {
-        background: rgba(185,138,47,.22) !important;
-        border-color: rgba(185,138,47,.24) !important;
-      }
-
-      .pledge-media-strip {
-        background: #efe1cc !important;
-        border-color: rgba(185,138,47,.24) !important;
-      }
-
-      .pledge-media-strip img {
-        filter: brightness(1.1) contrast(1.03) saturate(1.05) !important;
-      }
-
-      .proof-section {
-        background:
-          radial-gradient(circle at 18% 22%, rgba(216,185,113,.22), transparent 30rem),
-          linear-gradient(180deg, #fffaf2 0%, #f8f1e6 100%) !important;
-      }
-
-      .quote-card span {
-        color: #b98a2f !important;
-      }
-
-      .contact-section {
-        background:
-          radial-gradient(circle at 72% 40%, rgba(185,138,47,.20), transparent 34rem),
-          radial-gradient(circle at 20% 80%, rgba(111,29,46,.06), transparent 34rem),
-          linear-gradient(180deg, #f8f1e6 0%, #fffaf2 100%) !important;
-      }
-
-      .contact-form input {
-        color: #21170f !important;
-        border-bottom-color: rgba(185,138,47,.36) !important;
-      }
-
-      .contact-form input::placeholder {
-        color: rgba(33,23,15,.45) !important;
-      }
-
-      .contact-form input:focus {
-        border-bottom-color: #b98a2f !important;
-        box-shadow: 0 12px 34px rgba(185,138,47,.12) !important;
-      }
-
-      .contact-form button {
-        background: #b98a2f !important;
-        color: #fffaf2 !important;
-        border-color: #b98a2f !important;
-      }
-
-      .dh-footer {
-        background: #f1e5d3 !important;
-        border-top-color: rgba(185,138,47,.24) !important;
-        color: #514235 !important;
-      }
-
-      @media (max-width: 767px) {
-        .hero-vignette {
-          background:
-            linear-gradient(0deg, rgba(255,250,242,.85), rgba(255,250,242,.35)) !important;
-        }
-      }
-
-      @media (max-width: 767px) {
-        html, body { overflow-x: hidden; }
-
-        .dh-nav {
-          height: 64px;
-          padding: 0 1rem;
-          background: rgba(255,250,242,.86) !important;
-          border-bottom: 1px solid rgba(185,138,47,.22) !important;
-          backdrop-filter: blur(18px);
-        }
-        .dh-logo {
-          font-size: 1.45rem;
-          color: #8a641f !important;
-        }
-        .dh-logo-heart {
-          border-color: rgba(185,138,47,.42) !important;
-        }
-        .dh-nav-links { display: none; }
-        .dh-nav-cta { display: none; }
-
-        .hero-section {
-          min-height: 100svh;
-          padding: 5.8rem 1rem 1.25rem;
-          align-items: end;
-          overflow: hidden;
-        }
-        .hero-media {
-          inset: 64px 0 0 0;
-        }
-        .hero-media img,
-        .hero-media video {
-          object-position: center top;
-          filter: brightness(1.14) contrast(1.04) saturate(1.08) !important;
-        }
-        .hero-vignette {
-          background:
-            linear-gradient(0deg, rgba(255,250,242,.94) 0%, rgba(255,250,242,.72) 31%, rgba(255,250,242,.20) 65%, rgba(255,250,242,.10) 100%),
-            linear-gradient(90deg, rgba(255,250,242,.58), rgba(255,250,242,.16)) !important;
-        }
-        .hero-linework { opacity: .34; }
-        .hero-copy {
-          max-width: 100%;
-          padding-bottom: 0;
-          color: #21170f;
-        }
-        .hero-copy h1 {
-          max-width: 9.6ch;
-          font-size: clamp(2.65rem, 13vw, 4.65rem) !important;
-          line-height: .94;
-          letter-spacing: -.06em;
-          color: #21170f !important;
-          text-wrap: balance;
-        }
-        .hero-copy h1 em { color: #b98a2f !important; }
-        .hero-body {
-          max-width: 92%;
-          color: rgba(33,23,15,.78) !important;
-          font-size: .98rem;
-          line-height: 1.55;
-        }
-        .hero-actions {
-          margin-top: 1.25rem;
-          gap: .65rem;
-        }
-        .dh-button {
-          width: 100%;
-          min-height: 3.05rem;
-          font-size: .62rem;
-          letter-spacing: .18em;
-        }
-        .hero-trust-panel {
-          position: relative;
-          left: auto;
-          right: auto;
-          bottom: auto;
-          width: 100%;
-          margin-top: 1.1rem;
-          grid-template-columns: 1fr 1fr 1fr;
-          background: rgba(255,250,242,.70) !important;
-          border-color: rgba(185,138,47,.22) !important;
-          backdrop-filter: blur(16px);
-        }
-        .hero-trust-panel > div {
-          padding: .82rem .65rem;
-          border-left-color: rgba(185,138,47,.18) !important;
-        }
-        .hero-trust-panel span { font-size: .55rem; color: #b98a2f !important; }
-        .hero-trust-panel strong {
-          font-size: 1rem;
-          margin: .32rem 0 .2rem;
-          color: #21170f !important;
-        }
-        .hero-trust-panel small {
-          font-size: .62rem;
-          color: rgba(33,23,15,.62) !important;
-        }
-        .hero-scroll { display: none; }
-
-        .belief-section,
-        .pledges-section,
-        .proof-section,
-        .contact-section {
-          padding-left: 1rem;
-          padding-right: 1rem;
-        }
-        .belief-section {
-          grid-template-columns: 1fr;
-          gap: 1.4rem;
-          padding-top: 4.4rem;
-          padding-bottom: 4.4rem;
-        }
-        .belief-title h2,
-        .section-heading h2,
-        .proof-copy h2,
-        .contact-panel h2 {
-          font-size: clamp(2.35rem, 11vw, 3.7rem) !important;
-          line-height: .98;
-          max-width: 11ch;
-        }
-        .belief-text {
-          font-size: .98rem;
-          line-height: 1.72;
-        }
-        .belief-card {
-          grid-column: auto;
-          grid-template-columns: 1fr;
-          border-radius: 22px;
-          overflow: hidden;
-        }
-        .belief-card-media { min-height: 260px; }
-        .belief-card-media img { filter: brightness(1.08) contrast(1.03) saturate(1.08) !important; }
-        .belief-card-copy { padding: 1.4rem; }
-
-        .film-section {
-          min-height: auto;
-          overflow: visible;
-          background:
-            radial-gradient(circle at 16% 8%, rgba(216,185,113,.24), transparent 23rem),
-            linear-gradient(180deg, #fffaf2 0%, #f6ead8 100%) !important;
-        }
-        .film-rail { display: none; }
-        .film-stage {
-          height: auto;
-          min-height: auto;
-          padding: 4.2rem 1rem 4.2rem;
-          display: block;
-        }
-        .film-stage-header {
-          display: block;
-          margin-bottom: 1.3rem;
-        }
-        .film-stage-header h2 {
-          text-align: left;
-          margin-top: .7rem;
-          font-size: clamp(2.4rem, 11vw, 3.8rem) !important;
-          color: #21170f !important;
-        }
-        .film-scenes {
-          border: 0;
-          background: transparent !important;
-          display: grid;
-          gap: 1.3rem;
-          overflow: visible;
-          box-shadow: none;
-        }
-        .film-scene {
-          position: relative !important;
-          inset: auto;
-          min-height: auto;
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 0;
-          padding: 0;
-          opacity: 1 !important;
-          visibility: visible !important;
-          transform: none !important;
-          border: 1px solid rgba(185,138,47,.22);
-          border-radius: 26px;
-          overflow: hidden;
-          background: rgba(255,250,242,.78) !important;
-          box-shadow: 0 22px 55px rgba(92,58,28,.10);
-        }
-        .film-media {
-          height: 58svh;
-          min-height: 390px;
-          max-height: 560px;
-          border: 0;
-          background: #f3e4ce !important;
-        }
-        .film-media img,
-        .film-media video {
-          filter: brightness(1.12) contrast(1.05) saturate(1.08) !important;
-          object-position: center center;
-        }
-        .film-media-shade {
-          background:
-            linear-gradient(0deg, rgba(255,250,242,.68) 0%, rgba(255,250,242,.12) 42%, rgba(255,250,242,0) 100%) !important;
-        }
-        .kinetic {
-          transform: scale(.78);
-          transform-origin: center center;
-          opacity: .75;
-        }
-        .scene-copy {
-          max-width: none;
-          padding: 1.35rem 1.25rem 1.55rem;
-          background: linear-gradient(180deg, rgba(255,250,242,.88), rgba(246,234,216,.94)) !important;
-        }
-        .scene-eyebrow {
-          font-size: .62rem;
-          letter-spacing: .25em;
-          color: #b98a2f !important;
-        }
-        .scene-copy h3 {
-          font-size: clamp(2rem, 9vw, 3rem) !important;
-          line-height: 1.02;
-          color: #21170f !important;
-        }
-        .scene-copy > p:not(.scene-eyebrow) {
-          font-size: .98rem;
-          line-height: 1.65;
-          color: rgba(33,23,15,.72) !important;
-        }
-        .scene-tag {
-          margin-top: 1rem;
-          color: #8a641f !important;
-          border-color: rgba(185,138,47,.28) !important;
-          background: rgba(185,138,47,.08) !important;
-        }
-        .film-progress { display: none; }
-
-        .section-heading,
-        .pledge-content {
-          grid-template-columns: 1fr;
-          gap: 1.2rem;
-        }
-        .pledge-grid { grid-template-columns: 1fr; }
-        .pledge-panel { min-height: auto; padding: 1.35rem; }
-        .pledge-media-strip { min-height: 360px; border-radius: 24px; }
-
-        .proof-section { min-height: auto; }
-        .quote-track {
-          width: auto;
-          display: grid;
-          gap: 1rem;
-          margin-top: 2rem;
-        }
-        .quote-card {
-          width: 100%;
-          min-height: 260px;
-        }
-
-        .contact-panel {
-          padding: 1.4rem;
-          border-radius: 26px;
-        }
-        .contact-form {
-          grid-template-columns: 1fr;
-          margin-top: 2rem;
-        }
-        .contact-form button { justify-self: stretch; }
-
-        .dh-footer {
-          grid-template-columns: 1fr;
-          padding: 2rem 1rem;
-        }
-        .dh-footer div:last-child { text-align: left; }
-      }
-    `}</style>
   );
 }
