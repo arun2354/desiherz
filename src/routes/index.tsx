@@ -6,7 +6,7 @@ import { useGSAP } from "@gsap/react";
 import { Cursor } from "@/components/Cursor";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { ScrollVideo } from "@/components/ScrollVideo";
-import coupleHero from "@/assets/couple-hero.jpg";
+import { Scene3D } from "@/components/Scene3D";
 import coupleHands from "@/assets/couple-hands.jpg";
 import coupleStory1 from "@/assets/couple-story-1.jpg";
 import coupleStory2 from "@/assets/couple-story-2.jpg";
@@ -26,17 +26,17 @@ const SITE = {
   mark) instead of a broken player.
 */
 const FILMS = {
-  hero: "/videos/hero.mp4",
   listen: "/videos/listen.mp4",
   verify: "/videos/verify.mp4",
   curate: "/videos/curate.mp4",
   introduce: "/videos/introduce.mp4",
   align: "/videos/align.mp4",
   commit: "/videos/commit.mp4",
+  founder: "/videos/founder.mp4",
+  spokesperson: "/videos/spokesperson.mp4",
 };
 
 const MEDIA = {
-  hero: { src: coupleHero, alt: "A couple walking together, the opening image for DesiHerz." },
   hands: { src: coupleHands, alt: "Close-up of hands held gently together." },
   storyOne: { src: coupleStory1, alt: "A quiet couple portrait." },
   storyTwo: { src: coupleStory2, alt: "A couple portrait representing a considered introduction." },
@@ -48,7 +48,7 @@ const PROCESS = [
     step: "01",
     eyebrow: "The first conversation",
     title: "We begin with what no app can hear.",
-    body: "A private call or meeting where we understand temperament, family rhythm, values, pace and what a dignified introduction should feel like.",
+    body: "A private conversation, not a form.",
     cta: "Private intake",
     film: FILMS.listen,
     alt: "A private consultation conversation.",
@@ -58,7 +58,7 @@ const PROCESS = [
     step: "02",
     eyebrow: "Quiet verification",
     title: "Trust is designed before anyone is introduced.",
-    body: "Identity, intent and essential background are reviewed discreetly. No public profiles. No browsing. No exposure.",
+    body: "Reviewed discreetly. Never browsed.",
     cta: "Reviewed privately",
     film: FILMS.verify,
     alt: "A discreet verification process.",
@@ -68,7 +68,7 @@ const PROCESS = [
     step: "03",
     eyebrow: "Human curation",
     title: "We reduce noise until only the right signal remains.",
-    body: "Compatibility is considered through context: character, priorities, culture, family expectations, geography and the life each person is building.",
+    body: "Two or three names. Never a catalogue.",
     cta: "Two or three names",
     film: FILMS.curate,
     alt: "A curator reviewing a small set of considered introductions.",
@@ -78,7 +78,7 @@ const PROCESS = [
     step: "04",
     eyebrow: "The introduction",
     title: "A meeting is arranged like a scene, not a notification.",
-    body: "When both sides feel ready, we arrange the introduction with care: location, pace, boundaries and privacy all handled before the first hello.",
+    body: "Location, pace and privacy, handled before the first hello.",
     cta: "Introduced with care",
     film: FILMS.introduce,
     alt: "Two people meeting for a considered first introduction.",
@@ -88,7 +88,7 @@ const PROCESS = [
     step: "05",
     eyebrow: "The wider circle",
     title: "Families may be involved without taking over the story.",
-    body: "Where appropriate, we help align expectations with tact. Tradition is respected, but choice remains personal.",
+    body: "Tradition respected. Choice stays personal.",
     cta: "Family-aware",
     film: FILMS.align,
     alt: "A family conversation handled with tact.",
@@ -98,7 +98,7 @@ const PROCESS = [
     step: "06",
     eyebrow: "Commitment",
     title: "The outcome should feel calm, not manufactured.",
-    body: "If it becomes something lasting, we remain nearby — discreetly, practically and without turning your life into content.",
+    body: "We stay nearby — quietly, not as content.",
     cta: "A life, not a lead",
     film: FILMS.commit,
     alt: "A calm, quietly arranged commitment.",
@@ -108,19 +108,19 @@ const PROCESS = [
 const PLEDGES = [
   {
     title: "Private by design",
-    body: "No public profiles, no searchable catalogue, no casual browsing. Every introduction is controlled and intentional.",
+    body: "No public profiles. No browsing.",
   },
   {
     title: "Verified before contact",
-    body: "Members are reviewed before any introduction. Privacy, identity and intent are treated as part of the service, not an afterthought.",
+    body: "Reviewed before any introduction.",
   },
   {
     title: "Curated by humans",
-    body: "We do not overwhelm you with options. We prepare a small number of considered introductions, often one at a time.",
+    body: "A few names, considered — never a list.",
   },
   {
     title: "Family-aware, not family-controlled",
-    body: "We understand values, tradition and context while keeping personal choice and dignity at the center.",
+    body: "Context respected. Choice stays yours.",
   },
 ];
 
@@ -202,11 +202,12 @@ function Index() {
       )}
       <TopNav />
       <main>
-        <Hero />
+        <HeroUnion />
         <Belief />
         <ProcessFilm />
         <Pledges />
         <Proof />
+        <Voices />
         <Contact />
       </main>
       <Footer />
@@ -246,104 +247,68 @@ function TopNav() {
   );
 }
 
-function Hero() {
+function HeroUnion() {
   const ref = useRef<HTMLElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [videoReady, setVideoReady] = useState(false);
-  const [videoFailed, setVideoFailed] = useState(false);
-  const hasVideo = videoReady && !videoFailed;
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch(FILMS.hero, { method: "HEAD" })
-      .then((res) => {
-        if (!cancelled && res.ok) setVideoReady(true);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const progress = useRef(0);
 
   useGSAP(
     () => {
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+      gsap.set([".union-headline", ".union-subline", ".union-cta"], { opacity: 0, y: 26 });
       gsap.fromTo(
-        ".hero-copy > *",
-        { y: 32, opacity: 0 },
-        { y: 0, opacity: 1, duration: 1.15, ease: "power3.out", stagger: 0.1, delay: 0.1 }
+        ".scene-kicker",
+        { y: 20, opacity: 0 },
+        { y: 0, opacity: 1, duration: 1.1, ease: "power3.out", delay: 0.1 }
       );
 
-      if (reduce) return;
-
-      gsap.fromTo(
-        ".hero-media img, .hero-media video",
-        { scale: 1.08 },
-        {
-          scale: 1,
-          ease: "none",
-          scrollTrigger: { trigger: ref.current, start: "top top", end: "bottom top", scrub: true },
-        }
-      );
-
-      const video = videoRef.current;
-      if (video && hasVideo) {
-        const bindScrub = () => {
-          if (!video.duration) return;
-          gsap.to(video, {
-            currentTime: video.duration,
-            ease: "none",
-            scrollTrigger: { trigger: ref.current, start: "top top", end: "bottom top", scrub: 0.4 },
-          });
-        };
-        if (video.readyState >= 1) bindScrub();
-        else video.addEventListener("loadedmetadata", bindScrub, { once: true });
+      if (reduce) {
+        progress.current = 0.92;
+        gsap.set([".union-headline", ".union-subline", ".union-cta"], { opacity: 1, y: 0 });
+        return;
       }
+
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: ref.current,
+          start: "top top",
+          end: "+=260%",
+          pin: true,
+          scrub: 0.6,
+          onUpdate: (self) => {
+            progress.current = self.progress;
+          },
+        },
+      });
+
+      tl.to(".scene-scroll", { opacity: 0, duration: 0.1 }, 0.12)
+        .to(".union-headline", { opacity: 1, y: 0, duration: 0.16 }, 0.5)
+        .to(".union-subline", { opacity: 1, y: 0, duration: 0.14 }, 0.64)
+        .to(".union-cta", { opacity: 1, y: 0, duration: 0.14 }, 0.78);
     },
-    { scope: ref, dependencies: [hasVideo] }
+    { scope: ref }
   );
 
   return (
-    <section ref={ref} id="top" className="hero-section">
-      <div className="hero-media" aria-hidden="true">
-        {hasVideo ? (
-          <video
-            ref={videoRef}
-            src={FILMS.hero}
-            muted
-            playsInline
-            preload="auto"
-            onError={() => setVideoFailed(true)}
-          />
-        ) : (
-          <img src={MEDIA.hero.src} alt={MEDIA.hero.alt} loading="eager" decoding="async" />
-        )}
-        <div className="hero-vignette" />
+    <section ref={ref} id="top" className="scene-section">
+      <div className="scene-canvas" aria-hidden="true">
+        <Scene3D progress={progress} />
       </div>
+      <div className="scene-fade" aria-hidden="true" />
 
-      <div className="hero-copy">
-        <p className="dh-kicker">Private matrimony / Germany and beyond</p>
-        <h1>
+      <div className="scene-overlay">
+        <p className="dh-kicker scene-kicker">Private matrimony / Germany and beyond</p>
+        <h1 className="union-headline">
           The right introduction should feel <em>inevitable.</em>
         </h1>
-        <p className="hero-body">
-          A private, human-led matrimony house for discerning individuals and families — built around discretion,
-          character and thoughtful timing.
-        </p>
-        <div className="hero-actions">
+        <p className="union-subline">Two stories, considered until they align.</p>
+        <div className="union-cta">
           <a href="#process" className="dh-button primary">Watch the process</a>
           <a href="#contact" className="dh-button secondary">Request consultation</a>
         </div>
       </div>
 
-      <div className="hero-trust-panel" aria-label="Key service qualities">
-        <div><span>01</span><strong>Private</strong><small>No public profile</small></div>
-        <div><span>02</span><strong>Verified</strong><small>Reviewed before contact</small></div>
-        <div><span>03</span><strong>Curated</strong><small>Few introductions</small></div>
-      </div>
-
-      <div className="hero-scroll">Scroll</div>
+      <div className="scene-scroll">Scroll</div>
     </section>
   );
 }
@@ -375,12 +340,8 @@ function Belief() {
       </div>
       <div className="belief-text">
         <p>
-          The most important introductions are rarely found by volume. They are found by context: the way someone
-          speaks about family, handles pressure, protects privacy and imagines the home they are quietly building.
-        </p>
-        <p>
-          DesiHerz is built for people who want the dignity of a human process without the exposure of an app. We
-          listen first, verify carefully, curate slowly and introduce only when the match feels worth your attention.
+          The right introduction is found by context, not volume. We listen first, verify carefully, and introduce
+          only when it&rsquo;s worth your attention.
         </p>
       </div>
       <div className="belief-card">
@@ -390,7 +351,7 @@ function Belief() {
         <div className="belief-card-copy">
           <span>House standard</span>
           <strong>No profile is ever public.</strong>
-          <p>Nothing is published, browsed or distributed. Your story moves only through a private, controlled path.</p>
+          <p>Nothing published. Nothing browsed.</p>
         </div>
       </div>
     </section>
@@ -590,10 +551,6 @@ function Pledges() {
       <div className="section-heading compact">
         <p className="dh-kicker">Why us</p>
         <h2>Four rules that protect the story.</h2>
-        <p>
-          These are not marketing claims. They are the operating rules of the house: privacy, verification, human
-          judgement and respect for the people around the decision.
-        </p>
       </div>
 
       <div className="pledge-content">
@@ -659,6 +616,94 @@ function Proof() {
   );
 }
 
+function VideoFeature({
+  title,
+  role,
+  film,
+  alt,
+}: {
+  title: string;
+  role: string;
+  film: string;
+  alt: string;
+}) {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(film, { method: "HEAD" })
+      .then((res) => {
+        if (!cancelled && res.ok) setReady(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [film]);
+
+  return (
+    <figure className="feature-video">
+      <div className="feature-video-frame">
+        {ready ? (
+          <video src={film} controls preload="metadata" playsInline aria-label={alt} />
+        ) : (
+          <div className="media-slate" aria-hidden="true">
+            <div className="media-slate-mark">
+              <span />
+            </div>
+          </div>
+        )}
+      </div>
+      <figcaption>
+        <strong>{title}</strong>
+        <span>{role}</span>
+      </figcaption>
+    </figure>
+  );
+}
+
+function Voices() {
+  const ref = useRef<HTMLElement>(null);
+  useGSAP(
+    () => {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (reduce) return;
+      gsap.from(".feature-video", {
+        opacity: 0,
+        y: 26,
+        duration: 0.9,
+        ease: "power3.out",
+        stagger: 0.1,
+        scrollTrigger: { trigger: ref.current, start: "top 74%", toggleActions: "play none none reverse" },
+      });
+    },
+    { scope: ref }
+  );
+
+  return (
+    <section ref={ref} id="voices" className="voices-section">
+      <div className="section-heading compact">
+        <p className="dh-kicker">In their own words</p>
+        <h2>Hear it directly.</h2>
+      </div>
+      <div className="voices-grid">
+        <VideoFeature
+          title="The founder"
+          role="Why DesiHerz exists"
+          film={FILMS.founder}
+          alt="The founder of DesiHerz speaking about the house."
+        />
+        <VideoFeature
+          title="In conversation"
+          role="A closer look at the house"
+          film={FILMS.spokesperson}
+          alt="A spokesperson speaking about DesiHerz."
+        />
+      </div>
+    </section>
+  );
+}
+
 function Contact() {
   const ref = useRef<HTMLElement>(null);
   useGSAP(
@@ -684,10 +729,7 @@ function Contact() {
         <h2>
           Send a single line. <em>We&rsquo;ll write back.</em>
         </h2>
-        <p>
-          No public profile is created. Your details are seen only by the principal matchmaker and are never shared
-          as browseable data.
-        </p>
+        <p>No public profile. Seen only by the principal matchmaker.</p>
         <form onSubmit={(e) => e.preventDefault()} className="contact-form">
           <label>
             <span>Your name</span>
