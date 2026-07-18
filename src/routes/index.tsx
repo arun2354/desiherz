@@ -22,7 +22,7 @@ const SITE = {
   frame instead of playing the video back in real time. Until frames exist
   at /public/frames/, FrameCanvas falls back to a plain ring placeholder.
 */
-const STORY_FRAME_COUNT = 180;
+const STORY_FRAME_COUNT = 128;
 const STORY_FRAME_PATH = "/frames/frame_";
 
 const FILMS = {
