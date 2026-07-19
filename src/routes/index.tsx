@@ -252,6 +252,7 @@ function Gate({ onEnter }: { onEnter: () => void }) {
         <p className="gate-mark">
           Desi<em>♥</em>Herz
         </p>
+        <p className="gate-headtag">Made for one introduction. Built to last.</p>
         <p className="gate-tag">Est. Frankfurt</p>
       </div>
 
@@ -271,6 +272,17 @@ function Gate({ onEnter }: { onEnter: () => void }) {
             </div>
           </div>
         )}
+      </div>
+
+      <div className="gate-note">
+        <strong>Curated by DesiHerz,</strong>
+        <strong>a private matchmaking house.</strong>
+        <span className="gate-note-divider" aria-hidden="true" />
+        <p>The introduction that starts everything.</p>
+      </div>
+
+      <div className="gate-badge" aria-hidden="true">
+        <span>DesiHerz · Season One</span>
       </div>
     </div>
   );
@@ -356,6 +368,10 @@ function Hero() {
         <a href="#contact" className="dh-button secondary">Request consultation</a>
       </div>
       <div className="hero-scroll-hint">Scroll</div>
+      <p className="hero-side-note">
+        Every introduction is reviewed, considered and arranged with care — never automated.
+      </p>
+      <div className="hero-corner-tag">Private house · By invitation</div>
     </section>
   );
 }
@@ -399,6 +415,14 @@ function StoryChapters() {
 
   return (
     <section ref={ref} id="process" className="chapters-section">
+      <div className="chapters-note">
+        <strong>A controlled scroll story.</strong>
+        <span className="chapters-note-divider" aria-hidden="true" />
+        <p>Four quiet stages, one private path.</p>
+      </div>
+      <div className="chapters-badge" aria-hidden="true">
+        <span>DesiHerz · The Story</span>
+      </div>
       {CHAPTERS.map((c) => (
         <article key={c.key} className="chapter-scene">
           <span className="chapter-numeral" aria-hidden="true">{c.step}</span>
