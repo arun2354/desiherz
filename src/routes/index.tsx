@@ -31,69 +31,69 @@ const FILMS = {
   promo: "/videos/promo.mp4",
 };
 
-type StoryBeat = {
+type StoryChapter = {
   key: string;
-  position: "left-top" | "right-top" | "left-bottom" | "right-bottom" | "center-bottom";
+  step: string;
   eyebrow: string;
   title: string;
   body: string;
   enter: number;
   leave: number;
-  variant: "fade-up" | "slide-left" | "slide-right" | "scale-up" | "rotate-in";
 };
 
-const STORY: StoryBeat[] = [
+/*
+  The story is told in two movements:
+  1. CHAPTERS — four pure-typography scenes (no imagery yet; nothing to
+     show for these stages). Big type, one at a time, like the client's
+     oryzo.ai reference.
+  2. ALTAR — the one asset we actually have (the rings turntable video)
+     is held back as the payoff at the very end, not spent up front.
+*/
+const CHAPTERS: StoryChapter[] = [
   {
     key: "profile",
-    position: "left-top",
-    eyebrow: "01 — The profile",
+    step: "01",
+    eyebrow: "The profile",
     title: "Every story starts with one honest conversation.",
     body: "We build your private profile. It is never made public.",
-    enter: 0.06,
-    leave: 0.24,
-    variant: "fade-up",
+    enter: 0.04,
+    leave: 0.27,
   },
   {
     key: "database",
-    position: "right-top",
-    eyebrow: "02 — The database",
+    step: "02",
+    eyebrow: "The database",
     title: "Kept quietly. Searched carefully.",
     body: "Reviewed by us — never browsed by anyone else.",
-    enter: 0.26,
-    leave: 0.42,
-    variant: "slide-left",
+    enter: 0.27,
+    leave: 0.5,
   },
   {
     key: "match",
-    position: "left-bottom",
-    eyebrow: "03 — The match",
+    step: "03",
+    eyebrow: "The match",
     title: "We look until the signal is unmistakable.",
     body: "Two or three names, considered. Never a list.",
-    enter: 0.44,
-    leave: 0.6,
-    variant: "slide-right",
+    enter: 0.5,
+    leave: 0.73,
   },
   {
     key: "process",
-    position: "right-bottom",
-    eyebrow: "04 — The process",
+    step: "04",
+    eyebrow: "The process",
     title: "We walk beside you until you're certain.",
     body: "Every step guided, from the first hello to the family conversation.",
-    enter: 0.62,
-    leave: 0.78,
-    variant: "scale-up",
-  },
-  {
-    key: "altar",
-    position: "center-bottom",
-    eyebrow: "05 — The altar",
-    title: "One ring. One introduction. One yes.",
-    body: "The outcome should feel calm, not manufactured.",
-    enter: 0.8,
-    leave: 0.97,
-    variant: "rotate-in",
+    enter: 0.73,
+    leave: 0.96,
   },
 ];
+
+const ALTAR = {
+  step: "05",
+  eyebrow: "The altar",
+  title: "One ring. One introduction. One yes.",
+  body: "The outcome should feel calm, not manufactured.",
+};
 
 const STATS = [
   { value: "00", label: "Public profiles. Ever." },
@@ -140,7 +140,7 @@ export const Route = createFileRoute("/")({
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" } as any,
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700;800;900&display=swap",
       },
     ],
     scripts: [
@@ -186,7 +186,8 @@ function Index() {
       <TopNav />
       <main>
         <Hero />
-        <FrameStory />
+        <StoryChapters />
+        <Altar />
         <Marquee />
         <Stats />
         <Proof />
@@ -359,36 +360,82 @@ function Hero() {
   );
 }
 
-function FrameStory() {
+/** Movement 1: four pure-typography chapters. No imagery — nothing to show yet for these stages. */
+function StoryChapters() {
+  const ref = useRef<HTMLElement>(null);
+
+  useGSAP(
+    () => {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const scenes = gsap.utils.toArray<HTMLElement>(".chapter-scene");
+      if (!scenes.length) return;
+
+      gsap.set(scenes, { autoAlpha: 0, y: 26 });
+      gsap.set(scenes[0], { autoAlpha: 1, y: 0 });
+
+      if (reduce) {
+        gsap.set(scenes, { autoAlpha: 1, y: 0, position: "relative" });
+        return;
+      }
+
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: ref.current,
+          start: "top top",
+          end: "+=320%",
+          pin: true,
+          scrub: 0.6,
+        },
+      });
+
+      scenes.forEach((scene, i) => {
+        if (i === 0) return;
+        tl.to(scenes[i - 1], { autoAlpha: 0, y: -30, duration: 0.6 }, ">+=0.2")
+          .fromTo(scene, { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: 0.6 }, "<");
+      });
+    },
+    { scope: ref }
+  );
+
+  return (
+    <section ref={ref} id="process" className="chapters-section">
+      {CHAPTERS.map((c) => (
+        <article key={c.key} className="chapter-scene">
+          <span className="chapter-numeral" aria-hidden="true">{c.step}</span>
+          <div className="chapter-copy">
+            <p className="dh-kicker">
+              {c.step} — {c.eyebrow}
+            </p>
+            <h2>{c.title}</h2>
+            <p className="chapter-body">{c.body}</p>
+          </div>
+        </article>
+      ))}
+    </section>
+  );
+}
+
+/** Movement 2: the payoff. The one real asset we have, held back until the end. */
+function Altar() {
   const ref = useRef<HTMLElement>(null);
   const progress = useRef(0);
 
   useGSAP(
     () => {
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const beats = STORY.map((b) => `.beat-${b.key}`);
-
-      gsap.set(beats, { opacity: 0 });
+      gsap.set(".altar-copy", { opacity: 0, y: 22 });
 
       if (reduce) {
-        progress.current = 0.5;
-        gsap.set(beats, { opacity: 1 });
+        progress.current = 1;
+        gsap.set(".altar-copy", { opacity: 1, y: 0 });
         return;
       }
-
-      const variantFrom: Record<StoryBeat["variant"], gsap.TweenVars> = {
-        "fade-up": { y: 22 },
-        "slide-left": { x: 46 },
-        "slide-right": { x: -46 },
-        "scale-up": { scale: 0.92 },
-        "rotate-in": { y: 18, rotate: -2 },
-      };
 
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: ref.current,
           start: "top top",
-          end: "+=380%",
+          end: "+=220%",
           pin: true,
           scrub: 0.6,
           onUpdate: (self) => {
@@ -397,27 +444,22 @@ function FrameStory() {
         },
       });
 
-      STORY.forEach((beat) => {
-        const from = variantFrom[beat.variant];
-        const dur = Math.max(0.04, (beat.leave - beat.enter) * 0.28);
-        tl.fromTo(`.beat-${beat.key}`, { opacity: 0, ...from }, { opacity: 1, x: 0, y: 0, scale: 1, rotate: 0, duration: dur }, beat.enter)
-          .to(`.beat-${beat.key}`, { opacity: 0, duration: dur * 0.8 }, beat.leave - dur * 0.8);
-      });
+      tl.to(".altar-copy", { opacity: 1, y: 0, duration: 0.2 }, 0.72);
     },
     { scope: ref }
   );
 
   return (
-    <section ref={ref} id="process" className="frame-section">
+    <section ref={ref} id="altar" className="frame-section">
       <FrameCanvas frameCount={STORY_FRAME_COUNT} framePath={STORY_FRAME_PATH} progress={progress} />
       <div className="frame-story-copy">
-        {STORY.map((beat) => (
-          <div key={beat.key} className={`story-pos-${beat.position} beat-${beat.key}`}>
-            <p className="story-eyebrow">{beat.eyebrow}</p>
-            <h3>{beat.title}</h3>
-            <p>{beat.body}</p>
-          </div>
-        ))}
+        <div className="story-pos-center-bottom altar-copy">
+          <p className="story-eyebrow">
+            {ALTAR.step} — {ALTAR.eyebrow}
+          </p>
+          <h3>{ALTAR.title}</h3>
+          <p>{ALTAR.body}</p>
+        </div>
       </div>
     </section>
   );
