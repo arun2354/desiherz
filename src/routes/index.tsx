@@ -199,11 +199,22 @@ function Index() {
   );
 }
 
-/** The invitation landing: a deliberate load, then a single door to open. */
+/** The invitation landing: a deliberate load, then a single door to open. No scroll. */
 function Gate({ onEnter }: { onEnter: () => void }) {
   const [pct, setPct] = useState(0);
   const [ready, setReady] = useState(false);
   const [leaving, setLeaving] = useState(false);
+
+  useEffect(() => {
+    const prevHtml = document.documentElement.style.overflow;
+    const prevBody = document.body.style.overflow;
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.documentElement.style.overflow = prevHtml;
+      document.body.style.overflow = prevBody;
+    };
+  }, []);
 
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -214,7 +225,7 @@ function Gate({ onEnter }: { onEnter: () => void }) {
     }
     let raf = 0;
     const start = performance.now();
-    const DURATION = 2000;
+    const DURATION = 2200;
     const tick = (t: number) => {
       const p = Math.min(1, (t - start) / DURATION);
       setPct(Math.round(p * 100));
@@ -232,22 +243,34 @@ function Gate({ onEnter }: { onEnter: () => void }) {
 
   return (
     <div className={`gate${leaving ? " is-leaving" : ""}`}>
-      <p className="gate-mark">
-        Desi<em>♥</em>Herz
-      </p>
-      {ready ? (
-        <button className="gate-enter" onClick={handleEnter}>
-          Meet your match <span>→</span>
-        </button>
-      ) : (
-        <div className="gate-loading" aria-hidden="true">
-          <span className="gate-pct">{pct}%</span>
-          <div className="gate-bar">
-            <span style={{ width: `${pct}%` }} />
+      <div className="gate-bg" aria-hidden="true">
+        <img src="/frames/frame_0110.jpg" alt="" />
+      </div>
+
+      <div className="gate-top">
+        <p className="gate-mark">
+          Desi<em>♥</em>Herz
+        </p>
+        <p className="gate-tag">Est. Frankfurt</p>
+      </div>
+
+      <div className="gate-main">
+        <h1 className="gate-headline">
+          Your <em>life partner</em> is waiting.
+        </h1>
+        {ready ? (
+          <button className="gate-enter" onClick={handleEnter}>
+            Enter <span>→</span>
+          </button>
+        ) : (
+          <div className="gate-loading" aria-hidden="true">
+            <span className="gate-pct">{pct}%</span>
+            <div className="gate-bar">
+              <span style={{ width: `${pct}%` }} />
+            </div>
           </div>
-        </div>
-      )}
-      <p className="gate-foot">Private matrimony · By invitation</p>
+        )}
+      </div>
     </div>
   );
 }
