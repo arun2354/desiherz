@@ -28,6 +28,7 @@ const STORY_FRAME_PATH = "/frames/frame_";
 const FILMS = {
   founder: "/videos/founder.mp4",
   spokesperson: "/videos/spokesperson.mp4",
+  promo: "/videos/promo.mp4",
 };
 
 type StoryBeat = {
@@ -43,51 +44,51 @@ type StoryBeat = {
 
 const STORY: StoryBeat[] = [
   {
-    key: "listen",
+    key: "profile",
     position: "left-top",
-    eyebrow: "01 — The first conversation",
-    title: "We begin with what no app can hear.",
-    body: "A private conversation, not a form.",
+    eyebrow: "01 — The profile",
+    title: "Every story starts with one honest conversation.",
+    body: "We build your private profile. It is never made public.",
     enter: 0.06,
     leave: 0.24,
     variant: "fade-up",
   },
   {
-    key: "verify",
+    key: "database",
     position: "right-top",
-    eyebrow: "02 — Quiet verification",
-    title: "Trust is designed before anyone is introduced.",
-    body: "Reviewed discreetly. Never browsed.",
+    eyebrow: "02 — The database",
+    title: "Kept quietly. Searched carefully.",
+    body: "Reviewed by us — never browsed by anyone else.",
     enter: 0.26,
     leave: 0.42,
     variant: "slide-left",
   },
   {
-    key: "curate",
+    key: "match",
     position: "left-bottom",
-    eyebrow: "03 — Human curation",
-    title: "We reduce noise until only the right signal remains.",
-    body: "Two or three names. Never a catalogue.",
+    eyebrow: "03 — The match",
+    title: "We look until the signal is unmistakable.",
+    body: "Two or three names, considered. Never a list.",
     enter: 0.44,
     leave: 0.6,
     variant: "slide-right",
   },
   {
-    key: "introduce",
+    key: "process",
     position: "right-bottom",
-    eyebrow: "04 — The introduction",
-    title: "A meeting is arranged like a scene, not a notification.",
-    body: "Location, pace and privacy, handled before the first hello.",
+    eyebrow: "04 — The process",
+    title: "We walk beside you until you're certain.",
+    body: "Every step guided, from the first hello to the family conversation.",
     enter: 0.62,
     leave: 0.78,
     variant: "scale-up",
   },
   {
-    key: "commit",
+    key: "altar",
     position: "center-bottom",
-    eyebrow: "05 — Commitment",
-    title: "The outcome should feel calm, not manufactured.",
-    body: "One ring. One introduction.",
+    eyebrow: "05 — The altar",
+    title: "One ring. One introduction. One yes.",
+    body: "The outcome should feel calm, not manufactured.",
     enter: 0.8,
     leave: 0.97,
     variant: "rotate-in",
@@ -127,7 +128,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "DesiHerz — Private Matrimony" },
       { property: "og:description", content: SITE.description },
       { property: "og:type", content: "website" },
-      { name: "theme-color", content: "#f5f3f0" },
+      { name: "theme-color", content: "#100904" },
       {
         name: "keywords",
         content:
@@ -139,7 +140,7 @@ export const Route = createFileRoute("/")({
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" } as any,
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,900;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700&display=swap",
       },
     ],
     scripts: [
@@ -160,6 +161,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const [entered, setEntered] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -169,9 +171,12 @@ function Index() {
     return () => window.removeEventListener("load", refresh);
   }, []);
 
+  if (!entered) {
+    return <Gate onEnter={() => setEntered(true)} />;
+  }
+
   return (
-    <div className="dh-root relative min-h-screen selection:bg-[#1a1a1a] selection:text-[#f5f3f0]">
-      <Loader />
+    <div className="dh-root relative min-h-screen selection:bg-[#c8964f] selection:text-[#100904]">
       {mounted && (
         <>
           <SmoothScroll />
@@ -194,15 +199,55 @@ function Index() {
   );
 }
 
-function Loader() {
-  const [hidden, setHidden] = useState(false);
+/** The invitation landing: a deliberate load, then a single door to open. */
+function Gate({ onEnter }: { onEnter: () => void }) {
+  const [pct, setPct] = useState(0);
+  const [ready, setReady] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+
   useEffect(() => {
-    const t = setTimeout(() => setHidden(true), 550);
-    return () => clearTimeout(t);
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) {
+      setPct(100);
+      setReady(true);
+      return;
+    }
+    let raf = 0;
+    const start = performance.now();
+    const DURATION = 2000;
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - start) / DURATION);
+      setPct(Math.round(p * 100));
+      if (p < 1) raf = requestAnimationFrame(tick);
+      else setReady(true);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, []);
+
+  const handleEnter = () => {
+    setLeaving(true);
+    window.setTimeout(onEnter, 560);
+  };
+
   return (
-    <div className={`site-loader${hidden ? " is-hidden" : ""}`} aria-hidden="true">
-      <span className="site-loader-mark">Desi♥Herz</span>
+    <div className={`gate${leaving ? " is-leaving" : ""}`}>
+      <p className="gate-mark">
+        Desi<em>♥</em>Herz
+      </p>
+      {ready ? (
+        <button className="gate-enter" onClick={handleEnter}>
+          Meet your match <span>→</span>
+        </button>
+      ) : (
+        <div className="gate-loading" aria-hidden="true">
+          <span className="gate-pct">{pct}%</span>
+          <div className="gate-bar">
+            <span style={{ width: `${pct}%` }} />
+          </div>
+        </div>
+      )}
+      <p className="gate-foot">Private matrimony · By invitation</p>
     </div>
   );
 }
@@ -238,6 +283,27 @@ function TopNav() {
   );
 }
 
+function HeroBackgroundVideo() {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    fetch(FILMS.promo, { method: "HEAD" })
+      .then((res) => {
+        if (!cancelled && res.ok) setReady(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  if (!ready) return null;
+  return (
+    <div className="hero-bg-video" aria-hidden="true">
+      <video src={FILMS.promo} autoPlay muted loop playsInline preload="auto" />
+    </div>
+  );
+}
+
 function Hero() {
   const ref = useRef<HTMLElement>(null);
   useGSAP(
@@ -247,7 +313,7 @@ function Hero() {
       gsap.fromTo(
         ".hero-cream > *",
         { y: 26, opacity: 0 },
-        { y: 0, opacity: 1, duration: 1, ease: "power3.out", stagger: 0.08, delay: 0.6 }
+        { y: 0, opacity: 1, duration: 1, ease: "power3.out", stagger: 0.08, delay: 0.3 }
       );
     },
     { scope: ref }
@@ -255,6 +321,7 @@ function Hero() {
 
   return (
     <section ref={ref} id="top" className="hero-cream">
+      <HeroBackgroundVideo />
       <p className="dh-kicker hero-eyebrow">Private matrimony / Germany and beyond</p>
       <h1>
         The right introduction, <em>reconsidered.</em>
