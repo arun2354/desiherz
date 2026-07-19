@@ -136,6 +136,8 @@ export const Route = createFileRoute("/")({
       },
     ],
     links: [
+      { rel: "preconnect", href: "https://use.typekit.net" },
+      { rel: "stylesheet", href: "https://use.typekit.net/fcy0dtp.css" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" } as any,
       {
