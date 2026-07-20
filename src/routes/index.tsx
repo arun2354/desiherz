@@ -2,12 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
+import Lenis from "lenis";
 import { Cursor } from "@/components/Cursor";
-import { SmoothScroll } from "@/components/SmoothScroll";
-import { FrameCanvas } from "@/components/FrameCanvas";
 
-gsap.registerPlugin(ScrollTrigger, useGSAP);
+gsap.registerPlugin(ScrollTrigger);
 
 const SITE = {
   name: "DesiHerz",
@@ -15,91 +13,94 @@ const SITE = {
     "DesiHerz is an invitation-only matrimony house for discerning people and families who value privacy, character and human curation in Germany and beyond.",
 };
 
-/*
-  The center-stage sequence below is a "video-to-website" build: a short
-  rings turntable video gets extracted into a still-frame sequence with
-  ffmpeg (see scripts/extract-frames.sh), and scroll picks the matching
-  frame instead of playing the video back in real time. Until frames exist
-  at /public/frames/, FrameCanvas falls back to a plain ring placeholder.
-*/
-const STORY_FRAME_COUNT = 128;
-const STORY_FRAME_PATH = "/frames/frame_";
-
 const FILMS = {
   founder: "/videos/founder.mp4",
   spokesperson: "/videos/spokesperson.mp4",
-  promo: "/videos/promo.mp4",
-};
-
-type StoryChapter = {
-  key: string;
-  step: string;
-  eyebrow: string;
-  title: string;
-  body: string;
-  enter: number;
-  leave: number;
 };
 
 /*
-  The story is told in two movements:
-  1. CHAPTERS — four pure-typography scenes (no imagery yet; nothing to
-     show for these stages). Big type, one at a time, like the client's
-     oryzo.ai reference.
-  2. ALTAR — the one asset we actually have (the rings turntable video)
-     is held back as the payoff at the very end, not spent up front.
+  Ported 1:1 from the client's reference (hamzafarooq/claude-code-starter,
+  royal-pop-website): a single 900vh scroll container, every section
+  position:fixed with opacity driven by raw scroll progress, one frame
+  sequence bound to the same progress (accelerated so it finishes by the
+  midpoint), and a circle-wipe reveal from the standalone hero into the
+  canvas. See js/app.js in that repo for the original.
 */
-const CHAPTERS: StoryChapter[] = [
+const FRAME_COUNT = 128;
+const FRAME_PATH = (i: number) => `/frames/frame_${String(i + 1).padStart(4, "0")}.jpg`;
+const FRAME_SPEED = 2.0;
+const IMAGE_SCALE = 0.85;
+
+type SectionSpec = {
+  key: string;
+  align: "left" | "right" | null;
+  label: string;
+  heading: string;
+  body: string[];
+  enter: number;
+  leave: number;
+  animation: "fade-up" | "slide-left" | "slide-right" | "scale-up" | "rotate-in" | "stagger-up" | "clip-reveal";
+  persist?: boolean;
+};
+
+const SECTIONS: SectionSpec[] = [
   {
     key: "profile",
-    step: "01",
-    eyebrow: "The profile",
-    title: "Every story starts with one honest conversation.",
-    body: "We build your private profile. It is never made public.",
-    enter: 0.04,
-    leave: 0.27,
+    align: "left",
+    label: "01 / Profile",
+    heading: "Every story starts with one honest conversation.",
+    body: ["We build your private profile. It is never made public."],
+    enter: 8,
+    leave: 20,
+    animation: "slide-left",
   },
   {
     key: "database",
-    step: "02",
-    eyebrow: "The database",
-    title: "Kept quietly. Searched carefully.",
-    body: "Reviewed by us — never browsed by anyone else.",
-    enter: 0.27,
-    leave: 0.5,
+    align: "right",
+    label: "02 / Database",
+    heading: "Kept quietly. Searched carefully.",
+    body: ["Reviewed by us — never browsed by anyone else."],
+    enter: 22,
+    leave: 34,
+    animation: "slide-right",
   },
   {
     key: "match",
-    step: "03",
-    eyebrow: "The match",
-    title: "We look until the signal is unmistakable.",
-    body: "Two or three names, considered. Never a list.",
-    enter: 0.5,
-    leave: 0.73,
+    align: "left",
+    label: "03 / Match",
+    heading: "We look until the signal is unmistakable.",
+    body: ["Two or three names, considered. Never a list."],
+    enter: 36,
+    leave: 48,
+    animation: "clip-reveal",
   },
   {
     key: "process",
-    step: "04",
-    eyebrow: "The process",
-    title: "We walk beside you until you're certain.",
-    body: "Every step guided, from the first hello to the family conversation.",
-    enter: 0.73,
-    leave: 0.96,
+    align: "right",
+    label: "04 / Process",
+    heading: "We walk beside you until you're certain.",
+    body: ["Every step guided, from the first hello to the family conversation."],
+    enter: 68,
+    leave: 78,
+    animation: "rotate-in",
+  },
+  {
+    key: "altar",
+    align: "left",
+    label: "05 / Altar",
+    heading: "One ring. One introduction. One yes.",
+    body: ["The outcome should feel calm, not manufactured."],
+    enter: 80,
+    leave: 88,
+    animation: "scale-up",
   },
 ];
 
-const ALTAR = {
-  step: "05",
-  eyebrow: "The altar",
-  title: "One ring. One introduction. One yes.",
-  body: "The outcome should feel calm, not manufactured.",
-};
-
 const STATS = [
-  { value: "00", label: "Public profiles. Ever." },
-  { value: "100%", label: "Reviewed before contact." },
-  { value: "2–3", label: "Names considered, never a list." },
-  { value: "1", label: "Introduction arranged at a time." },
+  { value: 0, suffix: "", label: "Public profiles. Ever." },
+  { value: 100, suffix: "%", label: "Reviewed before contact." },
+  { value: 3, suffix: "", label: "Names considered, never a list." },
+  { value: 1, suffix: "", label: "Introduction arranged at a time." },
 ];
 
 const TESTIMONIALS = [
@@ -128,7 +129,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "DesiHerz — Private Matrimony" },
       { property: "og:description", content: SITE.description },
       { property: "og:type", content: "website" },
-      { name: "theme-color", content: "#100904" },
+      { name: "theme-color", content: "#f5f3f0" },
       {
         name: "keywords",
         content:
@@ -136,13 +137,11 @@ export const Route = createFileRoute("/")({
       },
     ],
     links: [
-      { rel: "preconnect", href: "https://use.typekit.net" },
-      { rel: "stylesheet", href: "https://use.typekit.net/fcy0dtp.css" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" } as any,
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700;800;900&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,700;9..144,900&family=Inter:wght@300;400;500;600;700&display=swap",
       },
     ],
     scripts: [
@@ -163,418 +162,538 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const [entered, setEntered] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  useEffect(() => {
-    const refresh = () => ScrollTrigger.refresh();
-    window.addEventListener("load", refresh);
-    return () => window.removeEventListener("load", refresh);
-  }, []);
-
-  if (!entered) {
-    return <Gate onEnter={() => setEntered(true)} />;
-  }
-
   return (
-    <div className="dh-root relative min-h-screen selection:bg-[#c8964f] selection:text-[#100904]">
-      {mounted && (
-        <>
-          <SmoothScroll />
-          <Cursor />
-        </>
-      )}
-      <TopNav />
-      <main>
-        <Hero />
-        <StoryChapters />
-        <Altar />
-        <Marquee />
-        <Stats />
+    <div className="dh-root relative selection:bg-[#1a1a1a] selection:text-[#f5f3f0]">
+      {mounted && <Cursor />}
+      <Loader />
+      <SiteHeader />
+      <HeroStandalone />
+      <div className="canvas-wrap">
+        <canvas id="dh-canvas" />
+      </div>
+      <div id="dark-overlay" />
+      <Marquee />
+      <ScrollJourney />
+      <JourneyController />
+      <div className="after-journey">
         <Proof />
         <Voices />
         <Contact />
-      </main>
-      <Footer />
-      <PersistentCta />
+        <Footer />
+      </div>
     </div>
   );
 }
 
-/** The invitation landing: a deliberate load, then a single door to open. No scroll. */
-function Gate({ onEnter }: { onEnter: () => void }) {
+function Loader() {
   const [pct, setPct] = useState(0);
-  const [ready, setReady] = useState(false);
-  const [leaving, setLeaving] = useState(false);
-
+  const [hidden, setHidden] = useState(false);
   useEffect(() => {
-    const prevHtml = document.documentElement.style.overflow;
-    const prevBody = document.body.style.overflow;
-    document.documentElement.style.overflow = "hidden";
-    document.body.style.overflow = "hidden";
+    const onProgress = (e: Event) => setPct((e as CustomEvent<number>).detail);
+    const onDone = () => setHidden(true);
+    window.addEventListener("dh:loadprogress", onProgress as EventListener);
+    window.addEventListener("dh:loaddone", onDone);
     return () => {
-      document.documentElement.style.overflow = prevHtml;
-      document.body.style.overflow = prevBody;
+      window.removeEventListener("dh:loadprogress", onProgress as EventListener);
+      window.removeEventListener("dh:loaddone", onDone);
     };
   }, []);
-
-  useEffect(() => {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) {
-      setPct(100);
-      setReady(true);
-      return;
-    }
-    let raf = 0;
-    const start = performance.now();
-    const DURATION = 2200;
-    const tick = (t: number) => {
-      const p = Math.min(1, (t - start) / DURATION);
-      setPct(Math.round(p * 100));
-      if (p < 1) raf = requestAnimationFrame(tick);
-      else setReady(true);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, []);
-
-  const handleEnter = () => {
-    setLeaving(true);
-    window.setTimeout(onEnter, 560);
-  };
-
   return (
-    <div className={`gate${leaving ? " is-leaving" : ""}`}>
-      <div className="gate-bg" aria-hidden="true">
-        <img src="/frames/frame_0110.jpg" alt="" />
+    <div id="loader" className={hidden ? "hidden" : ""}>
+      <div className="loader-brand">
+        Desi<em>♥</em>Herz
       </div>
-
-      <div className="gate-top">
-        <p className="gate-mark">
-          Desi<em>♥</em>Herz
-        </p>
-        <p className="gate-headtag">Made for one introduction. Built to last.</p>
-        <p className="gate-tag">Est. Frankfurt</p>
+      <div id="loader-bar">
+        <span id="loader-bar-fill" style={{ width: `${pct}%` }} />
       </div>
-
-      <div className="gate-main">
-        <h1 className="gate-headline">
-          Your <em>life partner</em> is waiting.
-        </h1>
-        {ready ? (
-          <button className="gate-enter" onClick={handleEnter}>
-            Enter <span>→</span>
-          </button>
-        ) : (
-          <div className="gate-loading" aria-hidden="true">
-            <span className="gate-pct">{pct}%</span>
-            <div className="gate-bar">
-              <span style={{ width: `${pct}%` }} />
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="gate-note">
-        <strong>Curated by DesiHerz,</strong>
-        <strong>a private matchmaking house.</strong>
-        <span className="gate-note-divider" aria-hidden="true" />
-        <p>The introduction that starts everything.</p>
-      </div>
-
-      <div className="gate-badge" aria-hidden="true">
-        <span>DesiHerz · Season One</span>
-      </div>
+      <div id="loader-percent">{pct}%</div>
     </div>
   );
 }
 
-function TopNav() {
-  const ref = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const onScroll = () => {
-      if (!ref.current) return;
-      ref.current.classList.toggle("is-scrolled", window.scrollY > 24);
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
+function SiteHeader() {
   return (
-    <header ref={ref} className="dh-nav">
-      <a href="#top" className="dh-logo" aria-label="DesiHerz home">
-        <span>Desi</span>
-        <em className="dh-logo-heart">♥</em>
-        <span>Herz</span>
-      </a>
-      <nav className="dh-nav-links" aria-label="Primary navigation">
-        <a href="#process">Process</a>
-        <a href="#pledges">Pledges</a>
-        <a href="#story">Story</a>
-        <a href="#contact">Contact</a>
+    <header className="site-header">
+      <nav>
+        <div className="logo">
+          Desi<span style={{ opacity: 0.7 }}>♥</span>Herz
+        </div>
+        <ul>
+          <li><a href="#profile">Process</a></li>
+          <li><a href="#pledges">Pledges</a></li>
+          <li><a href="#story">Story</a></li>
+          <li><a className="nav-cta" href="#contact">Private enquiry</a></li>
+        </ul>
       </nav>
-      <a href="#contact" className="dh-nav-cta">Private enquiry</a>
     </header>
   );
 }
 
-function HeroBackgroundVideo() {
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    fetch(FILMS.promo, { method: "HEAD" })
-      .then((res) => {
-        if (!cancelled && res.ok) setReady(true);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-  if (!ready) return null;
+function HeroStandalone() {
   return (
-    <div className="hero-bg-video" aria-hidden="true">
-      <video src={FILMS.promo} autoPlay muted loop playsInline preload="auto" />
-    </div>
-  );
-}
-
-function Hero() {
-  const ref = useRef<HTMLElement>(null);
-  useGSAP(
-    () => {
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (reduce) return;
-      gsap.fromTo(
-        ".hero-cream > *",
-        { y: 26, opacity: 0 },
-        { y: 0, opacity: 1, duration: 1, ease: "power3.out", stagger: 0.08, delay: 0.3 }
-      );
-    },
-    { scope: ref }
-  );
-
-  return (
-    <section ref={ref} id="top" className="hero-cream">
-      <HeroBackgroundVideo />
-      <p className="dh-kicker hero-eyebrow">Private matrimony / Germany and beyond</p>
-      <h1>
-        The right introduction, <em>reconsidered.</em>
-      </h1>
-      <p className="hero-sub">A private, human-led house. Not an app.</p>
-      <div className="hero-actions">
-        <a href="#process" className="dh-button primary">Watch the process</a>
-        <a href="#contact" className="dh-button secondary">Request consultation</a>
-      </div>
-      <div className="hero-scroll-hint">Scroll</div>
-      <p className="hero-side-note">
-        Every introduction is reviewed, considered and arranged with care — never automated.
-      </p>
-      <div className="hero-corner-tag">Private house · By invitation</div>
-    </section>
-  );
-}
-
-/** Movement 1: four pure-typography chapters. No imagery — nothing to show yet for these stages. */
-function StoryChapters() {
-  const ref = useRef<HTMLElement>(null);
-
-  useGSAP(
-    () => {
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const scenes = gsap.utils.toArray<HTMLElement>(".chapter-scene");
-      if (!scenes.length) return;
-
-      gsap.set(scenes, { autoAlpha: 0, y: 26 });
-      gsap.set(scenes[0], { autoAlpha: 1, y: 0 });
-
-      if (reduce) {
-        gsap.set(scenes, { autoAlpha: 1, y: 0, position: "relative" });
-        return;
-      }
-
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: ref.current,
-          start: "top top",
-          end: "+=320%",
-          pin: true,
-          scrub: 0.6,
-        },
-      });
-
-      scenes.forEach((scene, i) => {
-        if (i === 0) return;
-        tl.to(scenes[i - 1], { autoAlpha: 0, y: -30, duration: 0.6 }, ">+=0.2")
-          .fromTo(scene, { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: 0.6 }, "<");
-      });
-    },
-    { scope: ref }
-  );
-
-  return (
-    <section ref={ref} id="process" className="chapters-section">
-      <div className="chapters-note">
-        <strong>A controlled scroll story.</strong>
-        <span className="chapters-note-divider" aria-hidden="true" />
-        <p>Four quiet stages, one private path.</p>
-      </div>
-      <div className="chapters-badge" aria-hidden="true">
-        <span>DesiHerz · The Story</span>
-      </div>
-      {CHAPTERS.map((c) => (
-        <article key={c.key} className="chapter-scene">
-          <span className="chapter-numeral" aria-hidden="true">{c.step}</span>
-          <div className="chapter-copy">
-            <p className="dh-kicker">
-              {c.step} — {c.eyebrow}
-            </p>
-            <h2>{c.title}</h2>
-            <p className="chapter-body">{c.body}</p>
-          </div>
-        </article>
-      ))}
-    </section>
-  );
-}
-
-/** Movement 2: the payoff. The one real asset we have, held back until the end. */
-function Altar() {
-  const ref = useRef<HTMLElement>(null);
-  const progress = useRef(0);
-
-  useGSAP(
-    () => {
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      gsap.set(".altar-copy", { opacity: 0, y: 22 });
-
-      if (reduce) {
-        progress.current = 1;
-        gsap.set(".altar-copy", { opacity: 1, y: 0 });
-        return;
-      }
-
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: ref.current,
-          start: "top top",
-          end: "+=220%",
-          pin: true,
-          scrub: 0.6,
-          onUpdate: (self) => {
-            progress.current = self.progress;
-          },
-        },
-      });
-
-      tl.to(".altar-copy", { opacity: 1, y: 0, duration: 0.2 }, 0.72);
-    },
-    { scope: ref }
-  );
-
-  return (
-    <section ref={ref} id="altar" className="frame-section">
-      <FrameCanvas frameCount={STORY_FRAME_COUNT} framePath={STORY_FRAME_PATH} progress={progress} />
-      <div className="frame-story-copy">
-        <div className="story-pos-center-bottom altar-copy">
-          <p className="story-eyebrow">
-            {ALTAR.step} — {ALTAR.eyebrow}
-          </p>
-          <h3>{ALTAR.title}</h3>
-          <p>{ALTAR.body}</p>
+    <section className="hero-standalone">
+      <div className="hero-inner">
+        <span className="section-label">2026 · Private matrimony, Germany and beyond</span>
+        <h1 className="hero-heading">
+          <span>The right introduction,</span> <span><em>reconsidered.</em></span>
+        </h1>
+        <p className="hero-tagline">A private, human-led house. Not an app.</p>
+        <div className="hero-actions">
+          <a className="cta-button" href="#profile">Watch the process</a>
+          <a className="cta-button secondary" href="#contact">Request consultation</a>
         </div>
+      </div>
+      <div className="scroll-indicator">
+        <span>Scroll</span>
+        <svg width="14" height="22" viewBox="0 0 14 22" fill="none" aria-hidden="true">
+          <path d="M7 1v20m0 0l-6-6m6 6l6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
       </div>
     </section>
   );
 }
 
 function Marquee() {
-  const trackRef = useRef<HTMLDivElement>(null);
-  useGSAP(() => {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce || !trackRef.current) return;
-    gsap.to(trackRef.current, { xPercent: -50, ease: "none", duration: 26, repeat: -1 });
-  });
-
-  const words = ["Desi♥Herz", "Private", "Verified", "Curated", "By invitation"];
   return (
-    <section className="marquee-section" aria-hidden="true">
-      <div className="marquee-track" ref={trackRef}>
-        {[0, 1].map((rep) => (
-          <span key={rep}>
-            {words.map((w, i) => (
-              <span key={i}>{w}</span>
-            ))}
-          </span>
+    <div className="marquee-wrap" data-scroll-speed="-25" data-enter="38" data-leave="62">
+      <div className="marquee-text">Desi♥Herz · Desi♥Herz · Desi♥Herz · Desi♥Herz · Desi♥Herz ·</div>
+    </div>
+  );
+}
+
+function ScrollJourney() {
+  const [profile, database, match] = SECTIONS.filter((s) => ["profile", "database", "match"].includes(s.key));
+  const [process, altar] = SECTIONS.filter((s) => ["process", "altar"].includes(s.key));
+
+  return (
+    <div id="scroll-container">
+      <ContentSection spec={profile} id="profile" />
+      <ContentSection spec={database} />
+      <ContentSection spec={match} id="match" />
+
+      <section
+        className="scroll-section section-stats"
+        data-enter="52"
+        data-leave="66"
+        data-animation="stagger-up"
+        id="pledges"
+      >
+        <div className="stats-grid">
+          {STATS.map((s) => (
+            <div key={s.label} className="stat">
+              <span>
+                <span className="stat-number" data-value={s.value} data-decimals="0">0</span>
+                {s.suffix && <span className="stat-suffix">{s.suffix}</span>}
+              </span>
+              <span className="stat-label">{s.label}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <ContentSection spec={process} />
+      <ContentSection spec={altar} id="story" />
+
+      <section
+        className="scroll-section section-cta"
+        data-enter="90"
+        data-leave="97"
+        data-animation="fade-up"
+        id="scroll-contact"
+      >
+        <div className="section-inner cta-inner">
+          <span className="section-label">Begin privately</span>
+          <h2 className="section-heading">Send a single line.</h2>
+          <p className="section-body">No public profile. Seen only by the principal matchmaker.</p>
+          <a className="cta-button" href="#contact">Request consultation →</a>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ContentSection({ spec, id }: { spec: SectionSpec; id?: string }) {
+  return (
+    <section
+      id={id}
+      className={`scroll-section section-content align-${spec.align}`}
+      data-enter={spec.enter}
+      data-leave={spec.leave}
+      data-animation={spec.animation}
+    >
+      <div className="section-inner">
+        <span className="section-label">{spec.label}</span>
+        <h2 className="section-heading">{spec.heading}</h2>
+        {spec.body.map((p, i) => (
+          <p className="section-body" key={i}>{p}</p>
         ))}
       </div>
     </section>
   );
 }
 
-function Stats() {
-  const ref = useRef<HTMLElement>(null);
-  useGSAP(
-    () => {
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (reduce) return;
-      gsap.from(".stat-tile", {
-        opacity: 0,
-        y: 22,
-        duration: 0.8,
-        ease: "power3.out",
-        stagger: 0.08,
-        scrollTrigger: { trigger: ref.current, start: "top 74%", toggleActions: "play none none reverse" },
-      });
-    },
-    { scope: ref }
-  );
+/** Ports js/app.js verbatim: frame preload/draw, circle-wipe, section windows, marquee, counters. */
+function JourneyController() {
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  return (
-    <section ref={ref} id="pledges" className="stats-section on-dark">
-      <div className="stats-heading">
-        <p className="dh-kicker">Four rules that protect the story</p>
-        <h2>Not marketing claims. The operating rules of the house.</h2>
-      </div>
-      <div className="stats-grid">
-        {STATS.map((s) => (
-          <div key={s.label} className="stat-tile">
-            <strong>{s.value}</strong>
-            <span>{s.label}</span>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
+    const scrollContainer = document.getElementById("scroll-container");
+    const canvas = document.getElementById("dh-canvas") as HTMLCanvasElement | null;
+    const canvasWrap = document.querySelector<HTMLElement>(".canvas-wrap");
+    const heroSection = document.querySelector<HTMLElement>(".hero-standalone");
+    const overlay = document.getElementById("dark-overlay");
+    if (!scrollContainer || !canvas || !canvasWrap || !heroSection || !overlay) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+    });
+    lenis.on("scroll", ScrollTrigger.update);
+    const tickerFn = (time: number) => lenis.raf(time * 1000);
+    gsap.ticker.add(tickerFn);
+    gsap.ticker.lagSmoothing(0);
+
+    const frames: HTMLImageElement[] = new Array(FRAME_COUNT);
+    let bgColor = "#f5f3f0";
+    let currentFrame = -1;
+
+    function sizeCanvas() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas!.width = window.innerWidth * dpr;
+      canvas!.height = window.innerHeight * dpr;
+      canvas!.style.width = window.innerWidth + "px";
+      canvas!.style.height = window.innerHeight + "px";
+      ctx!.setTransform(1, 0, 0, 1, 0, 0);
+    }
+
+    function sampleBgColor(img: HTMLImageElement) {
+      try {
+        const c = document.createElement("canvas");
+        c.width = 16;
+        c.height = 16;
+        const cx = c.getContext("2d")!;
+        cx.drawImage(img, 0, 0, 16, 16);
+        const d = cx.getImageData(0, 0, 16, 16).data;
+        let r = 0, g = 0, b = 0, n = 0;
+        const sample = (x: number, y: number) => {
+          const idx = (y * 16 + x) * 4;
+          r += d[idx];
+          g += d[idx + 1];
+          b += d[idx + 2];
+          n++;
+        };
+        for (let x = 0; x < 16; x++) {
+          sample(x, 0);
+          sample(x, 15);
+        }
+        for (let y = 1; y < 15; y++) {
+          sample(0, y);
+          sample(15, y);
+        }
+        r = Math.round(r / n);
+        g = Math.round(g / n);
+        b = Math.round(b / n);
+        return `rgb(${r}, ${g}, ${b})`;
+      } catch {
+        return "#f5f3f0";
+      }
+    }
+
+    function drawFrame(index: number) {
+      const img = frames[index];
+      if (!img) return;
+      const cw = canvas!.width, ch = canvas!.height;
+      const iw = img.naturalWidth, ih = img.naturalHeight;
+      const scale = Math.max(cw / iw, ch / ih) * IMAGE_SCALE;
+      const dw = iw * scale, dh = ih * scale;
+      const dx = (cw - dw) / 2, dy = (ch - dh) / 2;
+      ctx!.fillStyle = bgColor;
+      ctx!.fillRect(0, 0, cw, ch);
+      ctx!.drawImage(img, dx, dy, dw, dh);
+      if (index % 20 === 0) {
+        bgColor = sampleBgColor(img);
+      }
+    }
+
+    function preloadFrames() {
+      let loaded = 0;
+      const loadOne = (i: number) =>
+        new Promise<void>((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            frames[i] = img;
+            loaded++;
+            const pct = Math.round((loaded / FRAME_COUNT) * 100);
+            window.dispatchEvent(new CustomEvent("dh:loadprogress", { detail: pct }));
+            if (i === 0) bgColor = sampleBgColor(img);
+            resolve();
+          };
+          img.onerror = () => {
+            loaded++;
+            resolve();
+          };
+          img.src = FRAME_PATH(i);
+        });
+
+      const firstBatch: Promise<void>[] = [];
+      for (let i = 0; i < Math.min(10, FRAME_COUNT); i++) firstBatch.push(loadOne(i));
+
+      return Promise.all(firstBatch).then(() => {
+        const rest: Promise<void>[] = [];
+        for (let i = 10; i < FRAME_COUNT; i++) rest.push(loadOne(i));
+        return Promise.all(rest);
+      });
+    }
+
+    function initFrameBinding() {
+      ScrollTrigger.create({
+        trigger: scrollContainer,
+        start: "top top",
+        end: "bottom bottom",
+        scrub: true,
+        onUpdate: (self) => {
+          const accelerated = Math.min(self.progress * FRAME_SPEED, 1);
+          const index = Math.min(Math.floor(accelerated * FRAME_COUNT), FRAME_COUNT - 1);
+          if (index !== currentFrame) {
+            currentFrame = index;
+            requestAnimationFrame(() => drawFrame(currentFrame));
+          }
+        },
+      });
+    }
+
+    function initHeroTransition() {
+      ScrollTrigger.create({
+        trigger: scrollContainer,
+        start: "top top",
+        end: "bottom bottom",
+        scrub: true,
+        onUpdate: (self) => {
+          const p = self.progress;
+          heroSection!.style.opacity = String(Math.max(0, 1 - p * 15));
+          heroSection!.style.pointerEvents = p > 0.05 ? "none" : "auto";
+          const wipeProgress = Math.min(1, Math.max(0, (p - 0.01) / 0.06));
+          const radius = wipeProgress * 90;
+          canvasWrap!.style.clipPath = `circle(${radius}% at 50% 50%)`;
+        },
+      });
+    }
+
+    function initMarquees() {
+      document.querySelectorAll<HTMLElement>(".marquee-wrap").forEach((el) => {
+        const speed = parseFloat(el.dataset.scrollSpeed || "-25");
+        const enter = parseFloat(el.dataset.enter || "0") / 100;
+        const leave = parseFloat(el.dataset.leave || "100") / 100;
+        const text = el.querySelector<HTMLElement>(".marquee-text");
+        if (!text) return;
+
+        gsap.to(text, {
+          xPercent: speed,
+          ease: "none",
+          scrollTrigger: { trigger: scrollContainer, start: "top top", end: "bottom bottom", scrub: true },
+        });
+
+        ScrollTrigger.create({
+          trigger: scrollContainer,
+          start: "top top",
+          end: "bottom bottom",
+          scrub: true,
+          onUpdate: (self) => {
+            const p = self.progress;
+            const fade = 0.04;
+            let opacity = 0;
+            if (p >= enter - fade && p <= enter) opacity = (p - (enter - fade)) / fade;
+            else if (p > enter && p < leave) opacity = 1;
+            else if (p >= leave && p <= leave + fade) opacity = 1 - (p - leave) / fade;
+            el.style.opacity = String(opacity);
+          },
+        });
+      });
+    }
+
+    function initDarkOverlayForStats() {
+      const stats = document.querySelector<HTMLElement>(".section-stats");
+      if (!stats) return;
+      const enter = parseFloat(stats.dataset.enter || "0") / 100;
+      const leave = parseFloat(stats.dataset.leave || "100") / 100;
+      const fadeRange = 0.04;
+
+      ScrollTrigger.create({
+        trigger: scrollContainer,
+        start: "top top",
+        end: "bottom bottom",
+        scrub: true,
+        onUpdate: (self) => {
+          const p = self.progress;
+          let opacity = 0;
+          if (p >= enter - fadeRange && p <= enter) opacity = 0.9 * ((p - (enter - fadeRange)) / fadeRange);
+          else if (p > enter && p < leave) opacity = 0.9;
+          else if (p >= leave && p <= leave + fadeRange) opacity = 0.9 * (1 - (p - leave) / fadeRange);
+          overlay!.style.opacity = String(opacity);
+        },
+      });
+    }
+
+    function setupSectionAnimation(section: HTMLElement) {
+      const type = section.dataset.animation;
+      const persist = section.dataset.persist === "true";
+      const enter = parseFloat(section.dataset.enter || "0") / 100;
+      const leave = parseFloat(section.dataset.leave || "100") / 100;
+      const children = section.querySelectorAll(
+        ".section-label, .section-heading, .section-body, .section-note, .cta-button, .stat"
+      );
+
+      const tl = gsap.timeline({ paused: true });
+      switch (type) {
+        case "fade-up":
+          tl.from(children, { y: 50, opacity: 0, stagger: 0.12, duration: 0.9, ease: "power3.out" });
+          break;
+        case "slide-left":
+          tl.from(children, { x: -80, opacity: 0, stagger: 0.14, duration: 0.9, ease: "power3.out" });
+          break;
+        case "slide-right":
+          tl.from(children, { x: 80, opacity: 0, stagger: 0.14, duration: 0.9, ease: "power3.out" });
+          break;
+        case "scale-up":
+          tl.from(children, { scale: 0.85, opacity: 0, stagger: 0.12, duration: 1.0, ease: "power2.out" });
+          break;
+        case "rotate-in":
+          tl.from(children, { y: 40, rotation: 3, opacity: 0, stagger: 0.1, duration: 0.9, ease: "power3.out" });
+          break;
+        case "stagger-up":
+          tl.from(children, { y: 60, opacity: 0, stagger: 0.15, duration: 0.8, ease: "power3.out" });
+          break;
+        case "clip-reveal":
+          tl.from(children, { clipPath: "inset(100% 0 0 0)", opacity: 0, stagger: 0.15, duration: 1.2, ease: "power4.inOut" });
+          break;
+        default:
+          tl.from(children, { y: 40, opacity: 0, stagger: 0.12, duration: 0.9, ease: "power3.out" });
+      }
+
+      const animateInPoint = enter + 0.02;
+      let played = false;
+
+      ScrollTrigger.create({
+        trigger: scrollContainer,
+        start: "top top",
+        end: "bottom bottom",
+        scrub: true,
+        onUpdate: (self) => {
+          const p = self.progress;
+          const fade = 0.03;
+          let opacity = 0;
+          if (p >= enter - fade && p <= enter) opacity = (p - (enter - fade)) / fade;
+          else if (p > enter && p < leave) opacity = 1;
+          else if (persist && p >= leave) opacity = 1;
+          else if (p >= leave && p <= leave + fade) opacity = 1 - (p - leave) / fade;
+          section.style.opacity = String(opacity);
+          section.classList.toggle("is-active", opacity > 0.5);
+
+          if (p >= animateInPoint && !played) {
+            tl.play();
+            played = true;
+          }
+          if (!persist && p < enter - fade && played) {
+            tl.reverse();
+            played = false;
+          }
+        },
+      });
+    }
+
+    function initSections() {
+      document.querySelectorAll<HTMLElement>(".scroll-section").forEach(setupSectionAnimation);
+    }
+
+    function initCounters() {
+      document.querySelectorAll<HTMLElement>(".stat-number").forEach((el) => {
+        const target = parseFloat(el.dataset.value || "0");
+        const decimals = parseInt(el.dataset.decimals || "0", 10);
+        const section = el.closest<HTMLElement>(".scroll-section");
+        if (!section) return;
+        const enter = parseFloat(section.dataset.enter || "0") / 100;
+        let played = false;
+
+        ScrollTrigger.create({
+          trigger: scrollContainer,
+          start: "top top",
+          end: "bottom bottom",
+          scrub: true,
+          onUpdate: (self) => {
+            if (self.progress >= enter + 0.01 && !played) {
+              played = true;
+              const obj = { val: 0 };
+              gsap.to(obj, {
+                val: target,
+                duration: 2,
+                ease: "power1.out",
+                onUpdate: () => {
+                  el.textContent = decimals === 0 ? Math.round(obj.val).toString() : obj.val.toFixed(decimals);
+                },
+              });
+            }
+          },
+        });
+      });
+    }
+
+    let cancelled = false;
+
+    sizeCanvas();
+    const onResize = () => {
+      sizeCanvas();
+      drawFrame(currentFrame >= 0 ? currentFrame : 0);
+    };
+    window.addEventListener("resize", onResize);
+
+    if (reduce) {
+      window.dispatchEvent(new CustomEvent("dh:loaddone"));
+      document.querySelectorAll<HTMLElement>(".scroll-section").forEach((s) => {
+        s.style.position = "relative";
+        s.style.opacity = "1";
+      });
+      heroSection.style.opacity = "1";
+      canvasWrap.style.clipPath = "circle(90% at 50% 50%)";
+    } else {
+      preloadFrames().then(() => {
+        if (cancelled) return;
+        window.dispatchEvent(new CustomEvent("dh:loaddone"));
+        drawFrame(0);
+        initFrameBinding();
+        initHeroTransition();
+        initMarquees();
+        initDarkOverlayForStats();
+        initSections();
+        initCounters();
+        ScrollTrigger.refresh();
+      });
+    }
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener("resize", onResize);
+      gsap.ticker.remove(tickerFn);
+      lenis.destroy();
+      ScrollTrigger.getAll().forEach((t) => t.kill());
+    };
+  }, []);
+
+  return null;
 }
 
 function Proof() {
   const ref = useRef<HTMLElement>(null);
   const quotes = useMemo(() => TESTIMONIALS, []);
-
-  useGSAP(
-    () => {
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (reduce) return;
-      gsap.from(".quote-card", {
-        opacity: 0,
-        y: 22,
-        duration: 0.85,
-        ease: "power3.out",
-        stagger: 0.08,
-        scrollTrigger: { trigger: ref.current, start: "top 74%", toggleActions: "play none none reverse" },
-      });
-    },
-    { scope: ref }
-  );
-
   return (
-    <section ref={ref} id="story" className="proof-section">
+    <section ref={ref} className="proof-section">
       <div className="section-heading-simple">
-        <p className="dh-kicker">Proof, softly</p>
+        <span className="section-label">Proof, softly</span>
         <h2>People remember how the introduction felt.</h2>
       </div>
       <div className="proof-grid">
@@ -589,19 +708,8 @@ function Proof() {
   );
 }
 
-function VideoFeature({
-  title,
-  role,
-  film,
-  alt,
-}: {
-  title: string;
-  role: string;
-  film: string;
-  alt: string;
-}) {
+function VideoFeature({ title, role, film, alt }: { title: string; role: string; film: string; alt: string }) {
   const [ready, setReady] = useState(false);
-
   useEffect(() => {
     let cancelled = false;
     fetch(film, { method: "HEAD" })
@@ -621,9 +729,7 @@ function VideoFeature({
           <video src={film} controls preload="metadata" playsInline aria-label={alt} />
         ) : (
           <div className="media-slate" aria-hidden="true">
-            <div className="media-slate-mark">
-              <span />
-            </div>
+            <div className="media-slate-mark"><span /></div>
           </div>
         )}
       </div>
@@ -636,70 +742,25 @@ function VideoFeature({
 }
 
 function Voices() {
-  const ref = useRef<HTMLElement>(null);
-  useGSAP(
-    () => {
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (reduce) return;
-      gsap.from(".feature-video", {
-        opacity: 0,
-        y: 22,
-        duration: 0.85,
-        ease: "power3.out",
-        stagger: 0.1,
-        scrollTrigger: { trigger: ref.current, start: "top 74%", toggleActions: "play none none reverse" },
-      });
-    },
-    { scope: ref }
-  );
-
   return (
-    <section ref={ref} id="voices" className="voices-section">
+    <section className="voices-section">
       <div className="section-heading-simple">
-        <p className="dh-kicker">In their own words</p>
+        <span className="section-label">In their own words</span>
         <h2>Hear it directly.</h2>
       </div>
-
       <div className="voices-grid">
-        <VideoFeature
-          title="The founder"
-          role="Why DesiHerz exists"
-          film={FILMS.founder}
-          alt="The founder of DesiHerz speaking about the house."
-        />
-        <VideoFeature
-          title="In conversation"
-          role="A closer look at the house"
-          film={FILMS.spokesperson}
-          alt="A spokesperson speaking about DesiHerz."
-        />
+        <VideoFeature title="The founder" role="Why DesiHerz exists" film={FILMS.founder} alt="The founder of DesiHerz speaking about the house." />
+        <VideoFeature title="In conversation" role="A closer look at the house" film={FILMS.spokesperson} alt="A spokesperson speaking about DesiHerz." />
       </div>
     </section>
   );
 }
 
 function Contact() {
-  const ref = useRef<HTMLElement>(null);
-  useGSAP(
-    () => {
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (reduce) return;
-      gsap.from(".contact-panel > *", {
-        opacity: 0,
-        y: 20,
-        duration: 0.85,
-        ease: "power3.out",
-        stagger: 0.07,
-        scrollTrigger: { trigger: ref.current, start: "top 72%", toggleActions: "play none none reverse" },
-      });
-    },
-    { scope: ref }
-  );
-
   return (
-    <section ref={ref} id="contact" className="contact-section">
+    <section id="contact" className="contact-section">
       <div className="contact-panel">
-        <p className="dh-kicker">Begin privately</p>
+        <span className="section-label">Begin privately</span>
         <h2>
           Send a single line. <em>We&rsquo;ll write back.</em>
         </h2>
@@ -737,25 +798,5 @@ function Footer() {
         <span>hello@desiherz.com</span>
       </div>
     </footer>
-  );
-}
-
-function PersistentCta() {
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const contact = document.getElementById("contact");
-    const onScroll = () => {
-      const pastHero = window.scrollY > window.innerHeight * 0.9;
-      const overContact = contact ? contact.getBoundingClientRect().top < window.innerHeight * 0.85 : false;
-      setVisible(pastHero && !overContact);
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-  return (
-    <div className={`persistent-cta${visible ? " is-visible" : ""}`}>
-      <a href="#contact">Private enquiry</a>
-    </div>
   );
 }
