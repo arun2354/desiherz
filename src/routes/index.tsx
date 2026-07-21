@@ -1,9 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
+import { motion } from "framer-motion";
 import { Cursor } from "@/components/Cursor";
+
+const fadeUp = { hidden: { opacity: 0, y: 28 }, show: { opacity: 1, y: 0 } };
+const staggerContainer = { hidden: {}, show: { transition: { staggerChildren: 0.12 } } };
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -129,7 +133,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "DesiHerz — Private Matrimony" },
       { property: "og:description", content: SITE.description },
       { property: "og:type", content: "website" },
-      { name: "theme-color", content: "#f5f3f0" },
+      { name: "theme-color", content: "#1a1410" },
       {
         name: "keywords",
         content:
@@ -141,7 +145,7 @@ export const Route = createFileRoute("/")({
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" } as any,
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,700;9..144,900&family=Inter:wght@300;400;500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,700;9..144,900&family=Manrope:wght@300;400;500;600;700&display=swap",
       },
     ],
     scripts: [
@@ -166,7 +170,7 @@ function Index() {
   useEffect(() => setMounted(true), []);
 
   return (
-    <div className="dh-root relative selection:bg-[#1a1a1a] selection:text-[#f5f3f0]">
+    <div className="dh-root relative selection:bg-[#8a2035] selection:text-[#f5ece1]">
       {mounted && <Cursor />}
       <Loader />
       <SiteHeader />
@@ -688,22 +692,40 @@ function JourneyController() {
 }
 
 function Proof() {
-  const ref = useRef<HTMLElement>(null);
   const quotes = useMemo(() => TESTIMONIALS, []);
   return (
-    <section ref={ref} className="proof-section">
-      <div className="section-heading-simple">
+    <section className="proof-section">
+      <motion.div
+        className="section-heading-simple"
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, amount: 0.5 }}
+        variants={fadeUp}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+      >
         <span className="section-label">Proof, softly</span>
         <h2>People remember how the introduction felt.</h2>
-      </div>
-      <div className="proof-grid">
+      </motion.div>
+      <motion.div
+        className="proof-grid"
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, amount: 0.3 }}
+        variants={staggerContainer}
+      >
         {quotes.map((q) => (
-          <article key={q.who} className="quote-card">
+          <motion.article
+            key={q.who}
+            className="quote-card"
+            variants={fadeUp}
+            transition={{ duration: 0.55, ease: "easeOut" }}
+            whileHover={{ y: -6 }}
+          >
             <p>&ldquo;{q.quote}&rdquo;</p>
             <footer>{q.who} / {q.city}</footer>
-          </article>
+          </motion.article>
         ))}
-      </div>
+      </motion.div>
     </section>
   );
 }
@@ -723,8 +745,14 @@ function VideoFeature({ title, role, film, alt }: { title: string; role: string;
   }, [film]);
 
   return (
-    <figure className="feature-video">
-      <div className="feature-video-frame">
+    <motion.figure
+      className="feature-video"
+      initial={{ opacity: 0, y: 32 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.4 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+    >
+      <motion.div className="feature-video-frame" whileHover={{ scale: 1.015 }} transition={{ duration: 0.4, ease: "easeOut" }}>
         {ready ? (
           <video src={film} controls preload="metadata" playsInline aria-label={alt} />
         ) : (
@@ -732,22 +760,28 @@ function VideoFeature({ title, role, film, alt }: { title: string; role: string;
             <div className="media-slate-mark"><span /></div>
           </div>
         )}
-      </div>
+      </motion.div>
       <figcaption>
         <strong>{title}</strong>
         <span>{role}</span>
       </figcaption>
-    </figure>
+    </motion.figure>
   );
 }
 
 function Voices() {
   return (
     <section className="voices-section">
-      <div className="section-heading-simple">
+      <motion.div
+        className="section-heading-simple"
+        initial={{ opacity: 0, y: 28 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.5 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+      >
         <span className="section-label">In their own words</span>
         <h2>Hear it directly.</h2>
-      </div>
+      </motion.div>
       <div className="voices-grid">
         <VideoFeature title="The founder" role="Why DesiHerz exists" film={FILMS.founder} alt="The founder of DesiHerz speaking about the house." />
         <VideoFeature title="In conversation" role="A closer look at the house" film={FILMS.spokesperson} alt="A spokesperson speaking about DesiHerz." />
@@ -759,7 +793,13 @@ function Voices() {
 function Contact() {
   return (
     <section id="contact" className="contact-section">
-      <div className="contact-panel">
+      <motion.div
+        className="contact-panel"
+        initial={{ opacity: 0, y: 32 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={{ duration: 0.65, ease: "easeOut" }}
+      >
         <span className="section-label">Begin privately</span>
         <h2>
           Send a single line. <em>We&rsquo;ll write back.</em>
@@ -778,16 +818,24 @@ function Contact() {
             <span>A note</span>
             <input type="text" placeholder="One or two sentences is enough." />
           </label>
-          <button type="submit">Request consultation <span>→</span></button>
+          <motion.button type="submit" whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}>
+            Request consultation <span>→</span>
+          </motion.button>
         </form>
-      </div>
+      </motion.div>
     </section>
   );
 }
 
 function Footer() {
   return (
-    <footer className="dh-footer">
+    <motion.footer
+      className="dh-footer"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.6 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+    >
       <div>
         <strong>Desi♥Herz</strong>
         <p>Private matrimony for discerning people and families. By introduction only.</p>
@@ -797,6 +845,6 @@ function Footer() {
         <span>By appointment only</span>
         <span>hello@desiherz.com</span>
       </div>
-    </footer>
+    </motion.footer>
   );
 }
