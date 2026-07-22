@@ -23,17 +23,14 @@ const FILMS = {
 };
 
 /*
-  Ported 1:1 from the client's reference (hamzafarooq/claude-code-starter,
-  royal-pop-website): a single 900vh scroll container, every section
-  position:fixed with opacity driven by raw scroll progress, one frame
-  sequence bound to the same progress (accelerated so it finishes by the
-  midpoint), and a circle-wipe reveal from the standalone hero into the
-  canvas. See js/app.js in that repo for the original.
+  Scroll choreography: a single 900vh scroll container, every section
+  position:fixed with opacity driven by raw scroll progress, and a
+  circle-wipe reveal from the standalone hero into a real scroll-scrubbed
+  video (currentTime lerped toward progress * duration each frame,
+  instead of a hand-drawn frame sequence).
 */
-const FRAME_COUNT = 128;
-const FRAME_PATH = (i: number) => `/frames/frame_${String(i + 1).padStart(4, "0")}.jpg`;
-const FRAME_SPEED = 2.0;
-const IMAGE_SCALE = 0.85;
+const HERO_SCRUB_SRC = "/videos/hero-scrub.mp4";
+const VIDEO_SPEED = 1.12; // finishes just before the closing CTA, then holds the last frame
 
 type SectionSpec = {
   key: string;
@@ -49,53 +46,53 @@ type SectionSpec = {
 
 const SECTIONS: SectionSpec[] = [
   {
-    key: "profile",
+    key: "discovery",
     align: "left",
-    label: "01 / Profile",
-    heading: "Every story starts with one honest conversation.",
-    body: ["We build your private profile. It is never made public."],
-    enter: 8,
-    leave: 20,
+    label: "02 / Discovery",
+    heading: "It starts with one quiet click.",
+    body: ["No swiping, no scrolling through strangers. Just a private introduction, waiting to begin."],
+    enter: 4,
+    leave: 14,
     animation: "slide-left",
   },
   {
-    key: "database",
+    key: "circle",
     align: "right",
-    label: "02 / Database",
-    heading: "Kept quietly. Searched carefully.",
-    body: ["Reviewed by us — never browsed by anyone else."],
-    enter: 22,
-    leave: 34,
+    label: "03 / The Vetted Circle",
+    heading: "Kept behind a lock only we hold.",
+    body: ["Every profile lives inside a private, vetted circle — reviewed by us, never browsed by anyone else."],
+    enter: 17,
+    leave: 28,
     animation: "slide-right",
   },
   {
     key: "match",
     align: "left",
-    label: "03 / Match",
-    heading: "We look until the signal is unmistakable.",
-    body: ["Two or three names, considered. Never a list."],
-    enter: 36,
-    leave: 48,
+    label: "04 / The Match",
+    heading: "Heritage and heart, made whole.",
+    body: ["One half carries where you come from. The other, where you're going. We introduce you only when both fit."],
+    enter: 31,
+    leave: 43,
     animation: "clip-reveal",
   },
   {
-    key: "process",
+    key: "proposal",
     align: "right",
-    label: "04 / Process",
-    heading: "We walk beside you until you're certain.",
-    body: ["Every step guided, from the first hello to the family conversation."],
-    enter: 68,
-    leave: 78,
+    label: "05 / The Proposal",
+    heading: "The spark isn't manufactured. It's just introduced.",
+    body: ["What happens after that first hello is entirely yours. We only make sure it's worth showing up for."],
+    enter: 63,
+    leave: 74,
     animation: "rotate-in",
   },
   {
-    key: "altar",
+    key: "handinhand",
     align: "left",
-    label: "05 / Altar",
-    heading: "One ring. One introduction. One yes.",
-    body: ["The outcome should feel calm, not manufactured."],
-    enter: 80,
-    leave: 88,
+    label: "06 / Hand in Hand",
+    heading: "From strangers to promised, quietly.",
+    body: ["No performance, no audience. Just two people who said yes at their own pace."],
+    enter: 77,
+    leave: 87,
     animation: "scale-up",
   },
 ];
@@ -176,7 +173,17 @@ function Index() {
       <SiteHeader />
       <HeroStandalone />
       <div className="canvas-wrap">
-        <canvas id="dh-canvas" />
+        <video
+          id="dh-scrub-video"
+          muted
+          playsInline
+          webkit-playsinline="true"
+          preload="auto"
+          disablePictureInPicture
+          aria-hidden="true"
+        >
+          <source src={HERO_SCRUB_SRC} type="video/mp4" />
+        </video>
       </div>
       <div id="dark-overlay" />
       <Marquee />
@@ -226,7 +233,7 @@ function SiteHeader() {
           Desi<span style={{ opacity: 0.7 }}>♥</span>Herz
         </div>
         <ul>
-          <li><a href="#profile">Process</a></li>
+          <li><a href="#discovery">Process</a></li>
           <li><a href="#pledges">Pledges</a></li>
           <li><a href="#story">Story</a></li>
           <li><a className="nav-cta" href="#contact">Private enquiry</a></li>
@@ -246,7 +253,7 @@ function HeroStandalone() {
         </h1>
         <p className="hero-tagline">A private, human-led house. Not an app.</p>
         <div className="hero-actions">
-          <a className="cta-button" href="#profile">Watch the process</a>
+          <a className="cta-button" href="#discovery">Watch the process</a>
           <a className="cta-button secondary" href="#contact">Request consultation</a>
         </div>
       </div>
@@ -269,19 +276,18 @@ function Marquee() {
 }
 
 function ScrollJourney() {
-  const [profile, database, match] = SECTIONS.filter((s) => ["profile", "database", "match"].includes(s.key));
-  const [process, altar] = SECTIONS.filter((s) => ["process", "altar"].includes(s.key));
+  const [discovery, circle, match, proposal, handinhand] = SECTIONS;
 
   return (
     <div id="scroll-container">
-      <ContentSection spec={profile} id="profile" />
-      <ContentSection spec={database} />
+      <ContentSection spec={discovery} id="discovery" />
+      <ContentSection spec={circle} />
       <ContentSection spec={match} id="match" />
 
       <section
         className="scroll-section section-stats"
-        data-enter="52"
-        data-leave="66"
+        data-enter="47"
+        data-leave="60"
         data-animation="stagger-up"
         id="pledges"
       >
@@ -298,21 +304,22 @@ function ScrollJourney() {
         </div>
       </section>
 
-      <ContentSection spec={process} />
-      <ContentSection spec={altar} id="story" />
+      <ContentSection spec={proposal} />
+      <ContentSection spec={handinhand} />
 
       <section
         className="scroll-section section-cta"
         data-enter="90"
         data-leave="97"
         data-animation="fade-up"
-        id="scroll-contact"
+        data-persist="true"
+        id="story"
       >
         <div className="section-inner cta-inner">
-          <span className="section-label">Begin privately</span>
-          <h2 className="section-heading">Send a single line.</h2>
-          <p className="section-body">No public profile. Seen only by the principal matchmaker.</p>
-          <a className="cta-button" href="#contact">Request consultation →</a>
+          <span className="section-label">07 / The Altar</span>
+          <h2 className="section-heading">One ring. One introduction. One yes.</h2>
+          <p className="section-body">The outcome should feel calm, not manufactured.</p>
+          <a className="cta-button" href="#contact">Begin privately →</a>
         </div>
       </section>
     </div>
@@ -339,19 +346,17 @@ function ContentSection({ spec, id }: { spec: SectionSpec; id?: string }) {
   );
 }
 
-/** Ports js/app.js verbatim: frame preload/draw, circle-wipe, section windows, marquee, counters. */
+/** Scroll choreography: video scrub, circle-wipe, section windows, marquee, counters. */
 function JourneyController() {
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const scrollContainer = document.getElementById("scroll-container");
-    const canvas = document.getElementById("dh-canvas") as HTMLCanvasElement | null;
+    const video = document.getElementById("dh-scrub-video") as HTMLVideoElement | null;
     const canvasWrap = document.querySelector<HTMLElement>(".canvas-wrap");
     const heroSection = document.querySelector<HTMLElement>(".hero-standalone");
     const overlay = document.getElementById("dark-overlay");
-    if (!scrollContainer || !canvas || !canvasWrap || !heroSection || !overlay) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!scrollContainer || !video || !canvasWrap || !heroSection || !overlay) return;
 
     const lenis = new Lenis({
       duration: 1.2,
@@ -363,111 +368,26 @@ function JourneyController() {
     gsap.ticker.add(tickerFn);
     gsap.ticker.lagSmoothing(0);
 
-    const frames: HTMLImageElement[] = new Array(FRAME_COUNT);
-    let bgColor = "#f5f3f0";
-    let currentFrame = -1;
+    let targetProgress = 0;
+    let videoReady = false;
 
-    function sizeCanvas() {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      canvas!.width = window.innerWidth * dpr;
-      canvas!.height = window.innerHeight * dpr;
-      canvas!.style.width = window.innerWidth + "px";
-      canvas!.style.height = window.innerHeight + "px";
-      ctx!.setTransform(1, 0, 0, 1, 0, 0);
-    }
+    const scrubFn = () => {
+      if (!videoReady || !video.duration) return;
+      const target = Math.min(targetProgress * VIDEO_SPEED, 1) * video.duration;
+      const current = video.currentTime;
+      const next = current + (target - current) * 0.12;
+      if (Math.abs(next - current) > 0.004) video.currentTime = next;
+    };
+    gsap.ticker.add(scrubFn);
 
-    function sampleBgColor(img: HTMLImageElement) {
-      try {
-        const c = document.createElement("canvas");
-        c.width = 16;
-        c.height = 16;
-        const cx = c.getContext("2d")!;
-        cx.drawImage(img, 0, 0, 16, 16);
-        const d = cx.getImageData(0, 0, 16, 16).data;
-        let r = 0, g = 0, b = 0, n = 0;
-        const sample = (x: number, y: number) => {
-          const idx = (y * 16 + x) * 4;
-          r += d[idx];
-          g += d[idx + 1];
-          b += d[idx + 2];
-          n++;
-        };
-        for (let x = 0; x < 16; x++) {
-          sample(x, 0);
-          sample(x, 15);
-        }
-        for (let y = 1; y < 15; y++) {
-          sample(0, y);
-          sample(15, y);
-        }
-        r = Math.round(r / n);
-        g = Math.round(g / n);
-        b = Math.round(b / n);
-        return `rgb(${r}, ${g}, ${b})`;
-      } catch {
-        return "#f5f3f0";
-      }
-    }
-
-    function drawFrame(index: number) {
-      const img = frames[index];
-      if (!img) return;
-      const cw = canvas!.width, ch = canvas!.height;
-      const iw = img.naturalWidth, ih = img.naturalHeight;
-      const scale = Math.max(cw / iw, ch / ih) * IMAGE_SCALE;
-      const dw = iw * scale, dh = ih * scale;
-      const dx = (cw - dw) / 2, dy = (ch - dh) / 2;
-      ctx!.fillStyle = bgColor;
-      ctx!.fillRect(0, 0, cw, ch);
-      ctx!.drawImage(img, dx, dy, dw, dh);
-      if (index % 20 === 0) {
-        bgColor = sampleBgColor(img);
-      }
-    }
-
-    function preloadFrames() {
-      let loaded = 0;
-      const loadOne = (i: number) =>
-        new Promise<void>((resolve) => {
-          const img = new Image();
-          img.onload = () => {
-            frames[i] = img;
-            loaded++;
-            const pct = Math.round((loaded / FRAME_COUNT) * 100);
-            window.dispatchEvent(new CustomEvent("dh:loadprogress", { detail: pct }));
-            if (i === 0) bgColor = sampleBgColor(img);
-            resolve();
-          };
-          img.onerror = () => {
-            loaded++;
-            resolve();
-          };
-          img.src = FRAME_PATH(i);
-        });
-
-      const firstBatch: Promise<void>[] = [];
-      for (let i = 0; i < Math.min(10, FRAME_COUNT); i++) firstBatch.push(loadOne(i));
-
-      return Promise.all(firstBatch).then(() => {
-        const rest: Promise<void>[] = [];
-        for (let i = 10; i < FRAME_COUNT; i++) rest.push(loadOne(i));
-        return Promise.all(rest);
-      });
-    }
-
-    function initFrameBinding() {
+    function initVideoScrub() {
       ScrollTrigger.create({
         trigger: scrollContainer,
         start: "top top",
         end: "bottom bottom",
         scrub: true,
         onUpdate: (self) => {
-          const accelerated = Math.min(self.progress * FRAME_SPEED, 1);
-          const index = Math.min(Math.floor(accelerated * FRAME_COUNT), FRAME_COUNT - 1);
-          if (index !== currentFrame) {
-            currentFrame = index;
-            requestAnimationFrame(() => drawFrame(currentFrame));
-          }
+          targetProgress = self.progress;
         },
       });
     }
@@ -647,16 +567,10 @@ function JourneyController() {
       });
     }
 
-    let cancelled = false;
-
-    sizeCanvas();
-    const onResize = () => {
-      sizeCanvas();
-      drawFrame(currentFrame >= 0 ? currentFrame : 0);
-    };
-    window.addEventListener("resize", onResize);
-
     if (reduce) {
+      video.autoplay = true;
+      video.loop = true;
+      video.play().catch(() => {});
       window.dispatchEvent(new CustomEvent("dh:loaddone"));
       document.querySelectorAll<HTMLElement>(".scroll-section").forEach((s) => {
         s.style.position = "relative";
@@ -665,24 +579,44 @@ function JourneyController() {
       heroSection.style.opacity = "1";
       canvasWrap.style.clipPath = "circle(90% at 50% 50%)";
     } else {
-      preloadFrames().then(() => {
-        if (cancelled) return;
+      const onProgress = () => {
+        if (!video.duration || !video.buffered.length) return;
+        const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+        const pct = Math.min(100, Math.round((bufferedEnd / video.duration) * 100));
+        window.dispatchEvent(new CustomEvent("dh:loadprogress", { detail: pct }));
+      };
+      const onReady = () => {
+        videoReady = true;
+        window.dispatchEvent(new CustomEvent("dh:loadprogress", { detail: 100 }));
         window.dispatchEvent(new CustomEvent("dh:loaddone"));
-        drawFrame(0);
-        initFrameBinding();
+        initVideoScrub();
         initHeroTransition();
         initMarquees();
         initDarkOverlayForStats();
         initSections();
         initCounters();
         ScrollTrigger.refresh();
-      });
+      };
+      video.addEventListener("progress", onProgress);
+      if (video.readyState >= 1) {
+        onReady();
+      } else {
+        video.addEventListener("loadedmetadata", onReady, { once: true });
+      }
+
+      return () => {
+        video.removeEventListener("progress", onProgress);
+        video.removeEventListener("loadedmetadata", onReady);
+        gsap.ticker.remove(tickerFn);
+        gsap.ticker.remove(scrubFn);
+        lenis.destroy();
+        ScrollTrigger.getAll().forEach((t) => t.kill());
+      };
     }
 
     return () => {
-      cancelled = true;
-      window.removeEventListener("resize", onResize);
       gsap.ticker.remove(tickerFn);
+      gsap.ticker.remove(scrubFn);
       lenis.destroy();
       ScrollTrigger.getAll().forEach((t) => t.kill());
     };

@@ -6,9 +6,10 @@
 
 /* =====================================================
    DesiHerz — scroll choreography ported from the Royal Pop
-   reference (hamzafarooq/claude-code-starter), restyled with
-   an ink + garnet + gold identity instead of the reference's
-   cream/orange palette, plus Fraunces + Manrope typography.
+   reference (hamzafarooq/claude-code-starter), restyled around
+   the black + warm-gold palette of the hero scrub video, with
+   garnet as a secondary jewel-tone accent, and Fraunces + Manrope
+   typography.
    ===================================================== */
 
 :root {
@@ -19,7 +20,7 @@
   --text-on-dark: #f5ece1;
   --text-on-dark-soft: #b3a396;
   --accent-garnet: #8a2035;
-  --accent-gold: #b6893f;
+  --accent-gold: #e0a53f;
   --font-display: 'Fraunces', 'Times New Roman', serif;
   --font-body: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
 }
@@ -55,7 +56,7 @@ img { max-width: 100%; display: block; }
 /* CURSOR */
 .cursor-dot {
   position: fixed; width: 6px; height: 6px; border-radius: 50%;
-  background: var(--accent-garnet); pointer-events: none; z-index: 9999;
+  background: var(--accent-gold); pointer-events: none; z-index: 9999;
   transform: translate(-50%, -50%);
   transition: width .2s, height .2s, opacity .2s;
 }
@@ -87,7 +88,7 @@ img { max-width: 100%; display: block; }
   letter-spacing: -0.04em;
   color: var(--text-on-dark);
 }
-.loader-brand em { font-style: normal; color: var(--accent-garnet); }
+.loader-brand em { font-style: normal; color: var(--accent-gold); }
 #loader-bar {
   width: min(280px, 60vw); height: 2px;
   background: rgba(245,236,225,0.14);
@@ -95,7 +96,7 @@ img { max-width: 100%; display: block; }
 }
 #loader-bar-fill {
   display: block; height: 100%; width: 0%;
-  background: var(--accent-garnet);
+  background: var(--accent-gold);
   transition: width 0.2s ease;
 }
 #loader-percent {
@@ -108,7 +109,7 @@ img { max-width: 100%; display: block; }
    ----------------------------------------------------- */
 /* Note: the reference uses mix-blend-mode:difference here for a header that
    auto-inverts over any background. In this stack (huge fixed scroll
-   container + canvas + video), that blend mode caused a serious compositor
+   container + scrub video), that blend mode caused a serious compositor
    hang, so contrast is handled with a translucent backdrop instead. */
 .site-header {
   position: fixed; top: 0; left: 0; right: 0;
@@ -157,7 +158,7 @@ img { max-width: 100%; display: block; }
   margin-bottom: 28px;
 }
 .hero-heading span { display: inline-block; }
-.hero-heading em { font-style: italic; color: var(--accent-garnet); }
+.hero-heading em { font-style: italic; color: var(--accent-gold); }
 .hero-tagline {
   font-family: var(--font-body);
   font-weight: 400;
@@ -184,7 +185,7 @@ img { max-width: 100%; display: block; }
 @keyframes bob { 0%,100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 8px); } }
 
 /* -----------------------------------------------------
-   4. Canvas
+   4. Scroll-scrubbed video
    ----------------------------------------------------- */
 .canvas-wrap {
   position: fixed; inset: 0;
@@ -192,7 +193,7 @@ img { max-width: 100%; display: block; }
   clip-path: circle(0% at 50% 50%);
   will-change: clip-path;
 }
-#dh-canvas { width: 100vw; height: 100vh; display: block; }
+#dh-scrub-video { width: 100vw; height: 100vh; display: block; object-fit: cover; }
 
 /* -----------------------------------------------------
    5. Dark overlay
@@ -300,7 +301,7 @@ img { max-width: 100%; display: block; }
 .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 60px 40px; width: 100%; max-width: 1400px; text-align: center; }
 .stat { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .stat-number { font-family: var(--font-display); font-weight: 900; font-size: clamp(3.5rem, 7vw, 7rem); line-height: 1; letter-spacing: -0.04em; color: var(--text-on-dark); }
-.stat-suffix { font-family: var(--font-display); font-size: 1.4rem; color: var(--accent-gold); }
+.stat-suffix { font-family: var(--font-display); font-size: 1.4rem; color: var(--accent-garnet); }
 .stat-label { font-size: 0.78rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-on-dark-soft); }
 
 .section-cta { padding: 0 5vw; justify-content: center; }
@@ -316,7 +317,7 @@ img { max-width: 100%; display: block; }
 .section-cta .section-body { color: rgba(240,237,232,.88); }
 .section-cta .section-note { color: rgba(240,237,232,.6); }
 .section-cta .cta-button { background: var(--text-on-dark); color: var(--bg-dark); text-shadow: none; }
-.section-cta .cta-button:hover { background: var(--accent-garnet); color: var(--text-on-dark); }
+.section-cta .cta-button:hover { background: var(--accent-gold); color: var(--text-on-dark); }
 .cta-inner .section-label, .cta-inner .section-heading, .cta-inner .section-body, .cta-inner .section-note { text-align: center; margin-left: auto; margin-right: auto; }
 a.cta-button, button.cta-button {
   display: inline-flex; align-items: center; gap: 10px;
@@ -332,7 +333,7 @@ a.cta-button, button.cta-button {
   cursor: pointer;
   transition: transform 0.25s ease, background 0.25s ease, color 0.25s ease;
 }
-.cta-button:hover { transform: translateY(-2px); background: var(--accent-garnet); color: var(--text-on-dark); }
+.cta-button:hover { transform: translateY(-2px); background: var(--accent-gold); color: var(--text-on-dark); }
 
 /* -----------------------------------------------------
    8. Post-journey content (testimonials, voices, contact, footer)
@@ -348,7 +349,7 @@ a.cta-button, button.cta-button {
 .quote-card footer { color: var(--text-on-light-soft); font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; font-weight: 600; }
 
 .voices-section { padding: clamp(5rem, 8vw, 8rem) 5vw; background: var(--bg-light); }
-.voices-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(1.2rem, 3vw, 2.4rem); margin-top: clamp(2rem, 4vw, 3.5rem); }
+.voices-grid { display: grid; grid-template-columns: 1fr; max-width: 720px; margin: clamp(2rem, 4vw, 3.5rem) auto 0; gap: clamp(1.6rem, 3vw, 2.8rem); }
 .feature-video-frame { position: relative; aspect-ratio: 4/3; overflow: hidden; border: 1px solid rgba(36,26,19,.09); border-radius: var(--radius-lg); background: #e9dccb; }
 .feature-video-frame video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .feature-video figcaption { margin-top: 1rem; display: flex; align-items: baseline; gap: .7rem; }
@@ -356,22 +357,22 @@ a.cta-button, button.cta-button {
 .feature-video span { color: var(--text-on-light-soft); font-size: .72rem; letter-spacing: .06em; }
 .media-slate { position: absolute; inset: 0; display: grid; place-items: center; background: #e9dccb; }
 .media-slate-mark { width: 56px; height: 56px; border-radius: 999px; border: 1px solid rgba(36,26,19,.16); display: grid; place-items: center; }
-.media-slate-mark span { width: 6px; height: 6px; border-radius: 999px; background: var(--accent-garnet); }
+.media-slate-mark span { width: 6px; height: 6px; border-radius: 999px; background: var(--accent-gold); }
 
 .contact-section { padding: clamp(5.5rem, 10vw, 9rem) 5vw; background: var(--bg-light); }
 .contact-panel { max-width: 980px; margin: 0 auto; padding: clamp(2rem, 5vw, 4rem); border: 1px solid rgba(36,26,19,.09); border-radius: var(--radius-lg); background: #fbf5ec; }
 .contact-panel h2 { margin: 1rem 0 1.1rem; font-family: var(--font-display); font-weight: 700; font-size: clamp(2.3rem, 4.4vw, 4.2rem); line-height: .96; letter-spacing: -.035em; color: var(--text-on-light); }
-.contact-panel h2 em { color: var(--accent-garnet); font-style: italic; }
+.contact-panel h2 em { color: var(--accent-gold); font-style: italic; }
 .contact-panel > p { margin: 0; max-width: 620px; color: var(--text-on-light-soft); line-height: 1.75; }
 .contact-form { margin-top: 3rem; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.4rem; }
 .contact-form label { display: block; }
 .contact-form label.full { grid-column: 1 / -1; }
 .contact-form span { display: block; margin-bottom: .8rem; color: var(--text-on-light-soft); font-size: .66rem; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; }
 .contact-form input { width: 100%; height: 3.4rem; background: transparent; border: 0; border-bottom: 1px solid rgba(36,26,19,.16); color: var(--text-on-light); outline: 0; font-size: 1rem; font-family: var(--font-body); transition: border-color .25s ease; }
-.contact-form input:focus { border-bottom-color: var(--accent-garnet); }
+.contact-form input:focus { border-bottom-color: var(--accent-gold); }
 .contact-form input::placeholder { color: rgba(36,26,19,.32); }
 .contact-form button { grid-column: 1 / -1; justify-self: end; margin-top: 1rem; min-height: 3.3rem; padding: 0 1.6rem; border: 0; border-radius: 999px; background: var(--text-on-light); color: var(--bg-light); font-weight: 600; font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; transition: background .3s ease, transform .3s ease; }
-.contact-form button:hover { background: var(--accent-garnet); color: var(--text-on-dark); }
+.contact-form button:hover { background: var(--accent-gold); color: var(--text-on-dark); }
 .contact-form button span { display: inline; margin-left: .7rem; letter-spacing: 0; }
 
 .dh-footer { display: grid; grid-template-columns: 1fr auto; gap: 2rem; padding: 3rem 5vw; border-top: 1px solid rgba(36,26,19,.09); background: var(--bg-light); color: var(--text-on-light-soft); }
@@ -398,7 +399,7 @@ a.cta-button, button.cta-button {
   }
   .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 40px 20px; }
   .marquee-text { font-size: 22vw; }
-  .proof-grid, .voices-grid { grid-template-columns: 1fr; }
+  .proof-grid { grid-template-columns: 1fr; }
   .contact-form { grid-template-columns: 1fr; }
   .contact-form button { justify-self: stretch; }
   .dh-footer { grid-template-columns: 1fr; padding: 2rem 1.1rem; }
