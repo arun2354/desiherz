@@ -196,46 +196,7 @@ img { max-width: 100%; display: block; }
 #dh-scrub-video { width: 100vw; height: 100vh; display: block; object-fit: cover; }
 
 /* -----------------------------------------------------
-   5. Dark overlay
-   ----------------------------------------------------- */
-#dark-overlay {
-  position: fixed; inset: 0;
-  background: var(--bg-dark);
-  z-index: 25;
-  opacity: 0;
-  pointer-events: none;
-  will-change: opacity;
-}
-
-/* -----------------------------------------------------
-   6. Marquee
-   ----------------------------------------------------- */
-.marquee-wrap {
-  position: fixed;
-  top: 50%; left: 0;
-  width: 100vw;
-  transform: translateY(-50%);
-  pointer-events: none;
-  z-index: 15;
-  overflow: hidden;
-  opacity: 0;
-  will-change: opacity;
-}
-.marquee-text {
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 13vw;
-  letter-spacing: -0.04em;
-  line-height: 1;
-  white-space: nowrap;
-  color: #ffffff;
-  mix-blend-mode: difference;
-  opacity: 0.55;
-  will-change: transform;
-}
-
-/* -----------------------------------------------------
-   7. Scroll container & sections
+   5. Scroll container & sections
    ----------------------------------------------------- */
 #scroll-container { position: relative; height: 900vh; z-index: 30; }
 .scroll-section {
@@ -246,7 +207,6 @@ img { max-width: 100%; display: block; }
   z-index: 35;
   will-change: opacity, transform;
 }
-.scroll-section.section-stats { z-index: 40; }
 .scroll-section.section-cta { z-index: 45; }
 
 .scroll-section.align-left::before,
@@ -297,12 +257,12 @@ img { max-width: 100%; display: block; }
 
 .section-note { font-size: 0.78rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-on-light-soft); }
 
-.section-stats { padding: 0 5vw; color: var(--text-on-dark); justify-content: center; }
-.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 60px 40px; width: 100%; max-width: 1400px; text-align: center; }
+.stats-band { padding: clamp(4rem, 7vw, 6.5rem) 5vw; background: var(--bg-light); border-bottom: 1px solid rgba(36,26,19,.09); }
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 48px 32px; max-width: 1400px; margin: 0 auto; text-align: center; }
 .stat { display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.stat-number { font-family: var(--font-display); font-weight: 900; font-size: clamp(3.5rem, 7vw, 7rem); line-height: 1; letter-spacing: -0.04em; color: var(--text-on-dark); }
-.stat-suffix { font-family: var(--font-display); font-size: 1.4rem; color: var(--accent-garnet); }
-.stat-label { font-size: 0.78rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-on-dark-soft); }
+.stat-number { font-family: var(--font-display); font-weight: 900; font-size: clamp(2.6rem, 5vw, 4.5rem); line-height: 1; letter-spacing: -0.04em; color: var(--text-on-light); }
+.stat-suffix { font-family: var(--font-display); font-size: 1.2rem; color: var(--accent-garnet); }
+.stat-label { font-size: 0.74rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-on-light-soft); }
 
 .section-cta { padding: 0 5vw; justify-content: center; }
 .section-cta::before {
@@ -397,8 +357,7 @@ a.cta-button, button.cta-button {
     border-radius: 14px;
     backdrop-filter: blur(6px);
   }
-  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 40px 20px; }
-  .marquee-text { font-size: 22vw; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 32px 20px; }
   .proof-grid { grid-template-columns: 1fr; }
   .contact-form { grid-template-columns: 1fr; }
   .contact-form button { justify-self: stretch; }

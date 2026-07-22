@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
-import { motion } from "framer-motion";
+import { motion, animate } from "framer-motion";
 import { Cursor } from "@/components/Cursor";
 
 const fadeUp = { hidden: { opacity: 0, y: 28 }, show: { opacity: 1, y: 0 } };
@@ -51,8 +51,8 @@ const SECTIONS: SectionSpec[] = [
     label: "02 / Discovery",
     heading: "It starts with one quiet click.",
     body: ["No swiping, no scrolling through strangers. Just a private introduction, waiting to begin."],
-    enter: 4,
-    leave: 14,
+    enter: 3,
+    leave: 13,
     animation: "slide-left",
   },
   {
@@ -62,7 +62,7 @@ const SECTIONS: SectionSpec[] = [
     heading: "Kept behind a lock only we hold.",
     body: ["Every profile lives inside a private, vetted circle — reviewed by us, never browsed by anyone else."],
     enter: 17,
-    leave: 28,
+    leave: 27,
     animation: "slide-right",
   },
   {
@@ -71,8 +71,8 @@ const SECTIONS: SectionSpec[] = [
     label: "04 / The Match",
     heading: "Heritage and heart, made whole.",
     body: ["One half carries where you come from. The other, where you're going. We introduce you only when both fit."],
-    enter: 31,
-    leave: 43,
+    enter: 32,
+    leave: 42,
     animation: "clip-reveal",
   },
   {
@@ -81,8 +81,8 @@ const SECTIONS: SectionSpec[] = [
     label: "05 / The Proposal",
     heading: "The spark isn't manufactured. It's just introduced.",
     body: ["What happens after that first hello is entirely yours. We only make sure it's worth showing up for."],
-    enter: 63,
-    leave: 74,
+    enter: 47,
+    leave: 57,
     animation: "rotate-in",
   },
   {
@@ -91,8 +91,8 @@ const SECTIONS: SectionSpec[] = [
     label: "06 / Hand in Hand",
     heading: "From strangers to promised, quietly.",
     body: ["No performance, no audience. Just two people who said yes at their own pace."],
-    enter: 77,
-    leave: 87,
+    enter: 62,
+    leave: 72,
     animation: "scale-up",
   },
 ];
@@ -185,11 +185,10 @@ function Index() {
           <source src={HERO_SCRUB_SRC} type="video/mp4" />
         </video>
       </div>
-      <div id="dark-overlay" />
-      <Marquee />
       <ScrollJourney />
       <JourneyController />
       <div className="after-journey">
+        <Stats />
         <Proof />
         <Voices />
         <Contact />
@@ -267,14 +266,6 @@ function HeroStandalone() {
   );
 }
 
-function Marquee() {
-  return (
-    <div className="marquee-wrap" data-scroll-speed="-25" data-enter="38" data-leave="62">
-      <div className="marquee-text">Desi♥Herz · Desi♥Herz · Desi♥Herz · Desi♥Herz · Desi♥Herz ·</div>
-    </div>
-  );
-}
-
 function ScrollJourney() {
   const [discovery, circle, match, proposal, handinhand] = SECTIONS;
 
@@ -283,34 +274,13 @@ function ScrollJourney() {
       <ContentSection spec={discovery} id="discovery" />
       <ContentSection spec={circle} />
       <ContentSection spec={match} id="match" />
-
-      <section
-        className="scroll-section section-stats"
-        data-enter="47"
-        data-leave="60"
-        data-animation="stagger-up"
-        id="pledges"
-      >
-        <div className="stats-grid">
-          {STATS.map((s) => (
-            <div key={s.label} className="stat">
-              <span>
-                <span className="stat-number" data-value={s.value} data-decimals="0">0</span>
-                {s.suffix && <span className="stat-suffix">{s.suffix}</span>}
-              </span>
-              <span className="stat-label">{s.label}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
       <ContentSection spec={proposal} />
       <ContentSection spec={handinhand} />
 
       <section
         className="scroll-section section-cta"
-        data-enter="90"
-        data-leave="97"
+        data-enter="78"
+        data-leave="86"
         data-animation="fade-up"
         data-persist="true"
         id="story"
@@ -346,7 +316,7 @@ function ContentSection({ spec, id }: { spec: SectionSpec; id?: string }) {
   );
 }
 
-/** Scroll choreography: video scrub, circle-wipe, section windows, marquee, counters. */
+/** Scroll choreography: video scrub, circle-wipe, section windows, counters. */
 function JourneyController() {
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -355,8 +325,7 @@ function JourneyController() {
     const video = document.getElementById("dh-scrub-video") as HTMLVideoElement | null;
     const canvasWrap = document.querySelector<HTMLElement>(".canvas-wrap");
     const heroSection = document.querySelector<HTMLElement>(".hero-standalone");
-    const overlay = document.getElementById("dark-overlay");
-    if (!scrollContainer || !video || !canvasWrap || !heroSection || !overlay) return;
+    if (!scrollContainer || !video || !canvasWrap || !heroSection) return;
 
     const lenis = new Lenis({
       duration: 1.2,
@@ -409,68 +378,13 @@ function JourneyController() {
       });
     }
 
-    function initMarquees() {
-      document.querySelectorAll<HTMLElement>(".marquee-wrap").forEach((el) => {
-        const speed = parseFloat(el.dataset.scrollSpeed || "-25");
-        const enter = parseFloat(el.dataset.enter || "0") / 100;
-        const leave = parseFloat(el.dataset.leave || "100") / 100;
-        const text = el.querySelector<HTMLElement>(".marquee-text");
-        if (!text) return;
-
-        gsap.to(text, {
-          xPercent: speed,
-          ease: "none",
-          scrollTrigger: { trigger: scrollContainer, start: "top top", end: "bottom bottom", scrub: true },
-        });
-
-        ScrollTrigger.create({
-          trigger: scrollContainer,
-          start: "top top",
-          end: "bottom bottom",
-          scrub: true,
-          onUpdate: (self) => {
-            const p = self.progress;
-            const fade = 0.04;
-            let opacity = 0;
-            if (p >= enter - fade && p <= enter) opacity = (p - (enter - fade)) / fade;
-            else if (p > enter && p < leave) opacity = 1;
-            else if (p >= leave && p <= leave + fade) opacity = 1 - (p - leave) / fade;
-            el.style.opacity = String(opacity);
-          },
-        });
-      });
-    }
-
-    function initDarkOverlayForStats() {
-      const stats = document.querySelector<HTMLElement>(".section-stats");
-      if (!stats) return;
-      const enter = parseFloat(stats.dataset.enter || "0") / 100;
-      const leave = parseFloat(stats.dataset.leave || "100") / 100;
-      const fadeRange = 0.04;
-
-      ScrollTrigger.create({
-        trigger: scrollContainer,
-        start: "top top",
-        end: "bottom bottom",
-        scrub: true,
-        onUpdate: (self) => {
-          const p = self.progress;
-          let opacity = 0;
-          if (p >= enter - fadeRange && p <= enter) opacity = 0.9 * ((p - (enter - fadeRange)) / fadeRange);
-          else if (p > enter && p < leave) opacity = 0.9;
-          else if (p >= leave && p <= leave + fadeRange) opacity = 0.9 * (1 - (p - leave) / fadeRange);
-          overlay!.style.opacity = String(opacity);
-        },
-      });
-    }
-
     function setupSectionAnimation(section: HTMLElement) {
       const type = section.dataset.animation;
       const persist = section.dataset.persist === "true";
       const enter = parseFloat(section.dataset.enter || "0") / 100;
       const leave = parseFloat(section.dataset.leave || "100") / 100;
       const children = section.querySelectorAll(
-        ".section-label, .section-heading, .section-body, .section-note, .cta-button, .stat"
+        ".section-label, .section-heading, .section-body, .section-note, .cta-button"
       );
 
       const tl = gsap.timeline({ paused: true });
@@ -535,38 +449,6 @@ function JourneyController() {
       document.querySelectorAll<HTMLElement>(".scroll-section").forEach(setupSectionAnimation);
     }
 
-    function initCounters() {
-      document.querySelectorAll<HTMLElement>(".stat-number").forEach((el) => {
-        const target = parseFloat(el.dataset.value || "0");
-        const decimals = parseInt(el.dataset.decimals || "0", 10);
-        const section = el.closest<HTMLElement>(".scroll-section");
-        if (!section) return;
-        const enter = parseFloat(section.dataset.enter || "0") / 100;
-        let played = false;
-
-        ScrollTrigger.create({
-          trigger: scrollContainer,
-          start: "top top",
-          end: "bottom bottom",
-          scrub: true,
-          onUpdate: (self) => {
-            if (self.progress >= enter + 0.01 && !played) {
-              played = true;
-              const obj = { val: 0 };
-              gsap.to(obj, {
-                val: target,
-                duration: 2,
-                ease: "power1.out",
-                onUpdate: () => {
-                  el.textContent = decimals === 0 ? Math.round(obj.val).toString() : obj.val.toFixed(decimals);
-                },
-              });
-            }
-          },
-        });
-      });
-    }
-
     if (reduce) {
       video.autoplay = true;
       video.loop = true;
@@ -591,10 +473,7 @@ function JourneyController() {
         window.dispatchEvent(new CustomEvent("dh:loaddone"));
         initVideoScrub();
         initHeroTransition();
-        initMarquees();
-        initDarkOverlayForStats();
         initSections();
-        initCounters();
         ScrollTrigger.refresh();
       };
       video.addEventListener("progress", onProgress);
@@ -623,6 +502,49 @@ function JourneyController() {
   }, []);
 
   return null;
+}
+
+function StatItem({ value, suffix, label }: { value: number; suffix: string; label: string }) {
+  const [display, setDisplay] = useState(0);
+  return (
+    <motion.div
+      className="stat"
+      variants={fadeUp}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      viewport={{ once: true, amount: 0.6 }}
+      onViewportEnter={() => {
+        animate(0, value, {
+          duration: 1.6,
+          ease: "easeOut",
+          onUpdate: (v) => setDisplay(Math.round(v)),
+        });
+      }}
+    >
+      <span>
+        <span className="stat-number">{display}</span>
+        {suffix && <span className="stat-suffix">{suffix}</span>}
+      </span>
+      <span className="stat-label">{label}</span>
+    </motion.div>
+  );
+}
+
+function Stats() {
+  return (
+    <section className="stats-band">
+      <motion.div
+        className="stats-grid"
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, amount: 0.3 }}
+        variants={staggerContainer}
+      >
+        {STATS.map((s) => (
+          <StatItem key={s.label} value={s.value} suffix={s.suffix} label={s.label} />
+        ))}
+      </motion.div>
+    </section>
+  );
 }
 
 function Proof() {
