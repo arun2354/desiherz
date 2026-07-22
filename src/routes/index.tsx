@@ -100,6 +100,15 @@ const SECTIONS: SectionSpec[] = [
   },
 ];
 
+const PROCESS_PREVIEW = [
+  { n: "02", label: "Discovery", teaser: "You find us." },
+  { n: "03", label: "Vetted circle", teaser: "We keep it private." },
+  { n: "04", label: "The match", teaser: "We look for fit." },
+  { n: "05", label: "The proposal", teaser: "You decide, freely." },
+  { n: "06", label: "Hand in hand", teaser: "It becomes real." },
+  { n: "07", label: "The altar", teaser: "You arrive together." },
+];
+
 const STATS = [
   { value: 0, suffix: "", label: "Public profiles. Ever." },
   { value: 100, suffix: "%", label: "Reviewed before contact." },
@@ -163,7 +172,7 @@ export const Route = createFileRoute("/")({
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" } as any,
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;0,6..96,700;0,6..96,900;1,6..96,400;1,6..96,600&family=Manrope:wght@300;400;500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&family=Manrope:wght@300;400;500;600;700&display=swap",
       },
     ],
     scripts: [
@@ -193,6 +202,7 @@ function Index() {
       <Loader />
       <SiteHeader />
       <HeroStandalone />
+      <ProcessPreview />
       <div className="canvas-wrap">
         <canvas id="dh-canvas" aria-hidden="true" />
       </div>
@@ -265,7 +275,7 @@ function HeroStandalone() {
         <h1 className="hero-heading">
           <span>The right introduction,</span> <span><em>reconsidered.</em></span>
         </h1>
-        <p className="hero-tagline">A private, human-led house. Not an app.</p>
+        <p className="hero-tagline">A private, human-led house. Scroll down to see exactly how an introduction happens.</p>
         <div className="hero-actions">
           <a className="cta-button" href="#discovery" onClick={(e) => { e.preventDefault(); scrollToJourney(5); }}>Watch the process</a>
           <a className="cta-button secondary" href="#contact">Request consultation</a>
@@ -277,6 +287,40 @@ function HeroStandalone() {
           <path d="M7 1v20m0 0l-6-6m6 6l6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
       </div>
+    </section>
+  );
+}
+
+function ProcessPreview() {
+  return (
+    <section className="process-preview">
+      <motion.div
+        className="section-heading-simple"
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.5 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+      >
+        <span className="section-label">Before you scroll</span>
+        <h2>Here&rsquo;s exactly how it works.</h2>
+        <p className="process-preview-sub">Six steps, no guesswork. Scroll to watch each one unfold.</p>
+      </motion.div>
+      <motion.div
+        className="process-preview-grid"
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, amount: 0.2 }}
+        variants={staggerContainer}
+      >
+        {PROCESS_PREVIEW.map((s) => (
+          <motion.div key={s.n} className="process-preview-step" variants={fadeUp} transition={{ duration: 0.45, ease: "easeOut" }}>
+            <span className="process-preview-n">{s.n}</span>
+            <strong>{s.label}</strong>
+            <span>{s.teaser}</span>
+          </motion.div>
+        ))}
+      </motion.div>
+      <div className="process-preview-cue">Scroll to begin ↓</div>
     </section>
   );
 }
