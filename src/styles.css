@@ -21,12 +21,12 @@
   --text-on-dark-soft: #b3a396;
   --accent-garnet: #8a2035;
   --accent-gold: #e0a53f;
-  --font-display: 'Fraunces', 'Times New Roman', serif;
+  --font-display: 'Bodoni Moda', 'Didot', 'Times New Roman', serif;
   --font-body: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 @theme inline {
-  --font-display: 'Fraunces', 'Times New Roman', serif;
+  --font-display: 'Bodoni Moda', 'Didot', 'Times New Roman', serif;
   --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
   --color-background: var(--bg-light);
   --color-foreground: var(--text-on-light);
@@ -185,7 +185,7 @@ img { max-width: 100%; display: block; }
 @keyframes bob { 0%,100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 8px); } }
 
 /* -----------------------------------------------------
-   4. Scroll-scrubbed video
+   4. Frame-sequence canvas
    ----------------------------------------------------- */
 .canvas-wrap {
   position: fixed; inset: 0;
@@ -193,7 +193,7 @@ img { max-width: 100%; display: block; }
   clip-path: circle(0% at 50% 50%);
   will-change: clip-path;
 }
-#dh-scrub-video { width: 100vw; height: 100vh; display: block; object-fit: cover; }
+#dh-canvas { width: 100vw; height: 100vh; display: block; }
 
 /* -----------------------------------------------------
    5. Scroll container & sections

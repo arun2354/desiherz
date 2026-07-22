@@ -25,12 +25,15 @@ const FILMS = {
 /*
   Scroll choreography: a single 900vh scroll container, every section
   position:fixed with opacity driven by raw scroll progress, and a
-  circle-wipe reveal from the standalone hero into a real scroll-scrubbed
-  video (currentTime lerped toward progress * duration each frame,
-  instead of a hand-drawn frame sequence).
+  circle-wipe reveal from the standalone hero into a frame sequence drawn
+  to canvas. Real <video> currentTime-scrubbing was tried first, but
+  every seek decodes from the nearest keyframe -- on real hardware that
+  reads as softness/lag during fast scroll. Canvas drawImage has no
+  decode latency, so scrubbing is exactly as smooth as the scroll input
+  and every frame is exactly as sharp as its source JPEG.
 */
-const HERO_SCRUB_SRC = "/videos/hero-scrub.mp4";
-const VIDEO_SPEED = 1.12; // finishes just before the closing CTA, then holds the last frame
+const FRAME_COUNT = 100;
+const FRAME_PATH = (i: number) => `/frames/frame_${String(i + 1).padStart(4, "0")}.jpg`;
 
 type SectionSpec = {
   key: string;
@@ -142,7 +145,7 @@ export const Route = createFileRoute("/")({
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" } as any,
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,700;9..144,900&family=Manrope:wght@300;400;500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;0,6..96,700;0,6..96,900;1,6..96,400;1,6..96,600&family=Manrope:wght@300;400;500;600;700&display=swap",
       },
     ],
     scripts: [
@@ -173,17 +176,7 @@ function Index() {
       <SiteHeader />
       <HeroStandalone />
       <div className="canvas-wrap">
-        <video
-          id="dh-scrub-video"
-          muted
-          playsInline
-          webkit-playsinline="true"
-          preload="auto"
-          disablePictureInPicture
-          aria-hidden="true"
-        >
-          <source src={HERO_SCRUB_SRC} type="video/mp4" />
-        </video>
+        <canvas id="dh-canvas" aria-hidden="true" />
       </div>
       <ScrollJourney />
       <JourneyController />
@@ -316,16 +309,18 @@ function ContentSection({ spec, id }: { spec: SectionSpec; id?: string }) {
   );
 }
 
-/** Scroll choreography: video scrub, circle-wipe, section windows, counters. */
+/** Scroll choreography: frame-sequence scrub, circle-wipe, section windows, counters. */
 function JourneyController() {
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const scrollContainer = document.getElementById("scroll-container");
-    const video = document.getElementById("dh-scrub-video") as HTMLVideoElement | null;
+    const canvas = document.getElementById("dh-canvas") as HTMLCanvasElement | null;
     const canvasWrap = document.querySelector<HTMLElement>(".canvas-wrap");
     const heroSection = document.querySelector<HTMLElement>(".hero-standalone");
-    if (!scrollContainer || !video || !canvasWrap || !heroSection) return;
+    if (!scrollContainer || !canvas || !canvasWrap || !heroSection) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
     const lenis = new Lenis({
       duration: 1.2,
@@ -337,26 +332,110 @@ function JourneyController() {
     gsap.ticker.add(tickerFn);
     gsap.ticker.lagSmoothing(0);
 
-    let targetProgress = 0;
-    let videoReady = false;
+    const frames: HTMLImageElement[] = new Array(FRAME_COUNT);
+    let bgColor = "#1a1410";
+    let currentFrame = -1;
 
-    const scrubFn = () => {
-      if (!videoReady || !video.duration) return;
-      const target = Math.min(targetProgress * VIDEO_SPEED, 1) * video.duration;
-      const current = video.currentTime;
-      const next = current + (target - current) * 0.12;
-      if (Math.abs(next - current) > 0.004) video.currentTime = next;
-    };
-    gsap.ticker.add(scrubFn);
+    function sizeCanvas() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas!.width = window.innerWidth * dpr;
+      canvas!.height = window.innerHeight * dpr;
+      canvas!.style.width = window.innerWidth + "px";
+      canvas!.style.height = window.innerHeight + "px";
+      ctx!.setTransform(1, 0, 0, 1, 0, 0);
+    }
 
-    function initVideoScrub() {
+    function sampleBgColor(img: HTMLImageElement) {
+      try {
+        const c = document.createElement("canvas");
+        c.width = 16;
+        c.height = 16;
+        const cx = c.getContext("2d")!;
+        cx.drawImage(img, 0, 0, 16, 16);
+        const d = cx.getImageData(0, 0, 16, 16).data;
+        let r = 0, g = 0, b = 0, n = 0;
+        const sample = (x: number, y: number) => {
+          const idx = (y * 16 + x) * 4;
+          r += d[idx];
+          g += d[idx + 1];
+          b += d[idx + 2];
+          n++;
+        };
+        for (let x = 0; x < 16; x++) {
+          sample(x, 0);
+          sample(x, 15);
+        }
+        for (let y = 1; y < 15; y++) {
+          sample(0, y);
+          sample(15, y);
+        }
+        r = Math.round(r / n);
+        g = Math.round(g / n);
+        b = Math.round(b / n);
+        return `rgb(${r}, ${g}, ${b})`;
+      } catch {
+        return "#1a1410";
+      }
+    }
+
+    function drawFrame(index: number) {
+      const img = frames[index];
+      if (!img) return;
+      const cw = canvas!.width, ch = canvas!.height;
+      const iw = img.naturalWidth, ih = img.naturalHeight;
+      const scale = Math.max(cw / iw, ch / ih);
+      const dw = iw * scale, dh = ih * scale;
+      const dx = (cw - dw) / 2, dy = (ch - dh) / 2;
+      ctx!.fillStyle = bgColor;
+      ctx!.fillRect(0, 0, cw, ch);
+      ctx!.drawImage(img, dx, dy, dw, dh);
+      if (index % 20 === 0) {
+        bgColor = sampleBgColor(img);
+      }
+    }
+
+    function preloadFrames() {
+      let loaded = 0;
+      const loadOne = (i: number) =>
+        new Promise<void>((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            frames[i] = img;
+            loaded++;
+            const pct = Math.round((loaded / FRAME_COUNT) * 100);
+            window.dispatchEvent(new CustomEvent("dh:loadprogress", { detail: pct }));
+            if (i === 0) bgColor = sampleBgColor(img);
+            resolve();
+          };
+          img.onerror = () => {
+            loaded++;
+            resolve();
+          };
+          img.src = FRAME_PATH(i);
+        });
+
+      const firstBatch: Promise<void>[] = [];
+      for (let i = 0; i < Math.min(12, FRAME_COUNT); i++) firstBatch.push(loadOne(i));
+
+      return Promise.all(firstBatch).then(() => {
+        const rest: Promise<void>[] = [];
+        for (let i = 12; i < FRAME_COUNT; i++) rest.push(loadOne(i));
+        return Promise.all(rest);
+      });
+    }
+
+    function initFrameBinding() {
       ScrollTrigger.create({
         trigger: scrollContainer,
         start: "top top",
         end: "bottom bottom",
         scrub: true,
         onUpdate: (self) => {
-          targetProgress = self.progress;
+          const index = Math.min(Math.floor(self.progress * FRAME_COUNT), FRAME_COUNT - 1);
+          if (index !== currentFrame) {
+            currentFrame = index;
+            requestAnimationFrame(() => drawFrame(currentFrame));
+          }
         },
       });
     }
@@ -449,10 +528,16 @@ function JourneyController() {
       document.querySelectorAll<HTMLElement>(".scroll-section").forEach(setupSectionAnimation);
     }
 
+    let cancelled = false;
+
+    sizeCanvas();
+    const onResize = () => {
+      sizeCanvas();
+      drawFrame(currentFrame >= 0 ? currentFrame : 0);
+    };
+    window.addEventListener("resize", onResize);
+
     if (reduce) {
-      video.autoplay = true;
-      video.loop = true;
-      video.play().catch(() => {});
       window.dispatchEvent(new CustomEvent("dh:loaddone"));
       document.querySelectorAll<HTMLElement>(".scroll-section").forEach((s) => {
         s.style.position = "relative";
@@ -460,42 +545,28 @@ function JourneyController() {
       });
       heroSection.style.opacity = "1";
       canvasWrap.style.clipPath = "circle(90% at 50% 50%)";
-    } else {
-      const onProgress = () => {
-        if (!video.duration || !video.buffered.length) return;
-        const bufferedEnd = video.buffered.end(video.buffered.length - 1);
-        const pct = Math.min(100, Math.round((bufferedEnd / video.duration) * 100));
-        window.dispatchEvent(new CustomEvent("dh:loadprogress", { detail: pct }));
+      const img = new Image();
+      img.onload = () => {
+        frames[FRAME_COUNT - 1] = img;
+        drawFrame(FRAME_COUNT - 1);
       };
-      const onReady = () => {
-        videoReady = true;
-        window.dispatchEvent(new CustomEvent("dh:loadprogress", { detail: 100 }));
+      img.src = FRAME_PATH(FRAME_COUNT - 1);
+    } else {
+      preloadFrames().then(() => {
+        if (cancelled) return;
         window.dispatchEvent(new CustomEvent("dh:loaddone"));
-        initVideoScrub();
+        drawFrame(0);
+        initFrameBinding();
         initHeroTransition();
         initSections();
         ScrollTrigger.refresh();
-      };
-      video.addEventListener("progress", onProgress);
-      if (video.readyState >= 1) {
-        onReady();
-      } else {
-        video.addEventListener("loadedmetadata", onReady, { once: true });
-      }
-
-      return () => {
-        video.removeEventListener("progress", onProgress);
-        video.removeEventListener("loadedmetadata", onReady);
-        gsap.ticker.remove(tickerFn);
-        gsap.ticker.remove(scrubFn);
-        lenis.destroy();
-        ScrollTrigger.getAll().forEach((t) => t.kill());
-      };
+      });
     }
 
     return () => {
+      cancelled = true;
+      window.removeEventListener("resize", onResize);
       gsap.ticker.remove(tickerFn);
-      gsap.ticker.remove(scrubFn);
       lenis.destroy();
       ScrollTrigger.getAll().forEach((t) => t.kill());
     };
