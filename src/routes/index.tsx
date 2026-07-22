@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
@@ -125,6 +125,24 @@ const TESTIMONIALS = [
   },
 ];
 
+/**
+ * Sections inside #scroll-container are position:fixed, layered on top of
+ * each other and shown/hidden purely by scroll percentage -- a native
+ * href="#id" anchor jump can't scroll to them (fixed elements don't have a
+ * meaningful document position for the browser to target). This computes
+ * the real scrollY for a given journey percentage instead.
+ */
+function scrollToJourney(percent: number) {
+  const container = document.getElementById("scroll-container");
+  if (!container) return;
+  const rect = container.getBoundingClientRect();
+  const containerTop = window.scrollY + rect.top;
+  const containerHeight = container.offsetHeight;
+  const viewportH = window.innerHeight;
+  const target = containerTop + (percent / 100) * (containerHeight - viewportH);
+  window.scrollTo({ top: target, behavior: "smooth" });
+}
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -225,9 +243,9 @@ function SiteHeader() {
           Desi<span style={{ opacity: 0.7 }}>♥</span>Herz
         </div>
         <ul>
-          <li><a href="#discovery">Process</a></li>
+          <li><a href="#discovery" onClick={(e) => { e.preventDefault(); scrollToJourney(5); }}>Process</a></li>
           <li><a href="#pledges">Pledges</a></li>
-          <li><a href="#story">Story</a></li>
+          <li><a href="#story" onClick={(e) => { e.preventDefault(); scrollToJourney(80); }}>Story</a></li>
           <li><a className="nav-cta" href="#contact">Private enquiry</a></li>
         </ul>
       </nav>
@@ -245,7 +263,7 @@ function HeroStandalone() {
         </h1>
         <p className="hero-tagline">A private, human-led house. Not an app.</p>
         <div className="hero-actions">
-          <a className="cta-button" href="#discovery">Watch the process</a>
+          <a className="cta-button" href="#discovery" onClick={(e) => { e.preventDefault(); scrollToJourney(5); }}>Watch the process</a>
           <a className="cta-button secondary" href="#contact">Request consultation</a>
         </div>
       </div>
@@ -424,50 +442,12 @@ function JourneyController() {
       });
     }
 
-    function initFrameBinding() {
-      ScrollTrigger.create({
-        trigger: scrollContainer,
-        start: "top top",
-        end: "bottom bottom",
-        scrub: true,
-        onUpdate: (self) => {
-          const index = Math.min(Math.floor(self.progress * FRAME_COUNT), FRAME_COUNT - 1);
-          if (index !== currentFrame) {
-            currentFrame = index;
-            requestAnimationFrame(() => drawFrame(currentFrame));
-          }
-        },
-      });
-    }
-
-    function initHeroTransition() {
-      ScrollTrigger.create({
-        trigger: scrollContainer,
-        start: "top top",
-        end: "bottom bottom",
-        scrub: true,
-        onUpdate: (self) => {
-          const p = self.progress;
-          heroSection!.style.opacity = String(Math.max(0, 1 - p * 15));
-          heroSection!.style.pointerEvents = p > 0.05 ? "none" : "auto";
-          const wipeProgress = Math.min(1, Math.max(0, (p - 0.01) / 0.06));
-          const radius = wipeProgress * 90;
-          canvasWrap!.style.clipPath = `circle(${radius}% at 50% 50%)`;
-        },
-      });
-    }
-
-    function setupSectionAnimation(section: HTMLElement) {
-      const type = section.dataset.animation;
-      const persist = section.dataset.persist === "true";
-      const enter = parseFloat(section.dataset.enter || "0") / 100;
-      const leave = parseFloat(section.dataset.leave || "100") / 100;
+    function buildTimeline(section: HTMLElement) {
       const children = section.querySelectorAll(
         ".section-label, .section-heading, .section-body, .section-note, .cta-button"
       );
-
       const tl = gsap.timeline({ paused: true });
-      switch (type) {
+      switch (section.dataset.animation) {
         case "fade-up":
           tl.from(children, { y: 50, opacity: 0, stagger: 0.12, duration: 0.9, ease: "power3.out" });
           break;
@@ -492,9 +472,24 @@ function JourneyController() {
         default:
           tl.from(children, { y: 40, opacity: 0, stagger: 0.12, duration: 0.9, ease: "power3.out" });
       }
+      return tl;
+    }
 
-      const animateInPoint = enter + 0.02;
-      let played = false;
+    /**
+     * One ScrollTrigger drives everything (frame index, hero fade/wipe, every
+     * section's opacity + timeline). GSAP's own performance guidance flags
+     * redundant same-range triggers -- this build had eight of them, each
+     * recomputing scroll progress independently every frame.
+     */
+    function initMasterScroll() {
+      const sections = Array.from(document.querySelectorAll<HTMLElement>(".scroll-section")).map((section) => ({
+        section,
+        persist: section.dataset.persist === "true",
+        enter: parseFloat(section.dataset.enter || "0") / 100,
+        leave: parseFloat(section.dataset.leave || "100") / 100,
+        tl: buildTimeline(section),
+        played: false,
+      }));
 
       ScrollTrigger.create({
         trigger: scrollContainer,
@@ -503,29 +498,40 @@ function JourneyController() {
         scrub: true,
         onUpdate: (self) => {
           const p = self.progress;
-          const fade = 0.03;
-          let opacity = 0;
-          if (p >= enter - fade && p <= enter) opacity = (p - (enter - fade)) / fade;
-          else if (p > enter && p < leave) opacity = 1;
-          else if (persist && p >= leave) opacity = 1;
-          else if (p >= leave && p <= leave + fade) opacity = 1 - (p - leave) / fade;
-          section.style.opacity = String(opacity);
-          section.classList.toggle("is-active", opacity > 0.5);
 
-          if (p >= animateInPoint && !played) {
-            tl.play();
-            played = true;
+          const index = Math.min(Math.floor(p * FRAME_COUNT), FRAME_COUNT - 1);
+          if (index !== currentFrame) {
+            currentFrame = index;
+            requestAnimationFrame(() => drawFrame(currentFrame));
           }
-          if (!persist && p < enter - fade && played) {
-            tl.reverse();
-            played = false;
+
+          heroSection!.style.opacity = String(Math.max(0, 1 - p * 15));
+          heroSection!.style.pointerEvents = p > 0.05 ? "none" : "auto";
+          const wipeProgress = Math.min(1, Math.max(0, (p - 0.01) / 0.06));
+          canvasWrap!.style.clipPath = `circle(${wipeProgress * 90}% at 50% 50%)`;
+
+          const fade = 0.03;
+          for (const m of sections) {
+            let opacity = 0;
+            if (p >= m.enter - fade && p <= m.enter) opacity = (p - (m.enter - fade)) / fade;
+            else if (p > m.enter && p < m.leave) opacity = 1;
+            else if (m.persist && p >= m.leave) opacity = 1;
+            else if (p >= m.leave && p <= m.leave + fade) opacity = 1 - (p - m.leave) / fade;
+            m.section.style.opacity = String(opacity);
+            m.section.classList.toggle("is-active", opacity > 0.5);
+
+            const animateInPoint = m.enter + 0.02;
+            if (p >= animateInPoint && !m.played) {
+              m.tl.play();
+              m.played = true;
+            }
+            if (!m.persist && p < m.enter - fade && m.played) {
+              m.tl.reverse();
+              m.played = false;
+            }
           }
         },
       });
-    }
-
-    function initSections() {
-      document.querySelectorAll<HTMLElement>(".scroll-section").forEach(setupSectionAnimation);
     }
 
     let cancelled = false;
@@ -556,9 +562,7 @@ function JourneyController() {
         if (cancelled) return;
         window.dispatchEvent(new CustomEvent("dh:loaddone"));
         drawFrame(0);
-        initFrameBinding();
-        initHeroTransition();
-        initSections();
+        initMasterScroll();
         ScrollTrigger.refresh();
       });
     }
@@ -602,7 +606,7 @@ function StatItem({ value, suffix, label }: { value: number; suffix: string; lab
 
 function Stats() {
   return (
-    <section className="stats-band">
+    <section id="pledges" className="stats-band">
       <motion.div
         className="stats-grid"
         initial="hidden"
@@ -717,7 +721,35 @@ function Voices() {
   );
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function Contact() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [note, setNote] = useState("");
+  const [errors, setErrors] = useState<{ name?: string; email?: string; note?: string }>({});
+  const [sent, setSent] = useState(false);
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    const nextErrors: typeof errors = {};
+    if (!name.trim()) nextErrors.name = "Please tell us your name.";
+    if (!email.trim()) nextErrors.email = "Please add an email so we can write back.";
+    else if (!EMAIL_RE.test(email.trim())) nextErrors.email = "That email doesn't look right.";
+    if (!note.trim()) nextErrors.note = "A line or two helps us understand you.";
+
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      setSent(false);
+      return;
+    }
+
+    const subject = encodeURIComponent(`Private enquiry from ${name.trim()}`);
+    const body = encodeURIComponent(`${note.trim()}\n\n— ${name.trim()} (${email.trim()})`);
+    window.location.href = `mailto:hello@desiherz.com?subject=${subject}&body=${body}`;
+    setSent(true);
+  }
+
   return (
     <section id="contact" className="contact-section">
       <motion.div
@@ -732,22 +764,51 @@ function Contact() {
           Send a single line. <em>We&rsquo;ll write back.</em>
         </h2>
         <p>No public profile. Seen only by the principal matchmaker.</p>
-        <form onSubmit={(e) => e.preventDefault()} className="contact-form">
+        <form onSubmit={handleSubmit} className="contact-form" noValidate>
           <label>
             <span>Your name</span>
-            <input type="text" placeholder="As your family calls you" />
+            <input
+              type="text"
+              placeholder="As your family calls you"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              aria-invalid={!!errors.name}
+              aria-describedby={errors.name ? "name-error" : undefined}
+            />
+            {errors.name && <span className="field-error" id="name-error">{errors.name}</span>}
           </label>
           <label>
             <span>Email</span>
-            <input type="email" placeholder="discreet@you.com" />
+            <input
+              type="email"
+              placeholder="discreet@you.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? "email-error" : undefined}
+            />
+            {errors.email && <span className="field-error" id="email-error">{errors.email}</span>}
           </label>
           <label className="full">
             <span>A note</span>
-            <input type="text" placeholder="One or two sentences is enough." />
+            <input
+              type="text"
+              placeholder="One or two sentences is enough."
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              aria-invalid={!!errors.note}
+              aria-describedby={errors.note ? "note-error" : undefined}
+            />
+            {errors.note && <span className="field-error" id="note-error">{errors.note}</span>}
           </label>
           <motion.button type="submit" whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}>
             Request consultation <span>→</span>
           </motion.button>
+          {sent && (
+            <p className="form-success" role="status">
+              Opening your email client to send this to hello@desiherz.com&hellip;
+            </p>
+          )}
         </form>
       </motion.div>
     </section>

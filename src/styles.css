@@ -198,7 +198,7 @@ img { max-width: 100%; display: block; }
 /* -----------------------------------------------------
    5. Scroll container & sections
    ----------------------------------------------------- */
-#scroll-container { position: relative; height: 900vh; z-index: 30; }
+#scroll-container { position: relative; height: 480vh; z-index: 30; }
 .scroll-section {
   position: fixed; inset: 0;
   display: flex; align-items: center;
@@ -331,6 +331,9 @@ a.cta-button, button.cta-button {
 .contact-form input { width: 100%; height: 3.4rem; background: transparent; border: 0; border-bottom: 1px solid rgba(36,26,19,.16); color: var(--text-on-light); outline: 0; font-size: 1rem; font-family: var(--font-body); transition: border-color .25s ease; }
 .contact-form input:focus { border-bottom-color: var(--accent-gold); }
 .contact-form input::placeholder { color: rgba(36,26,19,.32); }
+.contact-form input[aria-invalid="true"] { border-bottom-color: var(--accent-garnet); }
+.contact-form .field-error { display: block; margin-top: -.3rem; margin-bottom: 0; color: var(--accent-garnet); font-size: .74rem; letter-spacing: 0; text-transform: none; font-weight: 500; }
+.form-success { grid-column: 1 / -1; margin: .5rem 0 0; color: var(--text-on-light-soft); font-size: .82rem; }
 .contact-form button { grid-column: 1 / -1; justify-self: end; margin-top: 1rem; min-height: 3.3rem; padding: 0 1.6rem; border: 0; border-radius: 999px; background: var(--text-on-light); color: var(--bg-light); font-weight: 600; font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; transition: background .3s ease, transform .3s ease; }
 .contact-form button:hover { background: var(--accent-gold); color: var(--text-on-dark); }
 .contact-form button span { display: inline; margin-left: .7rem; letter-spacing: 0; }
@@ -344,7 +347,7 @@ a.cta-button, button.cta-button {
    Mobile
    ----------------------------------------------------- */
 @media (max-width: 768px) {
-  #scroll-container { height: 600vh; }
+  #scroll-container { height: 320vh; }
   .site-header { padding: 18px 5vw; }
   .site-header ul { gap: 16px; font-size: 0.7rem; }
   .site-header ul li:not(:last-child) { display: none; }
