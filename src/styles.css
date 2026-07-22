@@ -137,8 +137,22 @@ img { max-width: 100%; display: block; }
   display: flex; align-items: center;
   padding: 0 5vw;
   z-index: 20;
+  overflow: hidden;
 }
-.hero-inner { max-width: 90vw; }
+.hero-bg-video {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+.hero-bg-overlay {
+  position: absolute; inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(180deg, rgba(26,20,16,.62) 0%, rgba(26,20,16,.4) 38%, rgba(26,20,16,.72) 100%),
+    radial-gradient(120% 90% at 50% 38%, rgba(224,165,63,.12), transparent 62%);
+}
+.hero-inner { position: relative; z-index: 2; max-width: 90vw; }
 .section-label {
   display: inline-block;
   font-size: 0.78rem;
@@ -173,6 +187,7 @@ img { max-width: 100%; display: block; }
 .hero-actions .cta-button.secondary:hover { background: rgba(245,236,225,.08); }
 .scroll-indicator {
   position: absolute; bottom: 36px; left: 50%;
+  z-index: 2;
   transform: translateX(-50%);
   display: flex; flex-direction: column;
   align-items: center; gap: 10px;

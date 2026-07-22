@@ -256,6 +256,10 @@ function SiteHeader() {
 function HeroStandalone() {
   return (
     <section className="hero-standalone">
+      <video className="hero-bg-video" autoPlay muted loop playsInline preload="auto" disablePictureInPicture aria-hidden="true">
+        <source src="/videos/main-loop.mp4" type="video/mp4" />
+      </video>
+      <div className="hero-bg-overlay" aria-hidden="true" />
       <div className="hero-inner">
         <span className="section-label">2026 · Private matrimony, Germany and beyond</span>
         <h1 className="hero-heading">
@@ -341,7 +345,7 @@ function JourneyController() {
     if (!ctx) return;
 
     const lenis = new Lenis({
-      duration: 1.2,
+      duration: 0.85,
       easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
     });
