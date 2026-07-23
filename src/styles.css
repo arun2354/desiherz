@@ -210,7 +210,7 @@ img { max-width: 100%; display: block; }
   text-shadow: 0 4px 40px rgba(0,0,0,.7);
 }
 .hero-heading span { display: block; }
-.hero-heading em { font-style: italic; background: var(--gradient-rose); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero-heading em { font-style: italic; }
 .hero-actions { display: flex; gap: 14px; margin-top: 30px; }
 .hero-actions .cta-button { margin: 0; }
 .hero-actions .cta-button.secondary { background: transparent; color: var(--cream); border: 1px solid rgba(251,243,236,.4); }

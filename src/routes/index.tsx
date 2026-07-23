@@ -338,8 +338,101 @@ function SiteHeader() {
   );
 }
 
+const HERO_WORDS = ["reconsidered.", "rediscovered.", "made real.", "well matched."];
+
+/** Per-letter blur-in reveal with a brand-gradient color sweep, settling to cream. */
+function BlurWord({ word, trigger }: { word: string; trigger: number }) {
+  const letters = word.split("");
+  const STAGGER = 45;
+  const DURATION = 500;
+  const GRADIENT_HOLD = STAGGER * letters.length + DURATION + 200;
+
+  const [letterStates, setLetterStates] = useState<{ opacity: number; blur: number }[]>(
+    letters.map(() => ({ opacity: 0, blur: 20 }))
+  );
+  const [showGradient, setShowGradient] = useState(true);
+  const framesRef = useRef<number[]>([]);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useEffect(() => {
+    framesRef.current.forEach(cancelAnimationFrame);
+    timersRef.current.forEach(clearTimeout);
+    framesRef.current = [];
+    timersRef.current = [];
+
+    setLetterStates(letters.map(() => ({ opacity: 0, blur: 20 })));
+    setShowGradient(true);
+
+    letters.forEach((_, i) => {
+      const t = setTimeout(() => {
+        const start = performance.now();
+        const tick = (now: number) => {
+          const progress = Math.min((now - start) / DURATION, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          setLetterStates((prev) => {
+            const next = [...prev];
+            next[i] = { opacity: eased, blur: 20 * (1 - eased) };
+            return next;
+          });
+          if (progress < 1) framesRef.current.push(requestAnimationFrame(tick));
+        };
+        framesRef.current.push(requestAnimationFrame(tick));
+      }, i * STAGGER);
+      timersRef.current.push(t);
+    });
+
+    const gt = setTimeout(() => setShowGradient(false), GRADIENT_HOLD);
+    timersRef.current.push(gt);
+
+    return () => {
+      framesRef.current.forEach(cancelAnimationFrame);
+      timersRef.current.forEach(clearTimeout);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trigger]);
+
+  const gradientColors = ["#f3d6c3", "#d98e76", "#c9a15a", "#b35f49", "#f3d6c3"];
+  const hex2rgb = (hex: string) => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+
+  return (
+    <>
+      {letters.map((char, i) => {
+        const colorIndex = (i / Math.max(letters.length - 1, 1)) * (gradientColors.length - 1);
+        const lower = Math.floor(colorIndex);
+        const upper = Math.min(lower + 1, gradientColors.length - 1);
+        const t = colorIndex - lower;
+        const [r1, g1, b1] = hex2rgb(gradientColors[lower]);
+        const [r2, g2, b2] = hex2rgb(gradientColors[upper]);
+        const r = Math.round(r1 + (r2 - r1) * t);
+        const g = Math.round(g1 + (g2 - g1) * t);
+        const b = Math.round(b1 + (b2 - b1) * t);
+        return (
+          <span
+            key={i}
+            style={{
+              display: "inline-block",
+              opacity: letterStates[i]?.opacity ?? 0,
+              filter: `blur(${letterStates[i]?.blur ?? 20}px)`,
+              color: showGradient ? `rgb(${r},${g},${b})` : "var(--cream)",
+              transition: "color 0.4s ease",
+            }}
+          >
+            {char === " " ? " " : char}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
 function HeroStandalone() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [wordIndex, setWordIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => setWordIndex((p) => (p + 1) % HERO_WORDS.length), 2600);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -388,7 +481,7 @@ function HeroStandalone() {
         <span className="section-label"><BrandMark size={20} /> Private matrimony, made for each other</span>
         <h1 className="hero-heading">
           <span>The right introduction,</span>
-          <span><em>reconsidered.</em></span>
+          <span><em><BlurWord word={HERO_WORDS[wordIndex]} trigger={wordIndex} /></em></span>
         </h1>
         <div className="hero-actions">
           <a className="cta-button" href="#discovery" onClick={(e) => { e.preventDefault(); scrollToJourney(5); }}>Watch the process</a>
