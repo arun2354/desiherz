@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
@@ -315,8 +315,14 @@ function Loader() {
 }
 
 function SiteHeader() {
+  const [isScrolled, setIsScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setIsScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
   return (
-    <header className="site-header">
+    <header className={`site-header${isScrolled ? " is-scrolled" : ""}`}>
       <nav>
         <div className="logo">
           Desi<span className="wordmark-heart">♥</span>Herz
@@ -377,6 +383,7 @@ function HeroStandalone() {
         aria-hidden="true"
       />
       <div className="hero-bg-overlay" aria-hidden="true" />
+      <div className="hero-grid-lines" aria-hidden="true" />
       <div className="hero-inner">
         <span className="section-label"><BrandMark size={20} /> Private matrimony, made for each other</span>
         <h1 className="hero-heading">
@@ -399,8 +406,30 @@ function HeroStandalone() {
 }
 
 function ProcessPreview() {
+  const [active, setActive] = useState(0);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    let interval: ReturnType<typeof setInterval> | null = null;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !interval) {
+          interval = setInterval(() => setActive((p) => (p + 1) % PROCESS_PREVIEW.length), 3200);
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      if (interval) clearInterval(interval);
+    };
+  }, []);
+
   return (
-    <section className="process-preview">
+    <section className="process-preview" ref={sectionRef}>
       <motion.div
         className="section-heading-simple"
         initial={{ opacity: 0, y: 24 }}
@@ -419,12 +448,22 @@ function ProcessPreview() {
         viewport={{ once: true, amount: 0.2 }}
         variants={staggerContainer}
       >
-        {PROCESS_PREVIEW.map((s) => (
-          <motion.div key={s.label} className="process-preview-step" variants={fadeUp} transition={{ duration: 0.45, ease: "easeOut" }}>
-            <span className="process-preview-n">{ICONS[s.icon]}</span>
+        {PROCESS_PREVIEW.map((s, i) => (
+          <motion.button
+            type="button"
+            key={s.label}
+            className={`process-preview-step${i === active ? " is-active" : ""}`}
+            variants={fadeUp}
+            transition={{ duration: 0.45, ease: "easeOut" }}
+            onClick={() => setActive(i)}
+          >
+            <span className="process-preview-top">
+              <span className="process-preview-n">{ICONS[s.icon]}</span>
+              <span className="process-preview-bar"><span className={i === active ? "is-active" : ""} /></span>
+            </span>
             <strong>{s.label}</strong>
             <span>{s.teaser}</span>
-          </motion.div>
+          </motion.button>
         ))}
       </motion.div>
       <div className="process-preview-cue">Scroll to begin ↓</div>
@@ -817,9 +856,32 @@ function FAQSection() {
 }
 
 function Proof() {
-  const quotes = useMemo(() => TESTIMONIALS, []);
+  const [active, setActive] = useState(0);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    let interval: ReturnType<typeof setInterval> | null = null;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !interval) {
+          interval = setInterval(() => setActive((p) => (p + 1) % TESTIMONIALS.length), 6000);
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      if (interval) clearInterval(interval);
+    };
+  }, []);
+
+  const current = TESTIMONIALS[active];
+
   return (
-    <section className="proof-section">
+    <section className="proof-section" ref={sectionRef}>
       <motion.div
         className="section-heading-simple"
         initial="hidden"
@@ -831,29 +893,34 @@ function Proof() {
         <span className="section-label">Proof, softly</span>
         <h2>People remember how the introduction felt.</h2>
       </motion.div>
-      <motion.div
-        className="proof-grid"
-        initial="hidden"
-        whileInView="show"
-        viewport={{ once: true, amount: 0.3 }}
-        variants={staggerContainer}
-      >
-        {quotes.map((q) => (
-          <motion.article
-            key={q.who}
-            className="quote-card"
-            variants={fadeUp}
-            transition={{ duration: 0.55, ease: "easeOut" }}
-            whileHover={{ y: -6 }}
-          >
-            <svg className="quote-mark" viewBox="0 0 32 24" fill="none" aria-hidden="true">
-              <path d="M0 24V13.6C0 5.4 4.8 0.6 12 0v4.8C7.8 5.6 6 8.4 6 13.2h6V24H0zm18 0V13.6c0-8.2 4.8-13 12-13.6v4.8c-4.2 0.8-6 3.6-6 8.4h6V24H18z" fill="currentColor" />
-            </svg>
-            <p>{q.quote}</p>
-            <footer>{q.who} / {q.city}</footer>
-          </motion.article>
-        ))}
-      </motion.div>
+
+      <div className="proof-slider">
+        <svg className="quote-mark-bg" viewBox="0 0 32 24" fill="none" aria-hidden="true">
+          <path d="M0 24V13.6C0 5.4 4.8 0.6 12 0v4.8C7.8 5.6 6 8.4 6 13.2h6V24H0zm18 0V13.6c0-8.2 4.8-13 12-13.6v4.8c-4.2 0.8-6 3.6-6 8.4h6V24H18z" fill="currentColor" />
+        </svg>
+        <motion.blockquote key={active} className="proof-quote" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, ease: "easeOut" }}>
+          {current.quote}
+        </motion.blockquote>
+        <motion.footer key={`who-${active}`} className="proof-who" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.1 }}>
+          {current.who} <span>/ {current.city}</span>
+        </motion.footer>
+
+        <div className="proof-dots">
+          {TESTIMONIALS.map((t, i) => (
+            <button key={t.who} type="button" className="proof-dot" aria-label={`Show testimonial from ${t.who}`} onClick={() => setActive(i)}>
+              <span className={i === active ? "is-active" : ""} />
+            </button>
+          ))}
+        </div>
+
+        <div className="proof-cities">
+          {TESTIMONIALS.map((t, i) => (
+            <button key={t.who} type="button" className={`proof-city${i === active ? " is-active" : ""}`} onClick={() => setActive(i)}>
+              {t.city}
+            </button>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }
@@ -1022,17 +1089,39 @@ function Footer() {
       viewport={{ once: true, amount: 0.6 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
-      <div>
-        <strong>Desi<span className="wordmark-heart">♥</span>Herz</strong>
-        <p>Private matrimony for discerning people and families. By introduction only.</p>
+      <div className="dh-footer-grid">
+        <div className="dh-footer-brand">
+          <strong>Desi<span className="wordmark-heart">♥</span>Herz</strong>
+          <p>Private matrimony for discerning people and families. By introduction only.</p>
+        </div>
+        <div className="dh-footer-col">
+          <h3>Explore</h3>
+          <ul>
+            <li><a href="#discovery" onClick={(e) => { e.preventDefault(); scrollToJourney(5); }}>Process</a></li>
+            <li><a href="#pledges">Pledges</a></li>
+            <li><a href="#story" onClick={(e) => { e.preventDefault(); scrollToJourney(80); }}>Story</a></li>
+            <li><a href="#contact">Private enquiry</a></li>
+          </ul>
+        </div>
+        <div className="dh-footer-col">
+          <h3>Contact</h3>
+          <ul>
+            <li>Frankfurt am Main</li>
+            <li>By appointment only</li>
+            <li><a href="mailto:hello@desiherz.com">hello@desiherz.com</a></li>
+          </ul>
+        </div>
+        <div className="dh-footer-col">
+          <h3>Legal</h3>
+          <ul>
+            <li><a href="/impressum">Impressum</a></li>
+            <li><a href="/datenschutz">Datenschutz</a></li>
+          </ul>
+        </div>
       </div>
-      <div>
-        <span>Frankfurt am Main</span>
-        <span>By appointment only</span>
-        <span>hello@desiherz.com</span>
-        <span className="footer-legal">
-          <a href="/impressum">Impressum</a> · <a href="/datenschutz">Datenschutz</a>
-        </span>
+      <div className="dh-footer-bottom">
+        <span>&copy; 2026 Desi♥Herz. All rights reserved.</span>
+        <span className="footer-status"><span className="footer-status-dot" />Private matrimony, by invitation</span>
       </div>
     </motion.footer>
   );
