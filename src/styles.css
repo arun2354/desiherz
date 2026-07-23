@@ -144,13 +144,14 @@ img { max-width: 100%; display: block; }
   width: 100%; height: 100%;
   object-fit: cover;
   z-index: 0;
+  filter: url(#duotone-wine);
 }
 .hero-bg-overlay {
   position: absolute; inset: 0;
   z-index: 1;
   background:
-    linear-gradient(180deg, rgba(92,27,52,.46) 0%, rgba(92,27,52,.22) 40%, rgba(92,27,52,.58) 100%),
-    radial-gradient(120% 90% at 50% 38%, rgba(232,135,30,.16), transparent 62%);
+    linear-gradient(100deg, rgba(58,10,26,.86) 0%, rgba(58,10,26,.62) 32%, rgba(58,10,26,.22) 58%, rgba(58,10,26,0) 78%),
+    linear-gradient(0deg, rgba(58,10,26,.55) 0%, rgba(58,10,26,0) 22%, rgba(58,10,26,0) 78%, rgba(58,10,26,.4) 100%);
 }
 .hero-inner { position: relative; z-index: 2; max-width: 90vw; }
 .section-label {
@@ -161,7 +162,7 @@ img { max-width: 100%; display: block; }
   color: var(--text-on-light-soft);
   margin-bottom: 24px;
 }
-.hero-standalone .section-label { color: var(--text-on-dark-soft); }
+.hero-standalone .section-label { color: var(--text-on-dark-soft); text-shadow: 0 1px 16px rgba(0,0,0,.5); }
 .hero-heading {
   font-family: var(--font-display);
   font-weight: 700;
@@ -170,6 +171,7 @@ img { max-width: 100%; display: block; }
   letter-spacing: -0.03em;
   color: var(--text-on-dark);
   margin-bottom: 24px;
+  text-shadow: 0 2px 24px rgba(0,0,0,.55);
 }
 .hero-heading span { display: inline-block; }
 .hero-heading em { font-style: italic; color: var(--accent-marigold); }
@@ -180,6 +182,7 @@ img { max-width: 100%; display: block; }
   line-height: 1.5;
   max-width: 540px;
   color: var(--text-on-dark-soft);
+  text-shadow: 0 1px 16px rgba(0,0,0,.5);
 }
 .hero-actions { display: flex; gap: 14px; margin-top: 32px; }
 .hero-actions .cta-button { margin: 0; }
@@ -211,7 +214,7 @@ img { max-width: 100%; display: block; }
   clip-path: circle(0% at 50% 50%);
   will-change: clip-path;
 }
-#dh-canvas { width: 100vw; height: 100vh; display: block; }
+#dh-canvas { width: 100vw; height: 100vh; display: block; filter: url(#duotone-wine); }
 
 /* -----------------------------------------------------
    5. Scroll container & sections
@@ -376,24 +379,17 @@ a.cta-button, button.cta-button {
    ----------------------------------------------------- */
 @media (max-width: 768px) {
   #scroll-container { height: 320vh; }
-  .hero-bg-video { display: none; }
-  .hero-standalone {
-    background-image: url('/images/hero-mobile-poster.jpg');
-    background-size: cover;
-    background-position: center;
-  }
   .process-preview-grid { grid-template-columns: repeat(2, 1fr); }
   .site-header { padding: 18px 5vw; }
   .site-header ul { gap: 16px; font-size: 0.7rem; }
   .site-header ul li:not(:last-child) { display: none; }
   .hero-actions { flex-direction: column; }
   .align-left, .align-right { padding: 32px 6vw; }
-  .align-left .section-inner, .align-right .section-inner {
-    max-width: 100%;
-    background: rgba(92,27,52,0.82);
-    padding: 24px 22px;
-    border-radius: 14px;
-    backdrop-filter: blur(6px);
+  .align-left .section-inner, .align-right .section-inner { max-width: 100%; }
+  .scroll-section.align-left::before,
+  .scroll-section.align-right::before {
+    left: 0; right: 0; width: 100%;
+    background: linear-gradient(180deg, rgba(58,10,26,.12) 0%, rgba(58,10,26,.58) 48%, rgba(58,10,26,.9) 100%);
   }
   .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 32px 20px; }
   .proof-grid { grid-template-columns: 1fr; }

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
@@ -51,7 +51,7 @@ const SECTIONS: SectionSpec[] = [
   {
     key: "discovery",
     align: "left",
-    label: "02 / Discovery",
+    label: "01 / Discovery",
     heading: "It starts with one quiet click.",
     body: ["No swiping, no scrolling through strangers. Just a private introduction, waiting to begin."],
     enter: 3,
@@ -61,7 +61,7 @@ const SECTIONS: SectionSpec[] = [
   {
     key: "circle",
     align: "right",
-    label: "03 / The Vetted Circle",
+    label: "02 / The Vetted Circle",
     heading: "Kept behind a lock only we hold.",
     body: ["Every profile lives inside a private, vetted circle — reviewed by us, never browsed by anyone else."],
     enter: 17,
@@ -71,7 +71,7 @@ const SECTIONS: SectionSpec[] = [
   {
     key: "match",
     align: "left",
-    label: "04 / The Match",
+    label: "03 / The Match",
     heading: "Heritage and heart, made whole.",
     body: ["One half carries where you come from. The other, where you're going. We introduce you only when both fit."],
     enter: 32,
@@ -81,7 +81,7 @@ const SECTIONS: SectionSpec[] = [
   {
     key: "proposal",
     align: "right",
-    label: "05 / The Proposal",
+    label: "04 / The Proposal",
     heading: "The spark isn't manufactured. It's just introduced.",
     body: ["What happens after that first hello is entirely yours. We only make sure it's worth showing up for."],
     enter: 47,
@@ -91,7 +91,7 @@ const SECTIONS: SectionSpec[] = [
   {
     key: "handinhand",
     align: "left",
-    label: "06 / Hand in Hand",
+    label: "05 / Hand in Hand",
     heading: "From strangers to promised, quietly.",
     body: ["No performance, no audience. Just two people who said yes at their own pace."],
     enter: 62,
@@ -101,12 +101,12 @@ const SECTIONS: SectionSpec[] = [
 ];
 
 const PROCESS_PREVIEW = [
-  { n: "02", label: "Discovery", teaser: "You find us." },
-  { n: "03", label: "Vetted circle", teaser: "We keep it private." },
-  { n: "04", label: "The match", teaser: "We look for fit." },
-  { n: "05", label: "The proposal", teaser: "You decide, freely." },
-  { n: "06", label: "Hand in hand", teaser: "It becomes real." },
-  { n: "07", label: "The altar", teaser: "You arrive together." },
+  { n: "01", label: "Discovery", teaser: "You find us." },
+  { n: "02", label: "Vetted circle", teaser: "We keep it private." },
+  { n: "03", label: "The match", teaser: "We look for fit." },
+  { n: "04", label: "The proposal", teaser: "You decide, freely." },
+  { n: "05", label: "Hand in hand", teaser: "It becomes real." },
+  { n: "06", label: "The altar", teaser: "You arrive together." },
 ];
 
 const STATS = [
@@ -198,6 +198,25 @@ function Index() {
 
   return (
     <div className="dh-root relative selection:bg-[#8a2035] selection:text-[#f5ece1]">
+      {/* Duotone grade for all real footage: remaps any source color into the
+          site's own wine-to-ivory range, so contrast and tone stay consistent
+          regardless of what's actually in a given frame. */}
+      <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden="true">
+        <filter id="duotone-wine">
+          <feColorMatrix
+            type="matrix"
+            values="0.33 0.33 0.33 0 0
+                    0.33 0.33 0.33 0 0
+                    0.33 0.33 0.33 0 0
+                    0    0    0   1 0"
+          />
+          <feComponentTransfer>
+            <feFuncR type="table" tableValues="0.24 0.99" />
+            <feFuncG type="table" tableValues="0.08 0.95" />
+            <feFuncB type="table" tableValues="0.16 0.89" />
+          </feComponentTransfer>
+        </filter>
+      </svg>
       {mounted && <Cursor />}
       <Loader />
       <SiteHeader />
@@ -264,9 +283,31 @@ function SiteHeader() {
 }
 
 function HeroStandalone() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    // Belt-and-braces for the loop attribute: force a restart on 'ended', and
+    // resume playback if a browser auto-pauses the tab and doesn't resume it.
+    const restart = () => {
+      video.currentTime = 0;
+      video.play().catch(() => {});
+    };
+    const resumeIfPaused = () => {
+      if (video.paused && document.visibilityState === "visible") video.play().catch(() => {});
+    };
+    video.addEventListener("ended", restart);
+    document.addEventListener("visibilitychange", resumeIfPaused);
+    return () => {
+      video.removeEventListener("ended", restart);
+      document.removeEventListener("visibilitychange", resumeIfPaused);
+    };
+  }, []);
+
   return (
     <section className="hero-standalone">
-      <video className="hero-bg-video" autoPlay muted loop playsInline preload="auto" disablePictureInPicture aria-hidden="true">
+      <video ref={videoRef} className="hero-bg-video" autoPlay muted loop playsInline preload="auto" disablePictureInPicture aria-hidden="true">
         <source src="/videos/main-loop.mp4" type="video/mp4" />
       </video>
       <div className="hero-bg-overlay" aria-hidden="true" />
@@ -345,7 +386,7 @@ function ScrollJourney() {
         id="story"
       >
         <div className="section-inner cta-inner">
-          <span className="section-label">07 / The Altar</span>
+          <span className="section-label">06 / The Altar</span>
           <h2 className="section-heading">One ring. One introduction. One yes.</h2>
           <p className="section-body">The outcome should feel calm, not manufactured.</p>
           <a className="cta-button" href="#contact">Begin privately →</a>
