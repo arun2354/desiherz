@@ -338,6 +338,13 @@ function HeroStandalone() {
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+    // <source media> selection for <video> is unreliable across mobile
+    // browsers (Safari in particular) -- pick the source in JS instead so
+    // the 1:1 mobile file is guaranteed to load on phones.
+    const isMobile = window.matchMedia("(max-width: 767px)").matches;
+    video.src = isMobile ? "/videos/main-loop-mobile.mp4" : "/videos/main-loop.mp4";
+    video.load();
+    video.play().catch(() => {});
     // Belt-and-braces for the loop attribute: force a restart on 'ended', and
     // resume playback if a browser auto-pauses the tab and doesn't resume it.
     const restart = () => {
@@ -368,10 +375,7 @@ function HeroStandalone() {
         poster="/images/hero-poster.jpg"
         disablePictureInPicture
         aria-hidden="true"
-      >
-        <source src="/videos/main-loop-mobile.mp4" type="video/mp4" media="(max-width: 767px)" />
-        <source src="/videos/main-loop.mp4" type="video/mp4" />
-      </video>
+      />
       <div className="hero-bg-overlay" aria-hidden="true" />
       <div className="hero-inner">
         <span className="section-label"><BrandMark size={20} /> Private matrimony, made for each other</span>
@@ -383,6 +387,7 @@ function HeroStandalone() {
           <a className="cta-button" href="#discovery" onClick={(e) => { e.preventDefault(); scrollToJourney(5); }}>Watch the process</a>
           <a className="cta-button secondary" href="#contact">Request consultation</a>
         </div>
+        <span className="price-badge">First consultation &amp; screening <strong>€39</strong></span>
       </div>
       <div className="scroll-indicator">
         <span>Scroll</span>
@@ -954,7 +959,7 @@ function Contact() {
           Send a single line. <em>We&rsquo;ll write back.</em>
         </h2>
         <p>No public profile. Seen only by the principal matchmaker.</p>
-        <p className="contact-price">First consultation &amp; screening — <strong>€39</strong></p>
+        <span className="price-badge">First consultation &amp; screening <strong>€39</strong></span>
         <form onSubmit={handleSubmit} className="contact-form" noValidate>
           <label>
             <span>Your name</span>
