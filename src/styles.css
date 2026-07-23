@@ -423,7 +423,6 @@ a.cta-button, button.cta-button {
 .faq-toggle { flex: none; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--rule); display: grid; place-items: center; font-size: .9rem; color: var(--text-soft); transition: transform .3s ease; }
 .faq-item.is-open .faq-toggle { transform: rotate(45deg); border-color: var(--accent); color: var(--accent); }
 .faq-answer { overflow: hidden; max-height: 0; transition: max-height .35s ease; }
-.faq-item.is-open .faq-answer { max-height: 240px; }
 .faq-answer p { padding-top: 1rem; font-size: .84rem; line-height: 1.65; color: rgba(237,238,240,.78); max-width: 65ch; }
 
 .contact-section { padding: clamp(5.5rem, 10vw, 9rem) 5vw; border-top: 1px solid var(--rule); }

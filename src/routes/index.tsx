@@ -789,7 +789,7 @@ function FAQSection() {
                 </div>
                 <span className="faq-toggle" aria-hidden="true">+</span>
               </div>
-              <div className="faq-answer">
+              <div className="faq-answer" style={{ maxHeight: isOpen ? "240px" : "0px" }}>
                 <p>{item.a}</p>
               </div>
             </div>
