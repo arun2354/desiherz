@@ -101,12 +101,12 @@ const SECTIONS: SectionSpec[] = [
 ];
 
 const PROCESS_PREVIEW = [
-  { n: "01", label: "Discovery", teaser: "You find us." },
-  { n: "02", label: "Vetted circle", teaser: "We keep it private." },
-  { n: "03", label: "The match", teaser: "We look for fit." },
-  { n: "04", label: "The proposal", teaser: "You decide, freely." },
-  { n: "05", label: "Hand in hand", teaser: "It becomes real." },
-  { n: "06", label: "The altar", teaser: "You arrive together." },
+  { icon: "compass", label: "Discovery", teaser: "You find us." },
+  { icon: "lock", label: "Vetted circle", teaser: "We keep it private." },
+  { icon: "rings", label: "The match", teaser: "We look for fit." },
+  { icon: "ring", label: "The proposal", teaser: "You decide, freely." },
+  { icon: "hands", label: "Hand in hand", teaser: "It becomes real." },
+  { icon: "arch", label: "The altar", teaser: "You arrive together." },
 ];
 
 const STATS = [
@@ -117,9 +117,9 @@ const STATS = [
 ];
 
 const VALUES = [
-  { n: "01", label: "Privacy", body: "No public profile, ever. Your search exists only between you and the house." },
-  { n: "02", label: "Curation", body: "Every introduction is reviewed by a person, not a matching algorithm optimizing for engagement." },
-  { n: "03", label: "Commitment", body: "We stay with you from the first hello to the family conversation, not just the first message." },
+  { icon: "lock", label: "Privacy", body: "No public profile, ever. Your search exists only between you and the house." },
+  { icon: "gem", label: "Curation", body: "Every introduction is reviewed by a person, not a matching algorithm optimizing for engagement." },
+  { icon: "rings", label: "Commitment", body: "We stay with you from the first hello to the family conversation, not just the first message." },
 ];
 
 const FAQS = [
@@ -189,7 +189,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "DesiHerz — Private Matrimony" },
       { property: "og:description", content: SITE.description },
       { property: "og:type", content: "website" },
-      { name: "theme-color", content: "#0d1115" },
+      { name: "theme-color", content: "#fbf3ec" },
       {
         name: "keywords",
         content:
@@ -201,7 +201,7 @@ export const Route = createFileRoute("/")({
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" } as any,
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Italiana&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&display=swap",
       },
     ],
     scripts: [
@@ -226,9 +226,8 @@ function Index() {
   useEffect(() => setMounted(true), []);
 
   return (
-    <div className="dh-root relative selection:bg-[#b8272f] selection:text-[#edeef0]">
+    <div className="dh-root relative selection:bg-[#d98e76] selection:text-[#fbf3ec]">
       {mounted && <Cursor />}
-      {mounted && <CoordReadout />}
       <Loader />
       <SiteHeader />
       <HeroStandalone />
@@ -251,20 +250,47 @@ function Index() {
   );
 }
 
-function CoordReadout() {
-  const [pos, setPos] = useState({ x: 0, y: 0 });
-  useEffect(() => {
-    const onMove = (e: MouseEvent) => setPos({ x: e.clientX, y: e.clientY });
-    window.addEventListener("mousemove", onMove);
-    return () => window.removeEventListener("mousemove", onMove);
-  }, []);
+/** Two interlocking gradient rings -- the brand mark: two becoming one. */
+function BrandMark({ size = 26 }: { size?: number }) {
+  const gid = "rings-grad";
   return (
-    <div className="coord-readout" aria-hidden="true">
-      <div>X: {String(pos.x).padStart(4, "0")}</div>
-      <div>Y: {String(pos.y).padStart(4, "0")}</div>
-    </div>
+    <svg className="mark-heart" width={size} height={size * 0.62} viewBox="0 0 100 62" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <linearGradient id={gid} x1="0" y1="0" x2="100" y2="62" gradientUnits="userSpaceOnUse">
+          <stop offset="0" className="mark-heart-grad-a" />
+          <stop offset="0.55" className="mark-heart-grad-b" />
+          <stop offset="1" className="mark-heart-grad-c" />
+        </linearGradient>
+      </defs>
+      <circle cx="32" cy="31" r="22" stroke={`url(#${gid})`} strokeWidth="6" />
+      <circle cx="68" cy="31" r="22" stroke={`url(#${gid})`} strokeWidth="6" />
+    </svg>
   );
 }
+
+const ICONS: Record<string, JSX.Element> = {
+  compass: (
+    <svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="12" stroke="currentColor" strokeWidth="1.4" /><path d="M20 12l-6 4-2 6 6-4 2-6z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" /></svg>
+  ),
+  lock: (
+    <svg viewBox="0 0 32 32" fill="none"><rect x="8" y="15" width="16" height="12" rx="2" stroke="currentColor" strokeWidth="1.4" /><path d="M11 15v-4a5 5 0 0110 0v4" stroke="currentColor" strokeWidth="1.4" /></svg>
+  ),
+  rings: (
+    <svg viewBox="0 0 32 32" fill="none"><circle cx="12" cy="17" r="7" stroke="currentColor" strokeWidth="1.4" /><circle cx="20" cy="17" r="7" stroke="currentColor" strokeWidth="1.4" /></svg>
+  ),
+  ring: (
+    <svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="19" r="8" stroke="currentColor" strokeWidth="1.4" /><path d="M16 11l3 4h-6l3-4z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" /></svg>
+  ),
+  hands: (
+    <svg viewBox="0 0 32 32" fill="none"><path d="M7 16l6 6M25 16l-6 6M13 22l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /><circle cx="7" cy="14" r="2.4" stroke="currentColor" strokeWidth="1.4" /><circle cx="25" cy="14" r="2.4" stroke="currentColor" strokeWidth="1.4" /></svg>
+  ),
+  arch: (
+    <svg viewBox="0 0 32 32" fill="none"><path d="M9 27V16a7 7 0 0114 0v11" stroke="currentColor" strokeWidth="1.4" /><path d="M6 27h20" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
+  ),
+  gem: (
+    <svg viewBox="0 0 32 32" fill="none"><path d="M9 12h14l4 6-11 11L6 18l3-6z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" /><path d="M6 18h20M13 12l3 17M19 12l-3 17" stroke="currentColor" strokeWidth="1.1" /></svg>
+  ),
+};
 
 function Loader() {
   const [pct, setPct] = useState(0);
@@ -282,7 +308,7 @@ function Loader() {
   return (
     <div id="loader" className={hidden ? "hidden" : ""}>
       <div className="loader-brand">
-        Desi<em>♥</em>Herz
+        <BrandMark size={40} /> Desi Herz
       </div>
       <div id="loader-bar">
         <span id="loader-bar-fill" style={{ width: `${pct}%` }} />
@@ -297,7 +323,7 @@ function SiteHeader() {
     <header className="site-header">
       <nav>
         <div className="logo">
-          Desi<span style={{ opacity: 0.7 }}>♥</span>Herz
+          <BrandMark size={22} /> Desi Herz
         </div>
         <ul>
           <li><a href="#discovery" onClick={(e) => { e.preventDefault(); scrollToJourney(5); }}>Process</a></li>
@@ -339,13 +365,8 @@ function HeroStandalone() {
         <source src="/videos/main-loop.mp4" type="video/mp4" />
       </video>
       <div className="hero-bg-overlay" aria-hidden="true" />
-      <div className="hero-grain" aria-hidden="true" />
-      <div className="corner-bracket tl" aria-hidden="true" />
-      <div className="corner-bracket tr" aria-hidden="true" />
-      <div className="corner-bracket bl" aria-hidden="true" />
-      <div className="corner-bracket br" aria-hidden="true" />
       <div className="hero-inner">
-        <span className="section-label">DesiHerz · Private matrimony unit</span>
+        <span className="section-label"><BrandMark size={20} /> Private matrimony, made for each other</span>
         <h1 className="hero-heading">
           <span>The right introduction,</span>
           <span><em>reconsidered.</em></span>
@@ -388,8 +409,8 @@ function ProcessPreview() {
         variants={staggerContainer}
       >
         {PROCESS_PREVIEW.map((s) => (
-          <motion.div key={s.n} className="process-preview-step" variants={fadeUp} transition={{ duration: 0.45, ease: "easeOut" }}>
-            <span className="process-preview-n">{s.n}</span>
+          <motion.div key={s.label} className="process-preview-step" variants={fadeUp} transition={{ duration: 0.45, ease: "easeOut" }}>
+            <span className="process-preview-n">{ICONS[s.icon]}</span>
             <strong>{s.label}</strong>
             <span>{s.teaser}</span>
           </motion.div>
@@ -748,8 +769,8 @@ function ValuesBand() {
         variants={staggerContainer}
       >
         {VALUES.map((v) => (
-          <motion.div key={v.n} className="value-card" variants={fadeUp} transition={{ duration: 0.5, ease: "easeOut" }}>
-            <span className="value-n">{v.n}</span>
+          <motion.div key={v.label} className="value-card" variants={fadeUp} transition={{ duration: 0.5, ease: "easeOut" }}>
+            <span className="value-n">{ICONS[v.icon]}</span>
             <strong>{v.label}</strong>
             <p>{v.body}</p>
           </motion.div>
@@ -1021,7 +1042,7 @@ function Footer() {
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
       <div>
-        <strong>Desi♥Herz</strong>
+        <strong><BrandMark size={22} /> Desi Herz</strong>
         <p>Private matrimony for discerning people and families. By introduction only.</p>
       </div>
       <div>
