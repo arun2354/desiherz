@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
-import { motion, animate } from "framer-motion";
+import { motion } from "framer-motion";
 import { Cursor } from "@/components/Cursor";
 
 const fadeUp = { hidden: { opacity: 0, y: 28 }, show: { opacity: 1, y: 0 } };
@@ -109,13 +109,6 @@ const PROCESS_PREVIEW = [
   { icon: "arch", label: "The altar", teaser: "You arrive together." },
 ];
 
-const STATS = [
-  { value: 0, suffix: "", label: "Public profiles. Ever." },
-  { value: 100, suffix: "%", label: "Reviewed before contact." },
-  { value: 3, suffix: "", label: "Names considered, never a list." },
-  { value: 1, suffix: "", label: "Introduction arranged at a time." },
-];
-
 const VALUES = [
   { icon: "lock", label: "Privacy", body: "No public profile, ever. Your search exists only between you and the house." },
   { icon: "gem", label: "Curation", body: "Every introduction is reviewed by a person, not a matching algorithm optimizing for engagement." },
@@ -138,6 +131,10 @@ const FAQS = [
   {
     q: "Can a parent search on my behalf?",
     a: "Yes. Many families begin the enquiry together, and we're glad to work directly with parents throughout the process.",
+  },
+  {
+    q: "What does it cost to begin?",
+    a: "A first private consultation and screening is €39, arranged directly with the principal matchmaker.",
   },
   {
     q: "What happens after an introduction?",
@@ -239,7 +236,6 @@ function Index() {
       <JourneyController />
       <div className="after-journey">
         <ValuesBand />
-        <Stats />
         <Proof />
         <Voices />
         <FAQSection />
@@ -308,7 +304,7 @@ function Loader() {
   return (
     <div id="loader" className={hidden ? "hidden" : ""}>
       <div className="loader-brand">
-        <BrandMark size={40} /> Desi Herz
+        Desi<span className="wordmark-heart">♥</span>Herz
       </div>
       <div id="loader-bar">
         <span id="loader-bar-fill" style={{ width: `${pct}%` }} />
@@ -323,7 +319,7 @@ function SiteHeader() {
     <header className="site-header">
       <nav>
         <div className="logo">
-          <BrandMark size={22} /> Desi Herz
+          Desi<span className="wordmark-heart">♥</span>Herz
         </div>
         <ul>
           <li><a href="#discovery" onClick={(e) => { e.preventDefault(); scrollToJourney(5); }}>Process</a></li>
@@ -361,7 +357,19 @@ function HeroStandalone() {
 
   return (
     <section className="hero-standalone">
-      <video ref={videoRef} className="hero-bg-video" autoPlay muted loop playsInline preload="auto" disablePictureInPicture aria-hidden="true">
+      <video
+        ref={videoRef}
+        className="hero-bg-video"
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        poster="/images/hero-poster.jpg"
+        disablePictureInPicture
+        aria-hidden="true"
+      >
+        <source src="/videos/main-loop-mobile.mp4" type="video/mp4" media="(max-width: 767px)" />
         <source src="/videos/main-loop.mp4" type="video/mp4" />
       </video>
       <div className="hero-bg-overlay" aria-hidden="true" />
@@ -371,7 +379,6 @@ function HeroStandalone() {
           <span>The right introduction,</span>
           <span><em>reconsidered.</em></span>
         </h1>
-        <p className="hero-tagline">A private, human-led house. Scroll down to see exactly how an introduction happens.</p>
         <div className="hero-actions">
           <a className="cta-button" href="#discovery" onClick={(e) => { e.preventDefault(); scrollToJourney(5); }}>Watch the process</a>
           <a className="cta-button secondary" href="#contact">Request consultation</a>
@@ -556,33 +563,42 @@ function JourneyController() {
       }
     }
 
+    /**
+     * Only the first batch gates the loader/interactivity -- the remaining
+     * frames stream in afterward without blocking anything. Waiting on all
+     * 100 JPEGs before showing the page was the main cause of a long,
+     * page-blocking load screen; drawFrame() already no-ops on a frame
+     * that hasn't arrived yet, so scrubbing ahead of the background load
+     * just holds the last-drawn frame until its image lands.
+     */
     function preloadFrames() {
-      let loaded = 0;
-      const loadOne = (i: number) =>
+      const firstBatchSize = Math.min(12, FRAME_COUNT);
+      let firstBatchLoaded = 0;
+      const loadOne = (i: number, trackProgress: boolean) =>
         new Promise<void>((resolve) => {
           const img = new Image();
           img.onload = () => {
             frames[i] = img;
-            loaded++;
-            const pct = Math.round((loaded / FRAME_COUNT) * 100);
-            window.dispatchEvent(new CustomEvent("dh:loadprogress", { detail: pct }));
+            if (trackProgress) {
+              firstBatchLoaded++;
+              const pct = Math.round((firstBatchLoaded / firstBatchSize) * 100);
+              window.dispatchEvent(new CustomEvent("dh:loadprogress", { detail: pct }));
+            }
             if (i === 0) bgColor = sampleBgColor(img);
             resolve();
           };
           img.onerror = () => {
-            loaded++;
+            if (trackProgress) firstBatchLoaded++;
             resolve();
           };
           img.src = FRAME_PATH(i);
         });
 
       const firstBatch: Promise<void>[] = [];
-      for (let i = 0; i < Math.min(12, FRAME_COUNT); i++) firstBatch.push(loadOne(i));
+      for (let i = 0; i < firstBatchSize; i++) firstBatch.push(loadOne(i, true));
 
       return Promise.all(firstBatch).then(() => {
-        const rest: Promise<void>[] = [];
-        for (let i = 12; i < FRAME_COUNT; i++) rest.push(loadOne(i));
-        return Promise.all(rest);
+        for (let i = firstBatchSize; i < FRAME_COUNT; i++) loadOne(i, false);
       });
     }
 
@@ -723,31 +739,6 @@ function JourneyController() {
   return null;
 }
 
-function StatItem({ value, suffix, label }: { value: number; suffix: string; label: string }) {
-  const [display, setDisplay] = useState(0);
-  return (
-    <motion.div
-      className="stat"
-      variants={fadeUp}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-      viewport={{ once: true, amount: 0.6 }}
-      onViewportEnter={() => {
-        animate(0, value, {
-          duration: 1.6,
-          ease: "easeOut",
-          onUpdate: (v) => setDisplay(Math.round(v)),
-        });
-      }}
-    >
-      <span>
-        <span className="stat-number">{display}</span>
-        {suffix && <span className="stat-suffix">{suffix}</span>}
-      </span>
-      <span className="stat-label">{label}</span>
-    </motion.div>
-  );
-}
-
 function ValuesBand() {
   return (
     <section id="pledges" className="values-band">
@@ -817,24 +808,6 @@ function FAQSection() {
           );
         })}
       </div>
-    </section>
-  );
-}
-
-function Stats() {
-  return (
-    <section className="stats-band">
-      <motion.div
-        className="stats-grid"
-        initial="hidden"
-        whileInView="show"
-        viewport={{ once: true, amount: 0.3 }}
-        variants={staggerContainer}
-      >
-        {STATS.map((s) => (
-          <StatItem key={s.label} value={s.value} suffix={s.suffix} label={s.label} />
-        ))}
-      </motion.div>
     </section>
   );
 }
@@ -981,6 +954,7 @@ function Contact() {
           Send a single line. <em>We&rsquo;ll write back.</em>
         </h2>
         <p>No public profile. Seen only by the principal matchmaker.</p>
+        <p className="contact-price">First consultation &amp; screening — <strong>€39</strong></p>
         <form onSubmit={handleSubmit} className="contact-form" noValidate>
           <label>
             <span>Your name</span>
@@ -1042,13 +1016,16 @@ function Footer() {
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
       <div>
-        <strong><BrandMark size={22} /> Desi Herz</strong>
+        <strong>Desi<span className="wordmark-heart">♥</span>Herz</strong>
         <p>Private matrimony for discerning people and families. By introduction only.</p>
       </div>
       <div>
         <span>Frankfurt am Main</span>
         <span>By appointment only</span>
         <span>hello@desiherz.com</span>
+        <span className="footer-legal">
+          <a href="/impressum">Impressum</a> · <a href="/datenschutz">Datenschutz</a>
+        </span>
       </div>
     </motion.footer>
   );

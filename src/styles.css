@@ -77,6 +77,11 @@ img { max-width: 100%; display: block; }
 .mark-heart-grad-a { stop-color: var(--rose-light); }
 .mark-heart-grad-b { stop-color: var(--rose); }
 .mark-heart-grad-c { stop-color: var(--brown); }
+.wordmark-heart {
+  background: var(--gradient-rose);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  padding: 0 .05em;
+}
 
 /* -----------------------------------------------------
    1. Loader
@@ -96,7 +101,6 @@ img { max-width: 100%; display: block; }
   font-size: clamp(1.8rem, 5vw, 3rem);
   letter-spacing: 0.08em;
   color: var(--brown);
-  display: flex; align-items: center; gap: 10px;
 }
 .loader-brand em { font-style: normal; }
 #loader-bar {
@@ -127,7 +131,7 @@ img { max-width: 100%; display: block; }
   border-bottom: 1px solid rgba(251,243,236,.14);
 }
 .site-header nav { display: flex; align-items: center; justify-content: space-between; }
-.logo { font-family: var(--font-display); font-size: 1.15rem; letter-spacing: 0.06em; display: flex; align-items: center; gap: 8px; }
+.logo { font-family: var(--font-display); font-size: 1.15rem; letter-spacing: 0.06em; }
 .site-header ul { display: flex; align-items: center; gap: 30px; list-style: none; font-size: 0.76rem; letter-spacing: 0.1em; text-transform: uppercase; font-family: var(--font-body); font-weight: 600; }
 .site-header a { opacity: 0.82; transition: opacity 0.2s; }
 .site-header a:hover { opacity: 1; }
@@ -167,7 +171,15 @@ img { max-width: 100%; display: block; }
   margin-bottom: 20px;
 }
 .section-label::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--rose-deep); display: inline-block; }
-.hero-standalone .section-label { color: var(--rose-light); text-shadow: 0 1px 12px rgba(0,0,0,.6); }
+.hero-standalone .section-label {
+  color: var(--rose-light);
+  text-shadow: 0 1px 12px rgba(0,0,0,.6);
+  background: rgba(var(--scrim),.5);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(251,243,236,.16);
+  padding: 9px 16px;
+  border-radius: 999px;
+}
 .hero-standalone .section-label::before { display: none; }
 .hero-heading {
   font-family: var(--font-heading);
@@ -182,15 +194,6 @@ img { max-width: 100%; display: block; }
 }
 .hero-heading span { display: block; }
 .hero-heading em { font-style: italic; background: var(--gradient-rose); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.hero-tagline {
-  font-family: var(--font-body);
-  font-weight: 500;
-  font-size: clamp(1.05rem, 1.3vw, 1.3rem);
-  line-height: 1.5;
-  max-width: 480px;
-  color: var(--cream);
-  text-shadow: 0 1px 14px rgba(0,0,0,.85), 0 1px 3px rgba(0,0,0,.9);
-}
 .hero-actions { display: flex; gap: 14px; margin-top: 30px; }
 .hero-actions .cta-button { margin: 0; }
 .hero-actions .cta-button.secondary { background: transparent; color: var(--cream); border: 1px solid rgba(251,243,236,.4); }
@@ -353,13 +356,6 @@ a.cta-button, button.cta-button {
    ----------------------------------------------------- */
 .after-journey { position: relative; z-index: 60; background: var(--cream); color: var(--brown); }
 
-.stats-band { padding: clamp(4rem, 7vw, 6.5rem) 5vw; border-bottom: 1px solid var(--rule); }
-.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); max-width: 1200px; margin: 0 auto; text-align: center; border-top: 1px solid var(--rule); border-left: 1px solid var(--rule); }
-.stat { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 2rem 1rem; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
-.stat-number { font-family: var(--font-heading); font-weight: 600; font-size: clamp(2.6rem, 4.8vw, 4.2rem); line-height: 1; color: var(--brown); }
-.stat-suffix { font-family: var(--font-heading); font-style: italic; font-size: 1.2rem; color: var(--rose-deep); }
-.stat-label { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; color: var(--brown-soft); }
-
 .proof-section { padding: clamp(5rem, 8vw, 8rem) 5vw; }
 .section-heading-simple { max-width: 640px; margin: 0 auto clamp(2rem, 4vw, 3.5rem); text-align: center; }
 .section-heading-simple h2 { margin: .9rem 0 0; font-family: var(--font-heading); font-weight: 500; font-style: italic; font-size: clamp(1.9rem, 3vw, 2.8rem); line-height: 1.1; color: var(--brown); }
@@ -399,6 +395,8 @@ a.cta-button, button.cta-button {
 .contact-panel h2 { margin: 1rem 0 1.1rem; font-family: var(--font-heading); font-weight: 500; font-style: italic; font-size: clamp(2.2rem, 4vw, 3.8rem); line-height: 1.06; color: var(--brown); }
 .contact-panel h2 em { font-style: italic; background: var(--gradient-rose); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .contact-panel > p { margin: 0; max-width: 620px; color: var(--brown-soft); line-height: 1.75; font-size: 1rem; }
+.contact-price { margin-top: .6rem !important; font-size: .85rem !important; }
+.contact-price strong { color: var(--rose-deep); font-family: var(--font-heading); font-style: italic; font-weight: 600; font-size: 1.05rem; }
 .contact-form { margin-top: 3rem; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.6rem; }
 .contact-form label { display: block; }
 .contact-form label.full { grid-column: 1 / -1; }
@@ -414,9 +412,20 @@ a.cta-button, button.cta-button {
 .contact-form button span { display: inline; margin-left: .7rem; letter-spacing: 0; }
 
 .dh-footer { display: grid; grid-template-columns: 1fr auto; gap: 2rem; padding: 3rem 5vw; border-top: 1px solid var(--rule); color: var(--brown-soft); }
-.dh-footer strong { display: flex; align-items: center; gap: 8px; color: var(--brown); font-family: var(--font-display); font-size: 1.3rem; margin-bottom: .6rem; }
+.dh-footer strong { display: block; color: var(--brown); font-family: var(--font-display); font-size: 1.3rem; margin-bottom: .6rem; }
 .dh-footer p { margin: 0; max-width: 420px; line-height: 1.6; font-size: .9rem; }
 .dh-footer div:last-child { display: grid; gap: .5rem; text-align: right; font-size: .74rem; letter-spacing: .04em; }
+.footer-legal a { color: var(--brown-soft); text-decoration: underline; text-underline-offset: 2px; }
+.footer-legal a:hover { color: var(--rose-deep); }
+
+/* Legal pages (Impressum / Datenschutz) */
+.legal-page { max-width: 720px; margin: 0 auto; padding: clamp(3rem, 6vw, 5rem) 5vw 6rem; color: var(--brown); }
+.legal-back { display: inline-block; margin-bottom: 2rem; font-size: .8rem; color: var(--brown-soft); }
+.legal-back:hover { color: var(--rose-deep); }
+.legal-page h1 { font-family: var(--font-heading); font-style: italic; font-weight: 500; font-size: clamp(2rem, 4vw, 2.8rem); margin-bottom: .5rem; }
+.legal-page h2 { font-family: var(--font-heading); font-style: italic; font-weight: 600; font-size: 1.3rem; margin: 2.2rem 0 .6rem; color: var(--brown); }
+.legal-page p { line-height: 1.7; color: var(--brown-soft); font-size: .95rem; margin: 0 0 .8rem; }
+.legal-page .legal-note { font-style: italic; padding: .9rem 1.1rem; border: 1px solid var(--rule); border-radius: 10px; background: var(--cream-deep); }
 
 /* -----------------------------------------------------
    Mobile
@@ -437,7 +446,6 @@ a.cta-button, button.cta-button {
     left: 0; right: 0; width: 100%;
     background: linear-gradient(180deg, rgba(var(--scrim),.12) 0%, rgba(var(--scrim),.55) 48%, rgba(var(--scrim),.9) 100%);
   }
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .proof-grid { grid-template-columns: 1fr; gap: 2rem; }
   .contact-form { grid-template-columns: 1fr; }
   .contact-form button { justify-self: stretch; }
