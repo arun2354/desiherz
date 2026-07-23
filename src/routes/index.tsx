@@ -110,51 +110,51 @@ const PROCESS_PREVIEW = [
 ];
 
 const VALUES = [
-  { icon: "lock", label: "Privacy", body: "No public profile, ever. Your search exists only between you and the house." },
-  { icon: "gem", label: "Curation", body: "Every introduction is reviewed by a person, not a matching algorithm optimizing for engagement." },
-  { icon: "rings", label: "Commitment", body: "We stay with you from the first hello to the family conversation, not just the first message." },
+  { icon: "lock", label: "Privacy", body: "No public profile, ever." },
+  { icon: "gem", label: "Curation", body: "A person reviews every introduction, not an algorithm." },
+  { icon: "rings", label: "Commitment", body: "With you from the first hello to the family conversation." },
 ];
 
 const FAQS = [
   {
     q: "What is DesiHerz?",
-    a: "A private, invitation-led matrimony house. We build a discreet profile, search our own vetted circle, and arrange introductions by hand.",
+    a: "An invitation-led matrimony house — we search our vetted circle and introduce by hand.",
   },
   {
     q: "Is my profile ever made public?",
-    a: "No. Nothing about you is browsable, searchable, or visible to anyone outside the house. Only the principal matchmaker reviews your profile.",
+    a: "Never. Only the principal matchmaker ever sees it.",
   },
   {
     q: "How many introductions do I get at once?",
-    a: "Two or three names, considered carefully — never a list to scroll through.",
+    a: "Two or three names, considered carefully — never a list.",
   },
   {
     q: "Can a parent search on my behalf?",
-    a: "Yes. Many families begin the enquiry together, and we're glad to work directly with parents throughout the process.",
+    a: "Yes — many families begin the enquiry together.",
   },
   {
     q: "What does it cost to begin?",
-    a: "A first private consultation and screening is €39, arranged directly with the principal matchmaker.",
+    a: "A first private consultation and screening is €39.",
   },
   {
     q: "What happens after an introduction?",
-    a: "What happens next is entirely yours. We step back once the introduction is made and are only ever a message away if you need us.",
+    a: "Entirely yours. We step back and stay only a message away.",
   },
 ];
 
 const TESTIMONIALS = [
   {
-    quote: "The process felt private without feeling cold. We were introduced with context, care and no pressure to perform.",
+    quote: "Private without feeling cold. We were introduced with care, and no pressure to perform.",
     who: "M. & A.",
     city: "Frankfurt",
   },
   {
-    quote: "They understood that our families mattered, but they never let the family conversation overpower our own choice.",
+    quote: "They understood our families mattered, but never let that overpower our own choice.",
     who: "N. & R.",
     city: "Munich",
   },
   {
-    quote: "It was the opposite of an app. No noise, no public profile, just one introduction that made sense.",
+    quote: "The opposite of an app. No noise, just one introduction that made sense.",
     who: "S. & K.",
     city: "Berlin",
   },
@@ -387,7 +387,6 @@ function HeroStandalone() {
           <a className="cta-button" href="#discovery" onClick={(e) => { e.preventDefault(); scrollToJourney(5); }}>Watch the process</a>
           <a className="cta-button secondary" href="#contact">Request consultation</a>
         </div>
-        <span className="price-badge">First consultation &amp; screening <strong>€39</strong></span>
       </div>
       <div className="scroll-indicator">
         <span>Scroll</span>
@@ -847,7 +846,10 @@ function Proof() {
             transition={{ duration: 0.55, ease: "easeOut" }}
             whileHover={{ y: -6 }}
           >
-            <p>&ldquo;{q.quote}&rdquo;</p>
+            <svg className="quote-mark" viewBox="0 0 32 24" fill="none" aria-hidden="true">
+              <path d="M0 24V13.6C0 5.4 4.8 0.6 12 0v4.8C7.8 5.6 6 8.4 6 13.2h6V24H0zm18 0V13.6c0-8.2 4.8-13 12-13.6v4.8c-4.2 0.8-6 3.6-6 8.4h6V24H18z" fill="currentColor" />
+            </svg>
+            <p>{q.quote}</p>
             <footer>{q.who} / {q.city}</footer>
           </motion.article>
         ))}
