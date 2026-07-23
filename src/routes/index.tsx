@@ -116,6 +116,35 @@ const STATS = [
   { value: 1, suffix: "", label: "Introduction arranged at a time." },
 ];
 
+const VALUES = [
+  { n: "01", label: "Privacy", body: "No public profile, ever. Your search exists only between you and the house." },
+  { n: "02", label: "Curation", body: "Every introduction is reviewed by a person, not a matching algorithm optimizing for engagement." },
+  { n: "03", label: "Commitment", body: "We stay with you from the first hello to the family conversation, not just the first message." },
+];
+
+const FAQS = [
+  {
+    q: "What is DesiHerz?",
+    a: "A private, invitation-led matrimony house. We build a discreet profile, search our own vetted circle, and arrange introductions by hand.",
+  },
+  {
+    q: "Is my profile ever made public?",
+    a: "No. Nothing about you is browsable, searchable, or visible to anyone outside the house. Only the principal matchmaker reviews your profile.",
+  },
+  {
+    q: "How many introductions do I get at once?",
+    a: "Two or three names, considered carefully — never a list to scroll through.",
+  },
+  {
+    q: "Can a parent search on my behalf?",
+    a: "Yes. Many families begin the enquiry together, and we're glad to work directly with parents throughout the process.",
+  },
+  {
+    q: "What happens after an introduction?",
+    a: "What happens next is entirely yours. We step back once the introduction is made and are only ever a message away if you need us.",
+  },
+];
+
 const TESTIMONIALS = [
   {
     quote: "The process felt private without feeling cold. We were introduced with context, care and no pressure to perform.",
@@ -160,7 +189,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "DesiHerz — Private Matrimony" },
       { property: "og:description", content: SITE.description },
       { property: "og:type", content: "website" },
-      { name: "theme-color", content: "#1a1410" },
+      { name: "theme-color", content: "#0d1115" },
       {
         name: "keywords",
         content:
@@ -172,7 +201,7 @@ export const Route = createFileRoute("/")({
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" } as any,
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&family=Manrope:wght@300;400;500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap",
       },
     ],
     scripts: [
@@ -197,27 +226,9 @@ function Index() {
   useEffect(() => setMounted(true), []);
 
   return (
-    <div className="dh-root relative selection:bg-[#8a2035] selection:text-[#f5ece1]">
-      {/* Duotone grade for all real footage: remaps any source color into the
-          site's own wine-to-ivory range, so contrast and tone stay consistent
-          regardless of what's actually in a given frame. */}
-      <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden="true">
-        <filter id="duotone-wine">
-          <feColorMatrix
-            type="matrix"
-            values="0.33 0.33 0.33 0 0
-                    0.33 0.33 0.33 0 0
-                    0.33 0.33 0.33 0 0
-                    0    0    0   1 0"
-          />
-          <feComponentTransfer>
-            <feFuncR type="table" tableValues="0.24 0.99" />
-            <feFuncG type="table" tableValues="0.08 0.95" />
-            <feFuncB type="table" tableValues="0.16 0.89" />
-          </feComponentTransfer>
-        </filter>
-      </svg>
+    <div className="dh-root relative selection:bg-[#b8272f] selection:text-[#edeef0]">
       {mounted && <Cursor />}
+      {mounted && <CoordReadout />}
       <Loader />
       <SiteHeader />
       <HeroStandalone />
@@ -228,12 +239,29 @@ function Index() {
       <ScrollJourney />
       <JourneyController />
       <div className="after-journey">
+        <ValuesBand />
         <Stats />
         <Proof />
         <Voices />
+        <FAQSection />
         <Contact />
         <Footer />
       </div>
+    </div>
+  );
+}
+
+function CoordReadout() {
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => setPos({ x: e.clientX, y: e.clientY });
+    window.addEventListener("mousemove", onMove);
+    return () => window.removeEventListener("mousemove", onMove);
+  }, []);
+  return (
+    <div className="coord-readout" aria-hidden="true">
+      <div>X: {String(pos.x).padStart(4, "0")}</div>
+      <div>Y: {String(pos.y).padStart(4, "0")}</div>
     </div>
   );
 }
@@ -311,10 +339,16 @@ function HeroStandalone() {
         <source src="/videos/main-loop.mp4" type="video/mp4" />
       </video>
       <div className="hero-bg-overlay" aria-hidden="true" />
+      <div className="hero-grain" aria-hidden="true" />
+      <div className="corner-bracket tl" aria-hidden="true" />
+      <div className="corner-bracket tr" aria-hidden="true" />
+      <div className="corner-bracket bl" aria-hidden="true" />
+      <div className="corner-bracket br" aria-hidden="true" />
       <div className="hero-inner">
-        <span className="section-label">2026 · Private matrimony, Germany and beyond</span>
+        <span className="section-label">DesiHerz · Private matrimony unit</span>
         <h1 className="hero-heading">
-          <span>The right introduction,</span> <span><em>reconsidered.</em></span>
+          <span>The right introduction,</span>
+          <span><em>reconsidered.</em></span>
         </h1>
         <p className="hero-tagline">A private, human-led house. Scroll down to see exactly how an introduction happens.</p>
         <div className="hero-actions">
@@ -693,9 +727,82 @@ function StatItem({ value, suffix, label }: { value: number; suffix: string; lab
   );
 }
 
+function ValuesBand() {
+  return (
+    <section id="pledges" className="values-band">
+      <motion.div
+        className="section-heading-simple"
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.5 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+      >
+        <span className="section-label">Guiding principles</span>
+        <h2>Our pledges.</h2>
+      </motion.div>
+      <motion.div
+        className="values-grid"
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, amount: 0.2 }}
+        variants={staggerContainer}
+      >
+        {VALUES.map((v) => (
+          <motion.div key={v.n} className="value-card" variants={fadeUp} transition={{ duration: 0.5, ease: "easeOut" }}>
+            <span className="value-n">{v.n}</span>
+            <strong>{v.label}</strong>
+            <p>{v.body}</p>
+          </motion.div>
+        ))}
+      </motion.div>
+    </section>
+  );
+}
+
+function FAQSection() {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  return (
+    <section className="faq-section">
+      <motion.div
+        className="section-heading-simple"
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.5 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+      >
+        <span className="section-label">Frequently asked</span>
+        <h2>A few things people ask.</h2>
+      </motion.div>
+      <div className="faq-list">
+        {FAQS.map((item, i) => {
+          const isOpen = openIndex === i;
+          return (
+            <div
+              key={item.q}
+              className={`faq-item${isOpen ? " is-open" : ""}`}
+              onClick={() => setOpenIndex(isOpen ? null : i)}
+            >
+              <div className="faq-item-head">
+                <div>
+                  <span className="faq-n">{String(i + 1).padStart(2, "0")}</span>
+                  <h3 className="faq-question">{item.q}</h3>
+                </div>
+                <span className="faq-toggle" aria-hidden="true">+</span>
+              </div>
+              <div className="faq-answer">
+                <p>{item.a}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function Stats() {
   return (
-    <section id="pledges" className="stats-band">
+    <section className="stats-band">
       <motion.div
         className="stats-grid"
         initial="hidden"
