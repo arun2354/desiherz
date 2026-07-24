@@ -35,3 +35,6 @@ video-source/
 *.sln
 *.sw?
 .env
+
+# Personal MCP server config — contains API keys, never share/commit
+.mcp.json

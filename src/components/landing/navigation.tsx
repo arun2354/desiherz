@@ -64,11 +64,7 @@ export function Navigation() {
                 }`}
               >
                 {link.name}
-                <span
-                  className={`absolute -bottom-1 left-0 w-0 h-px transition-all duration-300 group-hover:w-full ${
-                    isScrolled ? "bg-foreground" : "bg-white"
-                  }`}
-                />
+                <span className="absolute -bottom-1 left-0 w-0 h-px bg-gradient-to-r from-gold to-rose transition-all duration-300 group-hover:w-full" />
               </a>
             ))}
           </div>
@@ -76,7 +72,7 @@ export function Navigation() {
           <div className="hidden md:flex items-center gap-4">
             <a
               href="#contact"
-              className={`rounded-full inline-flex items-center justify-center font-medium transition-all duration-500 ${
+              className={`rounded-full inline-flex items-center justify-center font-medium ring-1 ring-transparent transition-all duration-500 hover:ring-gold/60 ${
                 isScrolled
                   ? "bg-foreground hover:bg-foreground/90 text-background px-4 h-8 text-xs"
                   : "bg-white hover:bg-white/90 text-black px-6 h-10 text-sm"

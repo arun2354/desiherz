@@ -78,13 +78,16 @@ function BlurWord({ word, trigger }: { word: string; trigger: number }) {
             key={i}
             style={{
               display: "inline-block",
+              // a lone space inside an inline-block box gets trimmed to zero
+              // width by whitespace collapsing — pre + nbsp keeps it visible
+              whiteSpace: "pre",
               opacity: letterStates[i]?.opacity ?? 0,
               filter: `blur(${letterStates[i]?.blur ?? 20}px)`,
               color: showGradient ? `rgb(${r},${g},${b})` : "#f5e9dc",
               transition: "color 0.4s ease",
             }}
           >
-            {char === " " ? " " : char}
+            {char === " " ? " " : char}
           </span>
         );
       })}
@@ -165,7 +168,7 @@ export function HeroSection() {
   }, []);
 
   return (
-    <section className="relative min-h-screen flex flex-col justify-center items-start overflow-hidden bg-[#140c08]">
+    <section className="bg-grain relative min-h-screen flex flex-col justify-center items-start overflow-hidden bg-[#140c08]">
       {/* Background video */}
       <div className="absolute inset-0 z-0">
         <video
@@ -254,8 +257,11 @@ export function HeroSection() {
         }`}
       >
         <div className="max-w-[1400px] mx-auto flex items-start gap-10 lg:gap-20">
-          {stats.map((stat) => (
-            <div key={stat.label} className="flex flex-col gap-2">
+          {stats.map((stat, i) => (
+            <div
+              key={stat.label}
+              className={`flex flex-col gap-2 ${i > 0 ? "border-l border-[#e9cfae]/15 pl-10 lg:pl-20" : ""}`}
+            >
               <span className="text-3xl lg:text-4xl font-display text-[#d9a760]">{stat.value}</span>
               <span className="text-xs text-[#e9cfae]/70 leading-tight">{stat.label}</span>
             </div>

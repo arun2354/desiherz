@@ -1,4 +1,5 @@
-import { useEffect, useState, useRef } from "react";
+import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
 const faqs = [
   {
@@ -27,86 +28,95 @@ const faqs = [
   },
 ];
 
-export function FaqSection() {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
-  const [isVisible, setIsVisible] = useState(false);
-  const sectionRef = useRef<HTMLElement>(null);
+const EASE = [0.16, 1, 0.3, 1] as const;
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) setIsVisible(true);
-      },
-      { threshold: 0.1 }
-    );
-    if (sectionRef.current) observer.observe(sectionRef.current);
-    return () => observer.disconnect();
-  }, []);
+export function FaqSection() {
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <section id="faq" ref={sectionRef} className="relative py-24 lg:py-32">
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
-        <div className="grid lg:grid-cols-12 gap-12">
+    <section id="faq" className="relative overflow-hidden py-28 lg:py-40">
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/2 left-[-4%] -translate-y-1/2 font-display text-[22vw] leading-none text-foreground/[0.025] select-none"
+      >
+        ?
+      </span>
+
+      <div className="relative mx-auto max-w-[1400px] px-6 lg:px-12">
+        <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
           {/* Header */}
-          <div className="lg:col-span-5">
-            <span
-              className={`inline-flex items-center gap-3 text-sm font-mono text-muted-foreground mb-6 transition-all duration-700 ${
-                isVisible ? "opacity-100" : "opacity-0"
-              }`}
-            >
-              <span className="w-12 h-px bg-foreground/30" />
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.4 }}
+            transition={{ duration: 0.7, ease: EASE }}
+            className="lg:col-span-5"
+          >
+            <span className="mb-6 inline-flex items-center gap-3 text-sm font-mono text-muted-foreground">
+              <span className="h-px w-12 bg-gold/40" />
               Frequently asked
             </span>
-            <h2
-              className={`text-5xl md:text-6xl lg:text-7xl font-display tracking-tight leading-[0.95] transition-all duration-1000 ${
-                isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-              }`}
-            >
+            <h2 className="text-5xl leading-[0.95] tracking-tight md:text-6xl lg:text-7xl font-display">
               A few things
               <br />
-              <span className="text-muted-foreground">people ask.</span>
+              <span className="font-accent text-muted-foreground">people ask.</span>
             </h2>
-          </div>
+          </motion.div>
 
           {/* Items */}
           <div className="lg:col-span-7">
             {faqs.map((item, i) => {
               const isOpen = openIndex === i;
               return (
-                <button
+                <motion.div
                   key={item.q}
-                  type="button"
-                  onClick={() => setOpenIndex(isOpen ? null : i)}
-                  className={`w-full text-left border-b border-foreground/10 py-6 transition-all duration-500 group ${
-                    isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-                  }`}
-                  style={{ transitionDelay: `${i * 60}ms` }}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.4 }}
+                  transition={{ duration: 0.6, ease: EASE, delay: i * 0.06 }}
+                  className="border-b border-foreground/10"
                 >
-                  <div className="flex items-baseline justify-between gap-6">
+                  <button
+                    type="button"
+                    onClick={() => setOpenIndex(isOpen ? null : i)}
+                    aria-expanded={isOpen}
+                    className="group flex w-full items-baseline justify-between gap-6 py-6 text-left"
+                  >
                     <div className="flex items-baseline gap-5">
-                      <span className="font-mono text-xs text-muted-foreground">
+                      <span className={`font-mono text-xs transition-colors duration-300 ${isOpen ? "text-gold" : "text-muted-foreground"}`}>
                         {String(i + 1).padStart(2, "0")}
                       </span>
-                      <h3 className="text-lg lg:text-xl font-medium group-hover:text-rose transition-colors duration-300">
+                      <h3 className="text-lg font-medium transition-colors duration-300 group-hover:text-rose lg:text-xl">
                         {item.q}
                       </h3>
                     </div>
-                    <span
-                      className={`font-mono text-xl text-muted-foreground transition-transform duration-300 ${
-                        isOpen ? "rotate-45" : ""
-                      }`}
+                    <motion.span
+                      animate={{ rotate: isOpen ? 45 : 0 }}
+                      transition={{ duration: 0.3, ease: EASE }}
+                      className="font-mono text-xl text-gold"
                       aria-hidden="true"
                     >
                       +
-                    </span>
-                  </div>
-                  <div
-                    className="overflow-hidden transition-all duration-500"
-                    style={{ maxHeight: isOpen ? "160px" : "0px" }}
-                  >
-                    <p className="pt-4 pl-10 text-muted-foreground leading-relaxed">{item.a}</p>
-                  </div>
-                </button>
+                    </motion.span>
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        key="content"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.4, ease: EASE }}
+                        className="overflow-hidden"
+                      >
+                        <p className="max-w-md pt-1 pb-6 pl-10 leading-relaxed text-muted-foreground">
+                          {item.a}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
               );
             })}
           </div>

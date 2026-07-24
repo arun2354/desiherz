@@ -66,7 +66,7 @@ export function StatementSection() {
         >
           Some marriages are arranged.
           <br />
-          <span className="italic text-gold">The right ones are curated.</span>
+          <span className="font-accent text-foil">The right ones are curated.</span>
         </h2>
 
         <p
@@ -98,7 +98,7 @@ export function StatementSection() {
 
       {/* slow marquee strip */}
       <div
-        className={`mt-20 lg:mt-28 border-y border-foreground/10 py-5 overflow-hidden transition-opacity duration-1000 delay-300 ${
+        className={`mt-20 lg:mt-28 border-y border-gold/20 py-5 overflow-hidden transition-opacity duration-1000 delay-300 ${
           isVisible ? "opacity-100" : "opacity-0"
         }`}
       >

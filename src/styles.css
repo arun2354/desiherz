@@ -35,12 +35,19 @@
   --radius: 0.25rem;
   --rose: #c2679d;
   --gold: #b8863e;
+  --gold-light: #e0b876;
+  /* warm near-black for alternating dark editorial sections — never grey/pure-black */
+  --ink-background: oklch(0.16 0.025 45);
+  --ink-foreground: oklch(0.94 0.02 80);
+  --ink-muted-foreground: oklch(0.68 0.035 60);
+  --ink-border: oklch(0.32 0.03 50);
 }
 
 @theme inline {
   --font-sans: 'Instrument Sans', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
   --font-display: 'Fraunces', Georgia, serif;
+  --font-accent: 'Cormorant Garamond', 'Fraunces', Georgia, serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -62,6 +69,11 @@
   --color-ring: var(--ring);
   --color-rose: var(--rose);
   --color-gold: var(--gold);
+  --color-gold-light: var(--gold-light);
+  --color-ink-background: var(--ink-background);
+  --color-ink-foreground: var(--ink-foreground);
+  --color-ink-muted-foreground: var(--ink-muted-foreground);
+  --color-ink-border: var(--ink-border);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -73,7 +85,17 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background-color: var(--background);
+    /* soft ambient gradient wash, Apple-marketing-page style: fixed so it
+       reads as one continuous canvas behind the light sections rather than
+       repeating per-section. Velvety wine + aubergine + gold, not pink. */
+    background-image:
+      radial-gradient(48% 38% at 14% -8%, rgba(122, 32, 62, 0.11), transparent 68%),
+      radial-gradient(42% 34% at 88% 6%, rgba(184, 134, 62, 0.16), transparent 65%),
+      radial-gradient(52% 40% at 52% 108%, rgba(74, 36, 84, 0.09), transparent 70%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
   }
   html {
     scroll-behavior: smooth;
@@ -93,6 +115,11 @@
     font-family: var(--font-display);
   }
 
+  .font-accent {
+    font-family: var(--font-accent);
+    font-style: italic;
+  }
+
   .text-stroke {
     -webkit-text-stroke: 1.5px currentColor;
     -webkit-text-fill-color: transparent;
@@ -104,6 +131,52 @@
 
   .animate-fadeSlideIn {
     animation: fadeSlideIn 0.5s ease-out forwards;
+  }
+
+  /* subtle film-grain texture for dark editorial sections */
+  .bg-grain {
+    position: relative;
+  }
+  .bg-grain::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* gold-foil gradient text, for numerals and ornamental emphasis */
+  .text-foil {
+    background: linear-gradient(115deg, var(--gold) 10%, var(--gold-light) 45%, var(--rose) 65%, var(--gold) 90%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Apple-marketing-style ambient dark canvas: a velvety wine + aubergine +
+     gold base (feathered via the gradient stops themselves, not a blur
+     filter, so it can share the element with .bg-grain's own ::before
+     texture layer without the two fighting over the same pseudo-element).
+     Used by Voices, Testimonials and the Footer so the "dark" sections
+     still feel lit and premium rather than flat near-black. */
+  .bg-ink-gradient {
+    position: relative;
+    background:
+      radial-gradient(50% 45% at 12% 12%, rgba(122, 32, 62, 0.34), transparent 72%),
+      radial-gradient(44% 40% at 88% 8%, rgba(184, 134, 62, 0.18), transparent 72%),
+      radial-gradient(62% 54% at 50% 108%, rgba(74, 36, 84, 0.32), transparent 74%),
+      linear-gradient(165deg, #170a10 0%, #12070d 50%, #1a0d16 100%);
+  }
+
+  /* frosted-glass card, for panels sitting on top of .bg-ink-gradient */
+  .glass-panel {
+    background: color-mix(in oklab, var(--ink-foreground) 6%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid color-mix(in oklab, var(--ink-foreground) 12%, transparent);
   }
 }
 

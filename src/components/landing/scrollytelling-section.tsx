@@ -216,7 +216,11 @@ export function ScrollytellingSection() {
           ))}
 
           {/* step dots */}
-          <div className="absolute right-5 lg:right-8 top-1/2 -translate-y-1/2 flex flex-col gap-3">
+          <div className="absolute right-5 lg:right-8 top-1/2 -translate-y-1/2 flex flex-col items-center gap-3">
+            <span
+              aria-hidden="true"
+              className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-[#e9cfae]/15 to-transparent"
+            />
             {steps.map((step, i) => (
               <span
                 key={step.n}
