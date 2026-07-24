@@ -211,7 +211,11 @@ function makeCard(reg: Registry, w: number, h: number, r: number, edge: THREE.Co
 
   const fillGeo = new THREE.ShapeGeometry(roundedRectShape(w, h, r), 10);
   reg.geos.push(fillGeo);
-  const fillM = fadeMat(reg, new THREE.MeshStandardMaterial({ color: 0x201409, roughness: 0.75, metalness: 0.05 }), fillBase);
+  const fillM = fadeMat(
+    reg,
+    new THREE.MeshStandardMaterial({ color: 0x2a1c10, emissive: 0x140c08, emissiveIntensity: 1, roughness: 0.75, metalness: 0.05 }),
+    fillBase,
+  );
   const fill = new THREE.Mesh(fillGeo, fillM);
   fill.renderOrder = 1;
   mats.push(fillM);
@@ -221,7 +225,11 @@ function makeCard(reg: Registry, w: number, h: number, r: number, edge: THREE.Co
   outer.holes.push(roundedRectShape(w - strokeW * 2, h - strokeW * 2, Math.max(0.002, r - strokeW)));
   const borderGeo = new THREE.ShapeGeometry(outer, 10);
   reg.geos.push(borderGeo);
-  const borderM = fadeMat(reg, new THREE.MeshStandardMaterial({ color: edge, roughness: 0.35, metalness: 0.4 }), borderBase);
+  const borderM = fadeMat(
+    reg,
+    new THREE.MeshStandardMaterial({ color: edge, emissive: edge, emissiveIntensity: 0.85, roughness: 0.35, metalness: 0.4 }),
+    borderBase,
+  );
   const border = new THREE.Mesh(borderGeo, borderM);
   border.position.z = 0.003;
   border.renderOrder = 2;
@@ -256,7 +264,11 @@ function makeLine(reg: Registry, pts: THREE.Vector3[], color: string, base: numb
 function makeSilhouette(reg: Registry, gender: "m" | "f" | "n", scale: number, color: THREE.ColorRepresentation, base = 0.95) {
   const group = new THREE.Group();
   const mats: THREE.Material[] = [];
-  const mat = fadeMat(reg, new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.12, side: THREE.DoubleSide }), base);
+  const mat = fadeMat(
+    reg,
+    new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.85, roughness: 0.55, metalness: 0.12, side: THREE.DoubleSide }),
+    base,
+  );
   mats.push(mat);
 
   const headR = (gender === "f" ? 0.15 : 0.13) * scale;
@@ -321,14 +333,17 @@ export function ScrollytellingSection() {
 
     /* lighting — warm key + cool rim, so lit meshes have real depth
        instead of flat unlit color */
-    scene.add(new THREE.AmbientLight(0x4a3420, 1.6));
-    const key = new THREE.DirectionalLight(0xffe6bd, 1.5);
+    // Note: modern three.js (r155+) uses physically-correct light units —
+    // point/spot light intensity is in candela, so "legacy-scale" values
+    // like 0.9 render as near-black. These are calibrated for that.
+    scene.add(new THREE.AmbientLight(0x4a3420, 2.2));
+    const key = new THREE.DirectionalLight(0xffe6bd, 4.5);
     key.position.set(3.2, 4, 5.5);
     scene.add(key);
-    const rim = new THREE.PointLight(0xd9a0e0, 0.9, 24, 2);
+    const rim = new THREE.PointLight(0xd9a0e0, 45, 30, 2);
     rim.position.set(-3, 1.5, 3);
     scene.add(rim);
-    const fillLight = new THREE.PointLight(0xb9d4ff, 0.35, 24, 2);
+    const fillLight = new THREE.PointLight(0xb9d4ff, 20, 30, 2);
     fillLight.position.set(0, -2, 4);
     scene.add(fillLight);
 
@@ -801,7 +816,10 @@ export function ScrollytellingSection() {
           s.group.rotation.y = mix(s.rot, 0, t);
           s.group.scale.setScalar(mix(1, 2.6, t));
           s.borderMat.color.set(GOLD).lerp(new THREE.Color(ROSE), t);
-          s.figureMat.color.set(dim(s.genderColor, 0.62)).lerp(new THREE.Color(s.genderColor), t);
+          s.borderMat.emissive.copy(s.borderMat.color);
+          const figC = dim(s.genderColor, 0.62).lerp(new THREE.Color(s.genderColor), t);
+          s.figureMat.color.copy(figC);
+          s.figureMat.emissive.copy(figC);
         }
       });
       connections.forEach((c, j) => {
