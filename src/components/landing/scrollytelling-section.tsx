@@ -6,6 +6,19 @@ import { useEffect, useRef } from "react";
   (no decode latency, unlike seeking a real <video>), while six short
   captions fade through their own progress windows.
 
+  The enter/leave windows below are mapped to what the footage actually
+  shows at each frame (verified frame-by-frame), not evenly guessed —
+  that mismatch was the root cause of captions describing something
+  other than what was on screen:
+    frames  1–19  laptop, glowing double-heart, a hand reaching to it
+    frames 20–44  a floating network of locket/lock nodes
+    frames 45–58  gold particle burst -> a heart split circuit/leaf,
+                  held by two hands
+    frames 59–69  a ring inside a heart-shaped light trail, then
+                  placed on a finger
+    frames 70–89  joined hands wearing rings, petals and ribbons
+    frames 90–100 a couple at a candlelit altar arch, from behind
+
   Smoothness: a mouse wheel moves ~100px per notch, so mapping frames
   directly to scrollY jumps 2-3 frames per notch and looks steppy.
   Instead a continuous rAF loop eases displayed progress toward the
@@ -23,7 +36,7 @@ const steps = [
     line: "It starts with one quiet click.",
     tag: "100% PRIVATE · NO PUBLIC PROFILES",
     enter: 0.03,
-    leave: 0.16,
+    leave: 0.19,
     side: "left",
   },
   {
@@ -31,8 +44,8 @@ const steps = [
     title: "The circle",
     line: "Private, vetted, never browsed.",
     tag: "VETTED BY HAND · NEVER BROWSED",
-    enter: 0.2,
-    leave: 0.33,
+    enter: 0.22,
+    leave: 0.43,
     side: "right",
   },
   {
@@ -40,8 +53,8 @@ const steps = [
     title: "The match",
     line: "Heritage and heart, made whole.",
     tag: "HERITAGE & VALUES CONSIDERED",
-    enter: 0.37,
-    leave: 0.5,
+    enter: 0.46,
+    leave: 0.57,
     side: "left",
   },
   {
@@ -49,8 +62,8 @@ const steps = [
     title: "The proposal",
     line: "You decide, freely.",
     tag: "YOUR DECISION, ALWAYS",
-    enter: 0.54,
-    leave: 0.67,
+    enter: 0.6,
+    leave: 0.68,
     side: "right",
   },
   {
@@ -59,7 +72,7 @@ const steps = [
     line: "From strangers to promised, quietly.",
     tag: "AT YOUR OWN, QUIET PACE",
     enter: 0.71,
-    leave: 0.84,
+    leave: 0.88,
     side: "left",
   },
   {
@@ -67,8 +80,8 @@ const steps = [
     title: "The altar",
     line: "One ring. One introduction. One yes.",
     tag: "ONE INTRODUCTION, DONE RIGHT",
-    enter: 0.88,
-    leave: 1.01,
+    enter: 0.91,
+    leave: 1.02,
     side: "center",
   },
 ] as const;
@@ -92,11 +105,15 @@ const CLOSING_TAGS = [
   },
 ] as const;
 
+const smoothstep = (t: number) => t * t * (3 - 2 * t);
+
 export function ScrollytellingSection() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const captionRefs = useRef<(HTMLDivElement | null)[]>([]);
   const dotRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const counterRef = useRef<HTMLSpanElement>(null);
+  const railFillRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -173,24 +190,29 @@ export function ScrollytellingSection() {
         drawFrame(index);
       }
 
-      const fade = 0.03;
+      const fade = 0.045;
+      let activeIdx = 0;
       steps.forEach((step, i) => {
         const el = captionRefs.current[i];
         const dot = dotRefs.current[i];
-        if (!el) return;
         let opacity = 0;
-        if (p >= step.enter - fade && p <= step.enter) opacity = (p - (step.enter - fade)) / fade;
+        if (p >= step.enter - fade && p <= step.enter) opacity = smoothstep((p - (step.enter - fade)) / fade);
         else if (p > step.enter && p < step.leave) opacity = 1;
-        else if (p >= step.leave && p <= step.leave + fade) opacity = 1 - (p - step.leave) / fade;
-        el.style.opacity = String(opacity);
-        el.style.transform = `translateY(${(1 - opacity) * 24}px)`;
-        el.style.pointerEvents = opacity > 0.5 ? "auto" : "none";
+        else if (p >= step.leave && p <= step.leave + fade) opacity = 1 - smoothstep((p - step.leave) / fade);
+        if (el) {
+          el.style.opacity = String(opacity);
+          el.style.transform = `translateY(${(1 - opacity) * 18}px) scale(${0.98 + 0.02 * opacity})`;
+          el.style.pointerEvents = opacity > 0.5 ? "auto" : "none";
+        }
+        const active = p >= step.enter - fade && p < step.leave + fade;
+        if (active) activeIdx = i;
         if (dot) {
-          const active = p >= step.enter - fade && p < step.leave + fade;
           dot.style.background = active ? "#d9a760" : "rgba(245,233,220,0.2)";
-          dot.style.transform = active ? "scale(1.6)" : "scale(1)";
+          dot.style.transform = active ? "scale(1.7)" : "scale(1)";
         }
       });
+      if (counterRef.current) counterRef.current.textContent = `${steps[activeIdx].n} / 06`;
+      if (railFillRef.current) railFillRef.current.style.height = `${((activeIdx + 1) / steps.length) * 100}%`;
     };
 
     const loop = () => {
@@ -281,9 +303,14 @@ export function ScrollytellingSection() {
               style={{ opacity: 0 }}
             >
               <div className="glass-panel rounded-2xl px-7 py-8 lg:px-9 lg:py-10">
-                <span className="font-mono text-sm uppercase tracking-[0.25em] text-[#d9a760] block mb-4">
-                  {step.n}
-                </span>
+                <div
+                  className={`mb-4 flex items-baseline gap-3 ${
+                    step.side === "right" ? "justify-end" : step.side === "center" ? "justify-center" : ""
+                  }`}
+                >
+                  <span className="font-display text-3xl text-[#d9a760]">{step.n}</span>
+                  <span className="font-mono text-[11px] tracking-[0.2em] text-[#e9cfae]/40">/ 06</span>
+                </div>
                 <h3 className="font-display text-4xl lg:text-6xl text-[#f5e9dc] leading-[1.05] mb-4">
                   {step.title}
                 </h3>
@@ -333,22 +360,37 @@ export function ScrollytellingSection() {
             </div>
           ))}
 
-          {/* step dots */}
-          <div className="absolute right-5 lg:right-8 top-1/2 -translate-y-1/2 flex flex-col items-center gap-3">
-            <span
-              aria-hidden="true"
-              className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-[#e9cfae]/15 to-transparent"
-            />
-            {steps.map((step, i) => (
+          {/* progress rail: dots + a fill that tracks how far through the
+              journey we are, plus a running "N / 06" counter */}
+          <div className="absolute right-5 lg:right-8 top-1/2 -translate-y-1/2 flex flex-col items-center gap-4">
+            <div className="relative flex flex-col items-center gap-3">
               <span
-                key={step.n}
-                ref={(el) => {
-                  dotRefs.current[i] = el;
-                }}
-                className="w-2 h-2 rounded-full transition-all duration-300"
-                style={{ background: "rgba(245,233,220,0.2)" }}
+                aria-hidden="true"
+                className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 bg-[#e9cfae]/12"
               />
-            ))}
+              <span
+                aria-hidden="true"
+                ref={railFillRef}
+                className="absolute left-1/2 top-0 w-px -translate-x-1/2 bg-gradient-to-b from-[#d9a760] to-[#d9a760]/40 transition-[height] duration-300 ease-out"
+                style={{ height: "0%" }}
+              />
+              {steps.map((step, i) => (
+                <span
+                  key={step.n}
+                  ref={(el) => {
+                    dotRefs.current[i] = el;
+                  }}
+                  className="relative w-2.5 h-2.5 rounded-full transition-all duration-300"
+                  style={{ background: "rgba(245,233,220,0.2)" }}
+                />
+              ))}
+            </div>
+            <span
+              ref={counterRef}
+              className="font-mono text-[10px] tracking-[0.2em] text-[#e9cfae]/50 whitespace-nowrap"
+            >
+              01 / 06
+            </span>
           </div>
         </div>
       </div>
