@@ -16,17 +16,25 @@ if (typeof window !== "undefined") {
   p ∈ [0,5] (plus a clock for idle float). Nothing is tweened statefully,
   so scrolling up replays every frame in reverse exactly.
 
-  Typography stays in the DOM (crisp text beats extruded 3D type); the
-  canvas carries the cards, constellation, connection lines, rings and
-  the particle heart. Flat-shaded line-art materials only — no PBR, no
-  bloom pass — so the look stays engraved/etched rather than "game-like".
+  Cards and silhouettes are solid, lit meshes (MeshStandardMaterial under
+  a warm key light + cool rim light) so they read as real objects with
+  depth, not flat camouflaged line art. Connections, dust and the finale
+  particles stay unlit/additive for a glowing, "energy" contrast against
+  the solid "matter". Typography stays in the DOM for crispness.
 */
 
 const GOLD = "#d9a760";
 const GOLD_LIGHT = "#e0b876";
 const ROSE = "#eca8d6";
 const IVORY = "#f5e9dc";
+const MALE = "#cf9159"; // warm copper — male silhouettes
+const FEMALE = "#caa0d9"; // dusty orchid — female silhouettes
+const SAGE = "#93c2a3"; // family / trust
+const PERIWINKLE = "#93a9d9"; // review / security
 const BG = 0x140c08;
+const BG_COLOR = new THREE.Color(BG);
+
+const dim = (hex: string, amt: number) => new THREE.Color(hex).lerp(BG_COLOR, amt);
 
 const SCENES = [
   {
@@ -67,26 +75,26 @@ const SCENES = [
 ] as const;
 
 const FINAL_TAGS = [
-  { label: "Private by design", icon: "lock" },
-  { label: "Human reviewed", icon: "shield" },
-  { label: "Intent focused", icon: "heart" },
-  { label: "Meaningful introductions", icon: "family" },
+  { label: "Private by design", icon: "lock", color: GOLD },
+  { label: "Human reviewed", icon: "shield", color: PERIWINKLE },
+  { label: "Intent focused", icon: "heart", color: ROSE },
+  { label: "Meaningful introductions", icon: "family", color: SAGE },
 ] as const;
 
 /* satellite cards for the "we curate" constellation — angle, radius,
-   depth, tilt; three highlighted, index 0 becomes the chosen match */
+   depth, tilt, gender; three highlighted, index 0 becomes the chosen match */
 const SATS = [
-  { a: 0.3, r: 3.0, z: -1.2, rot: 0.22, hl: true },
-  { a: 1.05, r: 2.6, z: -0.6, rot: -0.18, hl: false },
-  { a: 1.62, r: 2.2, z: -1.6, rot: 0.12, hl: true },
-  { a: 2.2, r: 2.9, z: -0.9, rot: -0.26, hl: false },
-  { a: 2.85, r: 3.2, z: -1.4, rot: 0.18, hl: false },
-  { a: 3.5, r: 2.5, z: -0.7, rot: -0.12, hl: true },
-  { a: 4.1, r: 3.0, z: -1.5, rot: 0.2, hl: false },
-  { a: 4.7, r: 2.3, z: -0.8, rot: -0.22, hl: false },
-  { a: 5.3, r: 3.1, z: -1.1, rot: 0.08, hl: false },
-  { a: 5.9, r: 2.7, z: -1.7, rot: -0.08, hl: false },
-  { a: 0.75, r: 3.4, z: -2.0, rot: 0.04, hl: false },
+  { a: 0.3, r: 3.0, z: -1.2, rot: 0.22, hl: true, g: "f" as const },
+  { a: 1.05, r: 2.6, z: -0.6, rot: -0.18, hl: false, g: "m" as const },
+  { a: 1.62, r: 2.2, z: -1.6, rot: 0.12, hl: true, g: "f" as const },
+  { a: 2.2, r: 2.9, z: -0.9, rot: -0.26, hl: false, g: "m" as const },
+  { a: 2.85, r: 3.2, z: -1.4, rot: 0.18, hl: false, g: "f" as const },
+  { a: 3.5, r: 2.5, z: -0.7, rot: -0.12, hl: true, g: "m" as const },
+  { a: 4.1, r: 3.0, z: -1.5, rot: 0.2, hl: false, g: "f" as const },
+  { a: 4.7, r: 2.3, z: -0.8, rot: -0.22, hl: false, g: "m" as const },
+  { a: 5.3, r: 3.1, z: -1.1, rot: 0.08, hl: false, g: "f" as const },
+  { a: 5.9, r: 2.7, z: -1.7, rot: -0.08, hl: false, g: "m" as const },
+  { a: 0.75, r: 3.4, z: -2.0, rot: 0.04, hl: false, g: "f" as const },
 ] as const;
 
 /* camera keyframes: [p, x, y, z] as offsets from the content centre */
@@ -164,7 +172,7 @@ function setA(mats: THREE.Material[], a: number) {
   for (const m of mats) m.opacity = (m.userData.base as number) * a;
 }
 
-function roundedRectPoints(w: number, h: number, r: number, n = 10): THREE.Vector2[] {
+function roundedRectShape(w: number, h: number, r: number): THREE.Shape {
   const s = new THREE.Shape();
   const x = -w / 2;
   const y = -h / 2;
@@ -177,7 +185,7 @@ function roundedRectPoints(w: number, h: number, r: number, n = 10): THREE.Vecto
   s.absarc(x + r, y + h - r, r, Math.PI / 2, Math.PI, false);
   s.lineTo(x, y + r);
   s.absarc(x + r, y + r, r, Math.PI, Math.PI * 1.5, false);
-  return s.getPoints(n);
+  return s;
 }
 
 function glowTexture(reg: Registry): THREE.CanvasTexture {
@@ -195,29 +203,32 @@ function glowTexture(reg: Registry): THREE.CanvasTexture {
   return t;
 }
 
-/** outlined card: dark fill + gold line frame, opacity-fadeable as one unit */
-function makeCard(reg: Registry, w: number, h: number, r: number, edge: string, fillBase = 0.82) {
+/** lit card: dark fill + a real filled, colored border ring — solid and
+ *  legible against the backdrop rather than a 1px GL line. */
+function makeCard(reg: Registry, w: number, h: number, r: number, edge: THREE.ColorRepresentation, fillBase = 0.9, borderBase = 0.98) {
   const group = new THREE.Group();
   const mats: THREE.Material[] = [];
 
-  const pts = roundedRectPoints(w, h, r);
-  const shape = new THREE.Shape(pts);
-  const fillGeo = new THREE.ShapeGeometry(shape);
+  const fillGeo = new THREE.ShapeGeometry(roundedRectShape(w, h, r), 10);
   reg.geos.push(fillGeo);
-  const fillM = fadeMat(reg, new THREE.MeshBasicMaterial({ color: 0x1b1109, depthWrite: true }), fillBase);
+  const fillM = fadeMat(reg, new THREE.MeshStandardMaterial({ color: 0x201409, roughness: 0.75, metalness: 0.05 }), fillBase);
   const fill = new THREE.Mesh(fillGeo, fillM);
   fill.renderOrder = 1;
   mats.push(fillM);
 
-  const lineGeo = new THREE.BufferGeometry().setFromPoints([...pts, pts[0]]);
-  reg.geos.push(lineGeo);
-  const lineM = fadeMat(reg, new THREE.LineBasicMaterial({ color: edge }), 0.85);
-  const outline = new THREE.Line(lineGeo, lineM);
-  outline.renderOrder = 2;
-  mats.push(lineM);
+  const strokeW = Math.max(0.02, Math.min(w, h) * 0.045);
+  const outer = roundedRectShape(w, h, r);
+  outer.holes.push(roundedRectShape(w - strokeW * 2, h - strokeW * 2, Math.max(0.002, r - strokeW)));
+  const borderGeo = new THREE.ShapeGeometry(outer, 10);
+  reg.geos.push(borderGeo);
+  const borderM = fadeMat(reg, new THREE.MeshStandardMaterial({ color: edge, roughness: 0.35, metalness: 0.4 }), borderBase);
+  const border = new THREE.Mesh(borderGeo, borderM);
+  border.position.z = 0.003;
+  border.renderOrder = 2;
+  mats.push(borderM);
 
-  group.add(fill, outline);
-  return { group, mats, outlineMat: lineM as THREE.LineBasicMaterial };
+  group.add(fill, border);
+  return { group, mats, borderMat: borderM };
 }
 
 function circlePoints(radius: number, n = 40, arcStart = 0, arcEnd = Math.PI * 2): THREE.Vector3[] {
@@ -238,17 +249,41 @@ function makeLine(reg: Registry, pts: THREE.Vector3[], color: string, base: numb
   return { line, mat };
 }
 
-/** avatar: head circle + shoulder arc, engraved-line style */
-function makeAvatar(reg: Registry, scale: number, color: string) {
+/** a real bust silhouette — filled head + shoulders, lit like a solid
+ *  object. 'f' gets a fuller head (hair volume) and a narrower waist;
+ *  'm' gets a plain head and broad, square-ish shoulders; 'n' (the
+ *  card owner — "you") sits between the two, deliberately un-gendered. */
+function makeSilhouette(reg: Registry, gender: "m" | "f" | "n", scale: number, color: THREE.ColorRepresentation, base = 0.95) {
   const group = new THREE.Group();
   const mats: THREE.Material[] = [];
-  const head = makeLine(reg, circlePoints(0.11 * scale), color, 0.9, true);
-  head.line.position.y = 0.12 * scale;
-  const shoulders = makeLine(reg, circlePoints(0.2 * scale, 24, Math.PI * 0.15, Math.PI * 0.85), color, 0.9);
-  shoulders.line.position.y = -0.14 * scale;
-  group.add(head.line, shoulders.line);
-  mats.push(head.mat, shoulders.mat);
-  return { group, mats };
+  const mat = fadeMat(reg, new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.12, side: THREE.DoubleSide }), base);
+  mats.push(mat);
+
+  const headR = (gender === "f" ? 0.15 : 0.13) * scale;
+  const headGeo = new THREE.CircleGeometry(headR, 28);
+  reg.geos.push(headGeo);
+  const head = new THREE.Mesh(headGeo, mat);
+  head.position.set(0, 0.3 * scale, 0.004);
+  if (gender === "f") head.scale.set(1.05, 1.3, 1);
+  group.add(head);
+
+  const neckW = 0.06 * scale;
+  const shoulderW = (gender === "m" ? 0.34 : gender === "f" ? 0.22 : 0.28) * scale;
+  const torsoH = (gender === "m" ? 0.36 : gender === "f" ? 0.42 : 0.38) * scale;
+  const flare = gender === "m" ? 1.02 : 1.16;
+  const torso = new THREE.Shape();
+  torso.moveTo(-neckW, 0.16 * scale);
+  torso.quadraticCurveTo(-shoulderW * flare, -torsoH * 0.3, -shoulderW, -torsoH);
+  torso.lineTo(shoulderW, -torsoH);
+  torso.quadraticCurveTo(shoulderW * flare, -torsoH * 0.3, neckW, 0.16 * scale);
+  torso.closePath();
+  const torsoGeo = new THREE.ShapeGeometry(torso, 12);
+  reg.geos.push(torsoGeo);
+  const torsoMesh = new THREE.Mesh(torsoGeo, mat);
+  torsoMesh.position.set(0, 0.02 * scale, 0.003);
+  group.add(torsoMesh);
+
+  return { group, mats, mat };
 }
 
 /** heart outline points (classic parametric), centred, ~1.9 wide at s=0.062 */
@@ -281,8 +316,21 @@ export function ScrollytellingSection() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(BG, 0.028);
+    scene.fog = new THREE.FogExp2(BG, 0.026);
     const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 60);
+
+    /* lighting — warm key + cool rim, so lit meshes have real depth
+       instead of flat unlit color */
+    scene.add(new THREE.AmbientLight(0x4a3420, 1.6));
+    const key = new THREE.DirectionalLight(0xffe6bd, 1.5);
+    key.position.set(3.2, 4, 5.5);
+    scene.add(key);
+    const rim = new THREE.PointLight(0xd9a0e0, 0.9, 24, 2);
+    rim.position.set(-3, 1.5, 3);
+    scene.add(rim);
+    const fillLight = new THREE.PointLight(0xb9d4ff, 0.35, 24, 2);
+    fillLight.position.set(0, -2, 4);
+    scene.add(fillLight);
 
     const content = new THREE.Group();
     scene.add(content);
@@ -300,20 +348,21 @@ export function ScrollytellingSection() {
       return { sprite: s, mat: m };
     };
 
-    /* ambient backdrop glow — the "lit from within" feel */
-    const backGlow = makeGlow(GOLD, 9, 0.16);
+    /* ambient backdrop glow — the "lit from within" feel, kept modest so
+       the foreground reads clearly against it */
+    const backGlow = makeGlow(GOLD, 9, 0.11);
     backGlow.sprite.position.set(0, 0, -3.5);
     content.add(backGlow.sprite);
-    const backGlowRose = makeGlow(ROSE, 7, 0.1);
+    const backGlowRose = makeGlow(ROSE, 7, 0.07);
     backGlowRose.sprite.position.set(-1.5, 1, -4);
     content.add(backGlowRose.sprite);
 
-    /* ---------- main profile card ---------- */
+    /* ---------- main profile card ("you") ---------- */
     const CW = 1.7;
     const CH = 2.3;
     const main = makeCard(reg, CW, CH, 0.12, GOLD);
     content.add(main.group);
-    const mainGlow = makeGlow(GOLD, 3.6, 0.28);
+    const mainGlow = makeGlow(GOLD, 3.6, 0.26);
     mainGlow.sprite.position.z = -0.4;
     main.group.add(mainGlow.sprite);
 
@@ -373,7 +422,9 @@ export function ScrollytellingSection() {
       lockMats.push(ring.mat, body.mat, shackle.mat);
     }
 
-    // scene 2 content: three review rows, each with a check ring; rose seal
+    // scene 2 content: three review rows (each its own accent color),
+    // each with a check ring; rose seal
+    const REVIEW_COLORS = [ROSE, SAGE, PERIWINKLE];
     const reviewUnits: { mats: THREE.Material[]; ring: THREE.Group }[] = [];
     for (let i = 0; i < 3; i++) {
       const y = 0.42 - i * 0.44;
@@ -382,11 +433,11 @@ export function ScrollytellingSection() {
       mats.push(bar.mat);
       const ringGroup = new THREE.Group();
       ringGroup.position.set(0.48, y, 0.01);
-      const ring = makeLine(reg, circlePoints(0.085, 32), GOLD, 0.95, true);
+      const ring = makeLine(reg, circlePoints(0.085, 32), REVIEW_COLORS[i], 0.95, true);
       const tick = makeLine(
         reg,
         [new THREE.Vector3(-0.035, 0, 0.001), new THREE.Vector3(-0.005, -0.03, 0.001), new THREE.Vector3(0.045, 0.03, 0.001)],
-        ROSE,
+        GOLD,
         1,
       );
       ringGroup.add(ring.line, tick.line);
@@ -414,34 +465,38 @@ export function ScrollytellingSection() {
     sealGroup.add(sealGlow.sprite);
     sealMats.push(sealGlow.mat);
 
-    // avatar on the main card for scenes 4 (the person behind the form)
-    const mainAvatar = makeAvatar(reg, 1.6, GOLD);
-    mainAvatar.group.position.set(0, 0.05, 0.01);
-    main.group.add(mainAvatar.group);
+    // the person behind the form — un-gendered "you", shown for scene 4
+    const mainSilhouette = makeSilhouette(reg, "n", 1.7, GOLD);
+    mainSilhouette.group.position.set(0, 0.02, 0.01);
+    main.group.add(mainSilhouette.group);
 
-    /* ---------- satellites (scene 3) ---------- */
+    /* ---------- satellites (scene 3) — real men & women, most dim,
+       three highlighted in full color ---------- */
     const satsGroup = new THREE.Group();
     content.add(satsGroup);
     const satData = SATS.map((s) => {
       const pos = new THREE.Vector3(Math.cos(s.a) * s.r, Math.sin(s.a) * s.r * 0.62, s.z);
-      const card = makeCard(reg, 0.62, 0.84, 0.06, s.hl ? GOLD : "#6b4f33", 0.7);
+      const genderColor = s.g === "m" ? MALE : FEMALE;
+      const frameColor = s.hl ? GOLD : dim(GOLD, 0.62);
+      const figureColor = s.hl ? genderColor : dim(genderColor, 0.55);
+      const card = makeCard(reg, 0.64, 0.88, 0.06, frameColor, 0.82, 0.9);
       card.group.position.copy(pos);
       card.group.rotation.y = s.rot;
-      const avatar = makeAvatar(reg, 0.62, s.hl ? GOLD : "#6b4f33");
-      avatar.group.position.set(0, 0.1, 0.01);
-      card.group.add(avatar.group);
-      const bar = makeLine(reg, [new THREE.Vector3(-0.18, -0.24, 0.01), new THREE.Vector3(0.18, -0.24, 0.01)], IVORY, 0.25);
+      const figure = makeSilhouette(reg, s.g, 0.72, figureColor, 0.95);
+      figure.group.position.set(0, 0.12, 0.012);
+      card.group.add(figure.group);
+      const bar = makeLine(reg, [new THREE.Vector3(-0.18, -0.28, 0.012), new THREE.Vector3(0.18, -0.28, 0.012)], IVORY, s.hl ? 0.4 : 0.18);
       card.group.add(bar.line);
-      const mats = [...card.mats, ...avatar.mats, bar.mat];
+      const mats = [...card.mats, ...figure.mats, bar.mat];
       let glowMat: THREE.Material | null = null;
       if (s.hl) {
-        const glow = makeGlow(ROSE, 1.6, 0.4);
+        const glow = makeGlow(genderColor, 1.5, 0.4);
         glow.sprite.position.z = -0.2;
         card.group.add(glow.sprite);
         glowMat = glow.mat;
       }
       satsGroup.add(card.group);
-      return { ...s, pos, group: card.group, mats, glowMat, outlineMat: card.outlineMat };
+      return { ...s, pos, group: card.group, mats, glowMat, borderMat: card.borderMat, figureMat: figure.mat, genderColor };
     });
     const chosen = satData[0];
 
@@ -454,7 +509,7 @@ export function ScrollytellingSection() {
         const mat = fadeMat(
           reg,
           new THREE.LineDashedMaterial({ color: GOLD, dashSize: 0.09, gapSize: 0.06 }),
-          0.7,
+          0.75,
         );
         const line = new THREE.Line(geo, mat);
         line.renderOrder = 4;
@@ -625,7 +680,7 @@ export function ScrollytellingSection() {
         blending: THREE.AdditiveBlending,
         depthWrite: false,
       }),
-      0.3,
+      0.2,
     );
     const dust = new THREE.Points(dustGeo, dustMat);
     dust.renderOrder = 0;
@@ -701,7 +756,7 @@ export function ScrollytellingSection() {
       /* main card visibility + drift + scene-4 slide */
       const mainA = es(p, -0.1, 0.12) * (1 - es(p, 3.98, 4.3));
       setA(main.mats, mainA);
-      setA(headerMats, mainA * (1 - es(p, 2.95, 3.15))); // header yields to avatar in S4
+      setA(headerMats, mainA * (1 - es(p, 2.95, 3.15))); // header yields to the figure in S4
       mainGlow.mat.opacity = (mainGlow.mat.userData.base as number) * mainA * (1 - 0.5 * es(p, 2.0, 2.5));
       const slide = ss(seg(p, 3.05, 3.5));
       main.group.position.x = -1.35 * slide;
@@ -724,8 +779,8 @@ export function ScrollytellingSection() {
       setA(sealMats, sealA);
       sealGroup.scale.setScalar(mix(0.6, 1, sealA));
 
-      /* scene 4 avatar on main card */
-      setA(mainAvatar.mats, es(p, 3.0, 3.25) * (1 - es(p, 3.98, 4.3)));
+      /* scene 4: the figure on the main card */
+      setA(mainSilhouette.mats, es(p, 3.0, 3.25) * (1 - es(p, 3.98, 4.3)));
 
       /* scene 3: constellation */
       const satsIdle = Math.sin(time * 0.3) * 0.02;
@@ -744,8 +799,9 @@ export function ScrollytellingSection() {
           const t = ss(seg(p, 3.05, 3.5));
           s.group.position.set(mix(s.pos.x, 1.35, t), mix(s.pos.y, 0, t) + Math.sin(time * 0.6 + 1.7) * 0.035 * t, mix(s.pos.z, 0, t));
           s.group.rotation.y = mix(s.rot, 0, t);
-          s.group.scale.setScalar(mix(1, 2.74, t));
-          s.outlineMat.color.set(GOLD).lerp(new THREE.Color(ROSE), t);
+          s.group.scale.setScalar(mix(1, 2.6, t));
+          s.borderMat.color.set(GOLD).lerp(new THREE.Color(ROSE), t);
+          s.figureMat.color.set(dim(s.genderColor, 0.62)).lerp(new THREE.Color(s.genderColor), t);
         }
       });
       connections.forEach((c, j) => {
@@ -909,7 +965,7 @@ export function ScrollytellingSection() {
             <div className="mt-8 flex gap-6 lg:gap-8">
               {FINAL_TAGS.map((t) => (
                 <div key={t.label} className="st-final-tag flex flex-col items-center gap-2" style={{ opacity: 0 }}>
-                  <Icon name={t.icon} className="h-4 w-4 lg:h-5 lg:w-5" style={{ color: GOLD }} />
+                  <Icon name={t.icon} className="h-4 w-4 lg:h-5 lg:w-5" style={{ color: t.color }} />
                   <span
                     className="max-w-[70px] text-center text-[9px] leading-tight lg:max-w-[80px] lg:text-[10px]"
                     style={{ color: "rgba(245,233,220,0.6)" }}
