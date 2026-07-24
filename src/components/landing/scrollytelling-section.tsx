@@ -3,13 +3,11 @@ import { useEffect, useRef } from "react";
 /*
   Scrollytelling: a 600vh container with a sticky full-viewport canvas.
   Scroll progress scrubs a 100-frame JPEG sequence drawn to canvas
-  (no decode latency, unlike seeking a real <video>), while six short
-  captions fade through their own progress windows.
+  (no decode latency, unlike seeking a real <video>), while a caption
+  band fades through six progress windows.
 
   The enter/leave windows below are mapped to what the footage actually
-  shows at each frame (verified frame-by-frame), not evenly guessed —
-  that mismatch was the root cause of captions describing something
-  other than what was on screen:
+  shows at each frame (verified frame-by-frame), not evenly guessed:
     frames  1–19  laptop, glowing double-heart, a hand reaching to it
     frames 20–44  a floating network of locket/lock nodes
     frames 45–58  gold particle burst -> a heart split circuit/leaf,
@@ -18,6 +16,11 @@ import { useEffect, useRef } from "react";
                   placed on a finger
     frames 70–89  joined hands wearing rings, petals and ribbons
     frames 90–100 a couple at a candlelit altar arch, from behind
+
+  Captions sit in a fixed, solid lower-third band rather than a
+  translucent floating card — legibility over unpredictable footage
+  matters more than a glassy look, so the band background is a
+  near-opaque dark fill, not a frosted see-through one.
 
   Smoothness: a mouse wheel moves ~100px per notch, so mapping frames
   directly to scrollY jumps 2-3 frames per notch and looks steppy.
@@ -37,7 +40,7 @@ const steps = [
     tag: "100% PRIVATE · NO PUBLIC PROFILES",
     enter: 0.03,
     leave: 0.19,
-    side: "left",
+    final: false,
   },
   {
     n: "02",
@@ -46,7 +49,7 @@ const steps = [
     tag: "VETTED BY HAND · NEVER BROWSED",
     enter: 0.22,
     leave: 0.43,
-    side: "right",
+    final: false,
   },
   {
     n: "03",
@@ -55,7 +58,7 @@ const steps = [
     tag: "HERITAGE & VALUES CONSIDERED",
     enter: 0.46,
     leave: 0.57,
-    side: "left",
+    final: false,
   },
   {
     n: "04",
@@ -64,7 +67,7 @@ const steps = [
     tag: "YOUR DECISION, ALWAYS",
     enter: 0.6,
     leave: 0.68,
-    side: "right",
+    final: false,
   },
   {
     n: "05",
@@ -73,7 +76,7 @@ const steps = [
     tag: "AT YOUR OWN, QUIET PACE",
     enter: 0.71,
     leave: 0.88,
-    side: "left",
+    final: false,
   },
   {
     n: "06",
@@ -82,7 +85,7 @@ const steps = [
     tag: "ONE INTRODUCTION, DONE RIGHT",
     enter: 0.91,
     leave: 1.02,
-    side: "center",
+    final: true,
   },
 ] as const;
 
@@ -111,9 +114,8 @@ export function ScrollytellingSection() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const captionRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const dotRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const barFillRef = useRef<HTMLSpanElement>(null);
   const counterRef = useRef<HTMLSpanElement>(null);
-  const railFillRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -194,25 +196,20 @@ export function ScrollytellingSection() {
       let activeIdx = 0;
       steps.forEach((step, i) => {
         const el = captionRefs.current[i];
-        const dot = dotRefs.current[i];
         let opacity = 0;
         if (p >= step.enter - fade && p <= step.enter) opacity = smoothstep((p - (step.enter - fade)) / fade);
         else if (p > step.enter && p < step.leave) opacity = 1;
         else if (p >= step.leave && p <= step.leave + fade) opacity = 1 - smoothstep((p - step.leave) / fade);
         if (el) {
           el.style.opacity = String(opacity);
-          el.style.transform = `translateY(${(1 - opacity) * 18}px) scale(${0.98 + 0.02 * opacity})`;
+          el.style.transform = `translateY(${(1 - opacity) * 14}px)`;
           el.style.pointerEvents = opacity > 0.5 ? "auto" : "none";
         }
-        const active = p >= step.enter - fade && p < step.leave + fade;
-        if (active) activeIdx = i;
-        if (dot) {
-          dot.style.background = active ? "#d9a760" : "rgba(245,233,220,0.2)";
-          dot.style.transform = active ? "scale(1.7)" : "scale(1)";
-        }
+        if (p >= step.enter - fade && p < step.leave + fade) activeIdx = i;
       });
-      if (counterRef.current) counterRef.current.textContent = `${steps[activeIdx].n} / 06`;
-      if (railFillRef.current) railFillRef.current.style.height = `${((activeIdx + 1) / steps.length) * 100}%`;
+
+      if (barFillRef.current) barFillRef.current.style.width = `${p * 100}%`;
+      if (counterRef.current) counterRef.current.textContent = `${steps[activeIdx].n} / 06 — ${steps[activeIdx].title}`;
     };
 
     const loop = () => {
@@ -268,130 +265,105 @@ export function ScrollytellingSection() {
         <div className="sticky top-0 h-screen overflow-hidden">
           <canvas ref={canvasRef} className="absolute inset-0" aria-hidden="true" />
 
-          {/* Apple-style translucent overlay: directional scrim for edge
-              legibility + a soft ambient gold/rose wash, matching the rest
-              of the site's ambient-gradient language */}
+          {/* just enough scrim at the very bottom for the band to sit on;
+              the footage stays otherwise untouched/undimmed */}
           <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background:
-                "linear-gradient(180deg, rgba(20,12,8,0.55) 0%, rgba(20,12,8,0.12) 32%, rgba(20,12,8,0.12) 68%, rgba(20,12,8,0.6) 100%)",
-            }}
-          />
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background:
-                "radial-gradient(45% 40% at 15% 20%, rgba(194,103,157,0.16), transparent 70%), radial-gradient(40% 35% at 85% 15%, rgba(217,167,96,0.18), transparent 70%), radial-gradient(55% 45% at 50% 100%, rgba(217,167,96,0.12), transparent 72%)",
-            }}
+            className="absolute inset-x-0 bottom-0 h-[45vh] pointer-events-none"
+            style={{ background: "linear-gradient(180deg, transparent 0%, rgba(15,9,6,0.5) 55%, rgba(15,9,6,0.85) 100%)" }}
           />
 
-          {/* captions, each floating on a frosted glass card over the footage */}
+          {/* top progress bar: a thin gold line that fills across the
+              full 600vh scroll, so "how far through" is always visible */}
+          <div className="absolute top-0 inset-x-0 h-[3px] bg-[#e9cfae]/10">
+            <span
+              ref={barFillRef}
+              className="block h-full bg-[#d9a760]"
+              style={{ width: "0%" }}
+            />
+          </div>
+          <div className="absolute top-4 right-5 lg:right-8">
+            <span ref={counterRef} className="font-mono text-[10px] tracking-[0.18em] text-[#f5e9dc]/70 whitespace-nowrap">
+              01 / 06 — Discovery
+            </span>
+          </div>
+
+          {/* caption band: solid, high-contrast, fixed at the bottom —
+              legible over any frame, not a translucent floating card */}
           {steps.map((step, i) => (
             <div
               key={step.n}
               ref={(el) => {
                 captionRefs.current[i] = el;
               }}
-              className={`absolute top-1/2 -translate-y-1/2 max-w-md px-6 lg:px-0 transition-none ${
-                step.side === "left"
-                  ? "left-6 lg:left-24 text-left"
-                  : step.side === "right"
-                    ? "right-6 lg:right-24 text-right"
-                    : "left-1/2 -translate-x-1/2 text-center"
-              }`}
+              className="absolute inset-x-0 bottom-0 transition-none"
               style={{ opacity: 0 }}
             >
-              <div className="glass-panel rounded-2xl px-7 py-8 lg:px-9 lg:py-10">
+              <div className="mx-auto max-w-5xl px-6 pb-10 lg:px-16 lg:pb-14">
                 <div
-                  className={`mb-4 flex items-baseline gap-3 ${
-                    step.side === "right" ? "justify-end" : step.side === "center" ? "justify-center" : ""
-                  }`}
+                  className="rounded-2xl px-6 py-6 lg:px-10 lg:py-8"
+                  style={{
+                    background: "rgba(15,9,6,0.92)",
+                    borderTop: "2px solid #d9a760",
+                    boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
+                  }}
                 >
-                  <span className="font-display text-3xl text-[#d9a760]">{step.n}</span>
-                  <span className="font-mono text-[11px] tracking-[0.2em] text-[#e9cfae]/40">/ 06</span>
-                </div>
-                <h3 className="font-display text-4xl lg:text-6xl text-[#f5e9dc] leading-[1.05] mb-4">
-                  {step.title}
-                </h3>
-                <p className="text-lg text-[#e9cfae]/85 mb-5">{step.line}</p>
-                <span
-                  className={`inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.18em] text-[#e9cfae]/55 ${
-                    step.side === "center" ? "justify-center" : ""
-                  }`}
-                >
-                  <span className="text-[#d9a760]">✦</span>
-                  {step.tag}
-                </span>
-
-                {step.side === "center" && (
-                  <>
-                    <div className="mt-8">
+                  <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:gap-10">
+                    <div className="flex shrink-0 items-baseline gap-3 lg:w-24 lg:flex-col lg:items-start lg:gap-1">
+                      <span className="font-display text-5xl leading-none text-[#d9a760] lg:text-6xl">{step.n}</span>
+                      <span className="font-mono text-[10px] tracking-[0.2em] text-white/40">/ 06</span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="mb-2 font-display text-3xl leading-tight text-white lg:text-4xl">{step.title}</h3>
+                      <p className="mb-3 text-base text-[#f5e9dc] lg:text-lg">{step.line}</p>
+                      <span className="inline-flex items-center gap-2 font-mono text-[10px] tracking-[0.15em] text-[#d9a760]">
+                        <span>✦</span>
+                        {step.tag}
+                      </span>
+                    </div>
+                    {!step.final && (
                       <a
                         href="#contact"
-                        className="inline-flex items-center justify-center h-12 px-8 rounded-full bg-[#f5e9dc] text-[#140c08] text-sm font-medium hover:bg-white transition-colors"
+                        className="hidden shrink-0 items-center justify-center self-end rounded-full bg-[#f5e9dc] px-6 h-11 text-sm font-medium text-[#140c08] transition-colors hover:bg-white lg:inline-flex"
                       >
-                        Begin privately
+                        Private enquiry
                       </a>
-                    </div>
-                    <div className="mt-8 grid grid-cols-4 gap-4 pt-6 border-t border-[#e9cfae]/15">
-                      {CLOSING_TAGS.map((t) => (
-                        <div key={t.label} className="flex flex-col items-center gap-2">
-                          <svg
-                            viewBox="0 0 24 24"
-                            className="w-4 h-4 lg:w-5 lg:h-5 text-[#d9a760]"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={1.4}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d={t.d} />
-                          </svg>
-                          <span className="text-[9px] lg:text-[10px] leading-tight text-[#e9cfae]/60 max-w-[68px]">
-                            {t.label}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
+                    )}
+                  </div>
+
+                  {step.final && (
+                    <>
+                      <div className="mt-6">
+                        <a
+                          href="#contact"
+                          className="inline-flex h-12 items-center justify-center rounded-full bg-[#f5e9dc] px-8 text-sm font-medium text-[#140c08] transition-colors hover:bg-white"
+                        >
+                          Begin privately
+                        </a>
+                      </div>
+                      <div className="mt-6 grid grid-cols-2 gap-4 border-t border-white/10 pt-6 sm:grid-cols-4">
+                        {CLOSING_TAGS.map((t) => (
+                          <div key={t.label} className="flex flex-col items-center gap-2 text-center">
+                            <svg
+                              viewBox="0 0 24 24"
+                              className="h-4 w-4 text-[#d9a760] lg:h-5 lg:w-5"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth={1.4}
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d={t.d} />
+                            </svg>
+                            <span className="max-w-[100px] text-[10px] leading-tight text-white/60">{t.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           ))}
-
-          {/* progress rail: dots + a fill that tracks how far through the
-              journey we are, plus a running "N / 06" counter */}
-          <div className="absolute right-5 lg:right-8 top-1/2 -translate-y-1/2 flex flex-col items-center gap-4">
-            <div className="relative flex flex-col items-center gap-3">
-              <span
-                aria-hidden="true"
-                className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 bg-[#e9cfae]/12"
-              />
-              <span
-                aria-hidden="true"
-                ref={railFillRef}
-                className="absolute left-1/2 top-0 w-px -translate-x-1/2 bg-gradient-to-b from-[#d9a760] to-[#d9a760]/40 transition-[height] duration-300 ease-out"
-                style={{ height: "0%" }}
-              />
-              {steps.map((step, i) => (
-                <span
-                  key={step.n}
-                  ref={(el) => {
-                    dotRefs.current[i] = el;
-                  }}
-                  className="relative w-2.5 h-2.5 rounded-full transition-all duration-300"
-                  style={{ background: "rgba(245,233,220,0.2)" }}
-                />
-              ))}
-            </div>
-            <span
-              ref={counterRef}
-              className="font-mono text-[10px] tracking-[0.2em] text-[#e9cfae]/50 whitespace-nowrap"
-            >
-              01 / 06
-            </span>
-          </div>
         </div>
       </div>
     </section>
