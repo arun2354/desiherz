@@ -364,16 +364,35 @@ export function ScrollytellingSection() {
       rafId = requestAnimationFrame(() => loop(gen));
     };
 
-    start(device);
+    // this section sits well below the fold — fetching its frames
+    // immediately on mount would compete with the hero's video/fonts for
+    // bandwidth on the initial page load. Instead wait until the user is
+    // actually approaching it before the pipeline starts.
+    let started = false;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (started || cancelled) return;
+        if (entries.some((e) => e.isIntersecting)) {
+          started = true;
+          io.disconnect();
+          start(device);
+        }
+      },
+      { rootMargin: "100% 0px" }
+    );
+    io.observe(container);
 
     // rotating a phone (or resizing past the breakpoint) switches the
     // active frame set safely: invalidate the old generation, drop its
-    // cache, and restart the pipeline for the new device kind
+    // cache, and restart the pipeline for the new device kind. If the
+    // pipeline hasn't started yet, just record the new device — the
+    // eventual intersection-triggered start() will pick it up.
     const deviceQuery = window.matchMedia("(max-width: 767px)");
     const onDeviceChange = () => {
       const next: DeviceKind = deviceQuery.matches ? "mobile" : "desktop";
       if (next === device) return;
       device = next;
+      if (!started) return;
       cancelAnimationFrame(rafId);
       start(device);
     };
@@ -383,6 +402,7 @@ export function ScrollytellingSection() {
       cancelled = true;
       generation++;
       cancelAnimationFrame(rafId);
+      io.disconnect();
       window.removeEventListener("resize", onResize);
       deviceQuery.removeEventListener("change", onDeviceChange);
       for (const frame of cache) {

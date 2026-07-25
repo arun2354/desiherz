@@ -177,7 +177,7 @@ export function HeroSection() {
           muted
           loop
           playsInline
-          preload="auto"
+          preload="metadata"
           poster="/images/hero-poster.jpg"
           disablePictureInPicture
           aria-hidden="true"
