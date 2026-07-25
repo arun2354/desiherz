@@ -2,39 +2,56 @@ import { useEffect, useRef } from "react";
 
 /*
   Scrollytelling: a 600vh container with a sticky full-viewport canvas.
-  Scroll progress scrubs a 100-frame JPEG sequence drawn to canvas
-  (no decode latency, unlike seeking a real <video>), while a caption
-  band fades through six progress windows. Frames are extracted from
-  the client's own footage (public/videos/journey.mp4 / journey-mobile
-  .mp4) — desktop and mobile get their own frame set (/frames vs
-  /frames-mobile) since the mobile source is a separate portrait crop,
-  not just a resize.
+  Scroll progress scrubs the full 348-frame sequence (24fps × 14.5s,
+  manually extracted — not re-derived here) drawn to canvas, while a
+  caption band fades through six progress windows.
+
+  Frame source: public/scrollytelling/hero/{desktop,mobile}/frame_NNNNN.jpg.
+  Desktop is the 16:9 cut, mobile a separate 9:16 crop — only the
+  active device's set is ever fetched, and a manifest.json in each
+  folder (written once from the real file count, not hardcoded) tells
+  the client how many frames exist. A matchMedia listener can switch
+  the active set at runtime (e.g. rotating a phone across the 768px
+  breakpoint) without a full remount.
+
+  Frames decode via createImageBitmap when available (cheaper to draw,
+  decoded off the main thread) with a plain <img> fallback, and are
+  cached by index for the component's lifetime — nothing is fetched
+  twice. The first frame loads and paints before anything else; the
+  rest load in the background, continuously re-prioritised toward
+  whatever frame the user is currently scrolled near, so a frame
+  that's already loaded is always what's on screen (no blank canvas)
+  even if the exact target frame hasn't arrived yet.
 
   The enter/leave windows below are mapped to what the footage actually
-  shows at each frame (verified frame-by-frame), not evenly guessed:
-    frames  1–19  laptop, glowing double-heart, a hand reaching to it
-    frames 20–44  a floating network of vetted profiles (locks + people)
-    frames 45–60  a heart split circuit/leaf held by two hands,
-                  dissolving into a bright burst of light
-    frames 61–77  a ring placed on a finger, hands parting in light
-    frames 78–88  joined hands holding a sustained spark of light
-    frames 89–100 a couple, backlit, arriving at a candlelit altar
+  shows at each point in the timeline (0–1, resolution-independent —
+  verified frame-by-frame, not evenly guessed):
+    0.00–0.19  laptop, glowing double-heart, a hand reaching to it
+    0.21–0.44  a floating network of vetted profiles (locks + people)
+    0.46–0.60  a heart split circuit/leaf held by two hands,
+               dissolving into a bright burst of light
+    0.62–0.77  a ring placed on a finger, hands parting in light
+    0.79–0.88  joined hands holding a sustained spark of light
+    0.90–1.00  a couple, backlit, arriving at a candlelit altar
 
-  Captions sit in a fixed, solid lower-third band rather than a
-  translucent floating card — legibility over unpredictable footage
-  matters more than a glassy look, so the band background is a
-  near-opaque dark fill, not a frosted see-through one.
+  Captions sit in a small translucent (frosted, blurred) card, fixed at
+  the bottom, scaling from a compact mobile size up to a fuller band on
+  larger screens.
 
   Smoothness: a mouse wheel moves ~100px per notch, so mapping frames
   directly to scrollY jumps 2-3 frames per notch and looks steppy.
   Instead a continuous rAF loop eases displayed progress toward the
   scroll target (critically-damped lerp), so every notch plays the
-  in-between frames. Frames preload through a small concurrent pool
-  rather than one-by-one.
+  in-between frames — and reversing scroll direction just runs the same
+  math backward, no special-casing needed.
 */
-const FRAME_COUNT = 100;
-const framePath = (i: number, mobile: boolean) =>
-  `${mobile ? "/frames-mobile" : "/frames"}/frame_${String(i + 1).padStart(4, "0")}.jpg`;
+
+const BASE_PATH = "/scrollytelling/hero";
+type DeviceKind = "desktop" | "mobile";
+type Frame = ImageBitmap | HTMLImageElement;
+
+const frameWidth = (f: Frame) => ("naturalWidth" in f ? f.naturalWidth || f.width : f.width);
+const frameHeight = (f: Frame) => ("naturalHeight" in f ? f.naturalHeight || f.height : f.height);
 
 const steps = [
   {
@@ -129,61 +146,88 @@ export function ScrollytellingSection() {
     if (!ctx) return;
 
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    // <source media> selection is unreliable for this kind of runtime pick —
-    // decide once, in JS, same as the hero background loop does.
-    const isMobile = window.matchMedia("(max-width: 767px)").matches;
-    const frames: HTMLImageElement[] = new Array(FRAME_COUNT);
-    let currentFrame = -1;
+    const supportsBitmap = typeof createImageBitmap === "function";
+
+    let cancelled = false;
+    let device: DeviceKind = window.matchMedia("(max-width: 767px)").matches ? "mobile" : "desktop";
+    let generation = 0; // bumped on device switch; invalidates in-flight loads from the old set
+    let frameCount = 0;
+    let cache: (Frame | undefined)[] = [];
+    const inFlight = new Set<number>();
+    let lastDrawnIndex = -1;
+    let currentTargetIndex = 0;
     let eased = 0;
     let rafId = 0;
-    let cancelled = false;
+
+    const framePath = (dev: DeviceKind, i: number) => `${BASE_PATH}/${dev}/frame_${String(i + 1).padStart(5, "0")}.jpg`;
+
+    const decodeFrame = async (dev: DeviceKind, i: number): Promise<Frame | undefined> => {
+      const src = framePath(dev, i);
+      if (supportsBitmap) {
+        try {
+          const res = await fetch(src);
+          const blob = await res.blob();
+          return await createImageBitmap(blob);
+        } catch {
+          // fall through to the <img> path below
+        }
+      }
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(undefined);
+        img.src = src;
+      });
+    };
+
+    const ensureFrame = (dev: DeviceKind, i: number, gen: number): Promise<void> => {
+      if (cache[i] || inFlight.has(i)) return Promise.resolve();
+      inFlight.add(i);
+      return decodeFrame(dev, i).then((frame) => {
+        inFlight.delete(i);
+        if (cancelled || gen !== generation) return; // stale: device changed mid-flight
+        if (frame) cache[i] = frame;
+      });
+    };
+
+    // background loader: repeatedly picks the CONCURRENCY frames nearest
+    // the current scroll target that aren't loaded/loading yet, so
+    // priority keeps following the user rather than staying fixed at 0.
+    const preloadAll = async (dev: DeviceKind, gen: number, total: number) => {
+      const CONCURRENCY = 6;
+      while (!cancelled && gen === generation) {
+        const missing: number[] = [];
+        for (let i = 0; i < total; i++) {
+          if (!cache[i] && !inFlight.has(i)) missing.push(i);
+        }
+        if (missing.length === 0) return;
+        missing.sort((a, b) => Math.abs(a - currentTargetIndex) - Math.abs(b - currentTargetIndex));
+        await Promise.all(missing.slice(0, CONCURRENCY).map((i) => ensureFrame(dev, i, gen)));
+      }
+    };
 
     const sizeCanvas = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = window.innerWidth * dpr;
-      canvas.height = window.innerHeight * dpr;
+      canvas.width = Math.round(window.innerWidth * dpr);
+      canvas.height = Math.round(window.innerHeight * dpr);
       canvas.style.width = window.innerWidth + "px";
       canvas.style.height = window.innerHeight + "px";
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
     };
 
     const drawFrame = (index: number) => {
-      const img = frames[index];
-      if (!img) return;
+      const frame = cache[index];
+      if (!frame) return;
       const cw = canvas.width;
       const ch = canvas.height;
-      const iw = img.naturalWidth;
-      const ih = img.naturalHeight;
+      const iw = frameWidth(frame);
+      const ih = frameHeight(frame);
       const scale = Math.max(cw / iw, ch / ih);
       const dw = iw * scale;
       const dh = ih * scale;
       ctx.fillStyle = "#140c08";
       ctx.fillRect(0, 0, cw, ch);
-      ctx.drawImage(img, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
-    };
-
-    const loadFrame = (i: number) =>
-      new Promise<void>((resolve) => {
-        const img = new Image();
-        img.onload = () => {
-          frames[i] = img;
-          resolve();
-        };
-        img.onerror = () => resolve();
-        img.src = framePath(i, isMobile);
-      });
-
-    // concurrent preload pool: keeps 8 requests in flight, in order
-    const preloadAll = async () => {
-      const CONCURRENCY = 8;
-      let next = 0;
-      const worker = async () => {
-        while (next < FRAME_COUNT && !cancelled) {
-          const i = next++;
-          await loadFrame(i);
-        }
-      };
-      await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+      ctx.drawImage(frame, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
+      lastDrawnIndex = index;
     };
 
     const targetProgress = () => {
@@ -192,11 +236,15 @@ export function ScrollytellingSection() {
       return Math.min(1, Math.max(0, -rect.top / total));
     };
 
-    const applyProgress = (p: number) => {
-      const index = Math.min(Math.floor(p * FRAME_COUNT), FRAME_COUNT - 1);
-      if (index !== currentFrame) {
-        currentFrame = index;
-        drawFrame(index);
+    const applyProgress = (p: number, gen: number) => {
+      const index = Math.min(Math.round(p * (frameCount - 1)), frameCount - 1);
+      currentTargetIndex = index;
+      if (cache[index]) {
+        if (index !== lastDrawnIndex) drawFrame(index);
+      } else {
+        // keep showing whatever's already on screen; just make sure this
+        // frame jumps the preload queue for next time
+        ensureFrame(device, index, gen);
       }
 
       const fade = 0.045;
@@ -219,50 +267,93 @@ export function ScrollytellingSection() {
       if (counterRef.current) counterRef.current.textContent = `${steps[activeIdx].n} / 06 — ${steps[activeIdx].title}`;
     };
 
-    const loop = () => {
+    const loop = (gen: number) => {
       const rect = container.getBoundingClientRect();
       const nearViewport = rect.top < window.innerHeight * 1.5 && rect.bottom > -window.innerHeight * 0.5;
       if (nearViewport) {
         const target = targetProgress();
         eased += (target - eased) * 0.12;
         if (Math.abs(target - eased) < 0.0004) eased = target;
-        applyProgress(eased);
+        applyProgress(eased, gen);
       }
-      rafId = requestAnimationFrame(loop);
+      if (gen === generation) rafId = requestAnimationFrame(() => loop(gen));
     };
 
-    sizeCanvas();
     const onResize = () => {
       sizeCanvas();
-      if (currentFrame >= 0) drawFrame(currentFrame);
+      if (lastDrawnIndex >= 0) drawFrame(lastDrawnIndex);
     };
+    sizeCanvas();
     window.addEventListener("resize", onResize);
 
-    if (reduce) {
-      // no scrubbing: show the final frame and all captions statically
-      loadFrame(FRAME_COUNT - 1).then(() => {
-        if (cancelled) return;
-        currentFrame = FRAME_COUNT - 1;
-        drawFrame(currentFrame);
-      });
-      captionRefs.current.forEach((el) => {
-        if (el) el.style.opacity = "1";
-      });
-    } else {
-      loadFrame(0).then(() => {
-        if (cancelled) return;
-        eased = targetProgress();
-        currentFrame = -1;
-        applyProgress(eased);
-        preloadAll();
-      });
-      rafId = requestAnimationFrame(loop);
-    }
+    // starts (or restarts, on a device switch) the whole pipeline for
+    // whichever set is currently active
+    const start = async (dev: DeviceKind) => {
+      const gen = ++generation;
+      cache = [];
+      inFlight.clear();
+      lastDrawnIndex = -1;
+      frameCount = 0;
+
+      let count = 1;
+      try {
+        const res = await fetch(`${BASE_PATH}/${dev}/manifest.json`);
+        const data = await res.json();
+        if (typeof data.count === "number" && data.count > 0) count = data.count;
+      } catch {
+        // manifest missing/unreachable — fall back to a single-frame set
+        // rather than guessing a frame count that may not exist
+      }
+      if (cancelled || gen !== generation) return;
+      frameCount = count;
+
+      if (reduce) {
+        const lastIdx = frameCount - 1;
+        await ensureFrame(dev, lastIdx, gen);
+        if (cancelled || gen !== generation) return;
+        if (cache[lastIdx]) drawFrame(lastIdx);
+        captionRefs.current.forEach((el) => {
+          if (el) el.style.opacity = "1";
+        });
+        return;
+      }
+
+      await ensureFrame(dev, 0, gen);
+      if (cancelled || gen !== generation) return;
+      if (cache[0]) drawFrame(0);
+
+      preloadAll(dev, gen, frameCount);
+
+      eased = targetProgress();
+      applyProgress(eased, gen);
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => loop(gen));
+    };
+
+    start(device);
+
+    // rotating a phone (or resizing past the breakpoint) switches the
+    // active frame set safely: invalidate the old generation, drop its
+    // cache, and restart the pipeline for the new device kind
+    const deviceQuery = window.matchMedia("(max-width: 767px)");
+    const onDeviceChange = () => {
+      const next: DeviceKind = deviceQuery.matches ? "mobile" : "desktop";
+      if (next === device) return;
+      device = next;
+      cancelAnimationFrame(rafId);
+      start(device);
+    };
+    deviceQuery.addEventListener("change", onDeviceChange);
 
     return () => {
       cancelled = true;
+      generation++;
       cancelAnimationFrame(rafId);
       window.removeEventListener("resize", onResize);
+      deviceQuery.removeEventListener("change", onDeviceChange);
+      for (const frame of cache) {
+        if (frame && "close" in frame) frame.close();
+      }
     };
   }, []);
 
