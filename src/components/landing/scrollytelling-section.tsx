@@ -166,8 +166,13 @@ export function ScrollytellingSection() {
     // decoded frames are full-resolution raw bitmaps (~8MB each); only
     // keep this many on either side of the current position resident,
     // closing/evicting anything further away, so memory stays bounded
-    // regardless of the sequence length
-    const FRAME_WINDOW = 25;
+    // regardless of the sequence length. 40 covers ~116vh of scroll in
+    // either direction — comfortably more than a single fast mobile
+    // flick, so the picture doesn't freeze waiting on a refetch outside
+    // slower/interrupted connections. Costs ~640MB worst case, which is
+    // fine since it's only resident while the user is actually in this
+    // section, not for the whole page visit.
+    const FRAME_WINDOW = 40;
 
     const evictOutsideWindow = (centerIndex: number) => {
       const lo = centerIndex - FRAME_WINDOW;
@@ -220,7 +225,7 @@ export function ScrollytellingSection() {
     // for as long as the section exists), and never grows the cache
     // beyond that band.
     const preloadAll = async (dev: DeviceKind, gen: number, total: number) => {
-      const CONCURRENCY = 6;
+      const CONCURRENCY = 10;
       while (!cancelled && gen === generation) {
         const lo = Math.max(0, currentTargetIndex - FRAME_WINDOW);
         const hi = Math.min(total - 1, currentTargetIndex + FRAME_WINDOW);
@@ -329,15 +334,18 @@ export function ScrollytellingSection() {
       lastDrawnIndex = -1;
       frameCount = 0;
 
+      const manifestPromise = fetch(`${BASE_PATH}/${dev}/manifest.json`)
+        .then((res) => res.json())
+        .catch(() => null);
+      // frame 0's index doesn't depend on the manifest, so kick off its
+      // fetch immediately instead of waiting on the manifest round-trip
+      // first — that extra sequential RTT was delaying first paint,
+      // especially noticeable on higher-latency mobile connections.
+      const frame0Promise = ensureFrame(dev, 0, gen);
+
       let count = 1;
-      try {
-        const res = await fetch(`${BASE_PATH}/${dev}/manifest.json`);
-        const data = await res.json();
-        if (typeof data.count === "number" && data.count > 0) count = data.count;
-      } catch {
-        // manifest missing/unreachable — fall back to a single-frame set
-        // rather than guessing a frame count that may not exist
-      }
+      const data = await manifestPromise;
+      if (data && typeof data.count === "number" && data.count > 0) count = data.count;
       if (cancelled || gen !== generation) return;
       frameCount = count;
 
@@ -352,7 +360,7 @@ export function ScrollytellingSection() {
         return;
       }
 
-      await ensureFrame(dev, 0, gen);
+      await frame0Promise;
       if (cancelled || gen !== generation) return;
       if (cache[0]) drawFrame(0);
 
@@ -378,7 +386,7 @@ export function ScrollytellingSection() {
           start(device);
         }
       },
-      { rootMargin: "0px 0px 20% 0px" }
+      { rootMargin: "0px 0px 40% 0px" }
     );
     io.observe(container);
 
