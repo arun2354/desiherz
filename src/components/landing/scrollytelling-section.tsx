@@ -378,7 +378,7 @@ export function ScrollytellingSection() {
           start(device);
         }
       },
-      { rootMargin: "100% 0px" }
+      { rootMargin: "0px 0px 20% 0px" }
     );
     io.observe(container);
 

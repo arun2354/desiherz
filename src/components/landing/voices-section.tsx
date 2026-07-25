@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const FEATURES = [
@@ -82,10 +82,35 @@ function VideoPlayer({ film, alt }: { film: string; alt: string }) {
 
 export function VoicesSection() {
   const [active, setActive] = useState(0);
+  const [near, setNear] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
   const feature = FEATURES[active];
 
+  // this section is well below the fold — don't check/load its video
+  // until the user is actually approaching it, so it doesn't compete
+  // with the hero's critical assets on initial page load
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setNear(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "0px 0px 40% 0px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   return (
-    <section id="voices" className="bg-grain bg-ink-gradient relative overflow-hidden py-28 text-ink-foreground lg:py-40">
+    <section
+      id="voices"
+      ref={sectionRef}
+      className="bg-grain bg-ink-gradient relative overflow-hidden py-28 text-ink-foreground lg:py-40"
+    >
       <div className="relative z-10 mx-auto max-w-[1100px] px-6 lg:px-12">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -136,7 +161,11 @@ export function VoicesSection() {
               Scene
             </div>
 
-            <VideoPlayer film={feature.film} alt={feature.alt} />
+            {near ? (
+              <VideoPlayer film={feature.film} alt={feature.alt} />
+            ) : (
+              <div className="relative overflow-hidden border border-ink-border bg-black aspect-video" aria-hidden="true" />
+            )}
 
             <figcaption className="mt-5 flex items-baseline justify-between gap-4 border-t border-ink-border pt-4">
               <strong className="font-display text-xl text-ink-foreground">{feature.title}</strong>
