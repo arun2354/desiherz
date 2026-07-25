@@ -4,18 +4,21 @@ import { useEffect, useRef } from "react";
   Scrollytelling: a 600vh container with a sticky full-viewport canvas.
   Scroll progress scrubs a 100-frame JPEG sequence drawn to canvas
   (no decode latency, unlike seeking a real <video>), while a caption
-  band fades through six progress windows.
+  band fades through six progress windows. Frames are extracted from
+  the client's own footage (public/videos/journey.mp4 / journey-mobile
+  .mp4) — desktop and mobile get their own frame set (/frames vs
+  /frames-mobile) since the mobile source is a separate portrait crop,
+  not just a resize.
 
   The enter/leave windows below are mapped to what the footage actually
   shows at each frame (verified frame-by-frame), not evenly guessed:
     frames  1–19  laptop, glowing double-heart, a hand reaching to it
-    frames 20–44  a floating network of locket/lock nodes
-    frames 45–58  gold particle burst -> a heart split circuit/leaf,
-                  held by two hands
-    frames 59–69  a ring inside a heart-shaped light trail, then
-                  placed on a finger
-    frames 70–89  joined hands wearing rings, petals and ribbons
-    frames 90–100 a couple at a candlelit altar arch, from behind
+    frames 20–44  a floating network of vetted profiles (locks + people)
+    frames 45–60  a heart split circuit/leaf held by two hands,
+                  dissolving into a bright burst of light
+    frames 61–77  a ring placed on a finger, hands parting in light
+    frames 78–88  joined hands holding a sustained spark of light
+    frames 89–100 a couple, backlit, arriving at a candlelit altar
 
   Captions sit in a fixed, solid lower-third band rather than a
   translucent floating card — legibility over unpredictable footage
@@ -30,7 +33,8 @@ import { useEffect, useRef } from "react";
   rather than one-by-one.
 */
 const FRAME_COUNT = 100;
-const framePath = (i: number) => `/frames/frame_${String(i + 1).padStart(4, "0")}.jpg`;
+const framePath = (i: number, mobile: boolean) =>
+  `${mobile ? "/frames-mobile" : "/frames"}/frame_${String(i + 1).padStart(4, "0")}.jpg`;
 
 const steps = [
   {
@@ -47,8 +51,8 @@ const steps = [
     title: "The circle",
     line: "Private, vetted, never browsed.",
     tag: "VETTED BY HAND · NEVER BROWSED",
-    enter: 0.22,
-    leave: 0.43,
+    enter: 0.21,
+    leave: 0.44,
     final: false,
   },
   {
@@ -57,7 +61,7 @@ const steps = [
     line: "Heritage and heart, made whole.",
     tag: "HERITAGE & VALUES CONSIDERED",
     enter: 0.46,
-    leave: 0.57,
+    leave: 0.6,
     final: false,
   },
   {
@@ -65,8 +69,8 @@ const steps = [
     title: "The proposal",
     line: "You decide, freely.",
     tag: "YOUR DECISION, ALWAYS",
-    enter: 0.6,
-    leave: 0.68,
+    enter: 0.62,
+    leave: 0.77,
     final: false,
   },
   {
@@ -74,7 +78,7 @@ const steps = [
     title: "Hand in hand",
     line: "From strangers to promised, quietly.",
     tag: "AT YOUR OWN, QUIET PACE",
-    enter: 0.71,
+    enter: 0.79,
     leave: 0.88,
     final: false,
   },
@@ -83,7 +87,7 @@ const steps = [
     title: "The altar",
     line: "One ring. One introduction. One yes.",
     tag: "ONE INTRODUCTION, DONE RIGHT",
-    enter: 0.91,
+    enter: 0.9,
     leave: 1.02,
     final: true,
   },
@@ -125,6 +129,9 @@ export function ScrollytellingSection() {
     if (!ctx) return;
 
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // <source media> selection is unreliable for this kind of runtime pick —
+    // decide once, in JS, same as the hero background loop does.
+    const isMobile = window.matchMedia("(max-width: 767px)").matches;
     const frames: HTMLImageElement[] = new Array(FRAME_COUNT);
     let currentFrame = -1;
     let eased = 0;
@@ -163,7 +170,7 @@ export function ScrollytellingSection() {
           resolve();
         };
         img.onerror = () => resolve();
-        img.src = framePath(i);
+        img.src = framePath(i, isMobile);
       });
 
     // concurrent preload pool: keeps 8 requests in flight, in order

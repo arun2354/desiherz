@@ -59,8 +59,8 @@ export function Navigation() {
               <a
                 key={link.name}
                 href={link.href}
-                className={`text-sm transition-colors duration-300 relative group ${
-                  isScrolled ? "text-foreground/70 hover:text-foreground" : "text-white/70 hover:text-white"
+                className={`text-sm font-medium transition-colors duration-300 relative group ${
+                  isScrolled ? "text-foreground hover:text-gold" : "text-white hover:text-gold-light"
                 }`}
               >
                 {link.name}

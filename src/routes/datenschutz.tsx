@@ -20,10 +20,11 @@ function Datenschutz() {
 
       <h2>1. Verantwortlicher</h2>
       <p>
-        [Full legal name of the business/owner]<br />
-        [Street and house number]<br />
-        [Postal code and city], Germany<br />
-        E-Mail: [contact email]
+        DesiHerz ist eine Initiative/Projekt von Rahul und Kapil Kumar eGbR<br />
+        Ludwig Str. 17<br />
+        65479 Raunheim, Deutschland<br />
+        E-Mail: info@pflege-raunheim.de<br />
+        Telefon: 080000 60452
       </p>
 
       <h2>2. Hosting</h2>
@@ -43,10 +44,11 @@ function Datenschutz() {
 
       <h2>4. Kontaktformular</h2>
       <p>
-        Das Kontaktformular übermittelt Ihre Eingaben nicht an einen Server, sondern öffnet
-        Ihr eigenes E-Mail-Programm mit einer vorausgefüllten Nachricht an
-        hello@desiherz.com. Die eigentliche Übermittlung Ihrer Daten erfolgt erst, wenn Sie
-        diese E-Mail selbst absenden.
+        Wenn Sie unser Kontaktformular nutzen, werden die von Ihnen eingegebenen Daten
+        (Name, E-Mail-Adresse, Nachricht) über den Dienst Web3Forms an unsere
+        Kontakt-E-Mail-Adresse übermittelt. Web3Forms verarbeitet diese Daten ausschließlich
+        zur Zustellung Ihrer Nachricht und speichert sie nicht dauerhaft. Weitere
+        Informationen: <a href="https://web3forms.com/privacy" target="_blank" rel="noopener noreferrer">web3forms.com/privacy</a>.
       </p>
 
       <h2>5. Cookies und Tracking</h2>

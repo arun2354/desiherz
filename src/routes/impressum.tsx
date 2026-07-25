@@ -19,31 +19,35 @@ function Impressum() {
 
       <h2>Angaben gemäß § 5 TMG</h2>
       <p>
-        [Full legal name of the business/owner]<br />
-        [Street and house number]<br />
-        [Postal code and city]<br />
+        DesiHerz ist eine Initiative/Projekt von Rahul und Kapil Kumar eGbR<br />
+        Ludwig Str. 17<br />
+        65479 Raunheim<br />
         Germany
       </p>
 
       <h2>Kontakt</h2>
       <p>
-        Telefon: [phone number]<br />
-        E-Mail: [contact email]
+        Telefon: 080000 60452<br />
+        E-Mail: info@pflege-raunheim.de
       </p>
 
       <h2>Vertretungsberechtigt</h2>
-      <p>[Name of the person(s) legally representing the business]</p>
+      <p>
+        Rahul Kumar, Kapil Kumar
+        <br />
+        <em>[Bitte bestätigen: sind beide Gesellschafter einzeln vertretungsberechtigt?]</em>
+      </p>
 
       <h2>Registereintrag</h2>
       <p>
-        [If registered: register court, e.g. Amtsgericht Frankfurt am Main]<br />
-        [Registration number, e.g. HRB XXXXX]<br />
-        [If applicable] Umsatzsteuer-ID gemäß § 27a UStG: [VAT ID]
+        [Gesellschaftsregister und Registernummer der eGbR eintragen]<br />
+        [Falls zutreffend] Umsatzsteuer-ID gemäß § 27a UStG: [VAT ID]
       </p>
 
       <h2>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
       <p>
-        [Name and address of the person responsible for editorial content]
+        Rahul Kumar / Kapil Kumar<br />
+        Ludwig Str. 17, 65479 Raunheim
       </p>
 
       <h2>Streitschlichtung</h2>

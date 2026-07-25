@@ -1,6 +1,6 @@
 import { useState, type FormEvent, type MouseEvent } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BrandMark } from "@/components/landing/brand-mark";
@@ -8,14 +8,20 @@ import { BrandMark } from "@/components/landing/brand-mark";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const EASE = [0.16, 1, 0.3, 1] as const;
 
+// Web3Forms: a free form-delivery service — submissions POST straight to
+// their API and land in the inbox tied to this access key. No backend code
+// needed on our side. Sign up at web3forms.com with the inbox you want
+// enquiries to reach, then set VITE_WEB3FORMS_KEY (see .env.example).
+const WEB3FORMS_KEY = import.meta.env.VITE_WEB3FORMS_KEY as string | undefined;
+
 export function CtaSection() {
   const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 });
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
-  const [errors, setErrors] = useState<{ name?: string; email?: string; note?: string }>({});
-  const [sent, setSent] = useState(false);
+  const [errors, setErrors] = useState<{ name?: string; email?: string; note?: string; form?: string }>({});
+  const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
 
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -25,7 +31,7 @@ export function CtaSection() {
     });
   };
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const nextErrors: typeof errors = {};
     if (!name.trim()) nextErrors.name = "Please tell us your name.";
@@ -34,15 +40,38 @@ export function CtaSection() {
     if (!note.trim()) nextErrors.note = "A line or two helps us understand you.";
 
     setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) {
-      setSent(false);
+    if (Object.keys(nextErrors).length > 0) return;
+
+    if (!WEB3FORMS_KEY) {
+      // Not configured yet — fall back to mailto rather than silently failing.
+      const subject = encodeURIComponent(`Private enquiry from ${name.trim()}`);
+      const body = encodeURIComponent(`${note.trim()}\n\n— ${name.trim()} (${email.trim()})`);
+      window.location.href = `mailto:hello@desiherz.com?subject=${subject}&body=${body}`;
+      setStatus("sent");
       return;
     }
 
-    const subject = encodeURIComponent(`Private enquiry from ${name.trim()}`);
-    const body = encodeURIComponent(`${note.trim()}\n\n— ${name.trim()} (${email.trim()})`);
-    window.location.href = `mailto:hello@desiherz.com?subject=${subject}&body=${body}`;
-    setSent(true);
+    setStatus("sending");
+    try {
+      const res = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          access_key: WEB3FORMS_KEY,
+          subject: `Private enquiry from ${name.trim()}`,
+          from_name: "DesiHerz — Private enquiry",
+          name: name.trim(),
+          email: email.trim(),
+          message: note.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message || "Submission failed");
+      setStatus("sent");
+    } catch {
+      setStatus("idle");
+      setErrors({ form: "That didn't send — please try again, or email hello@desiherz.com directly." });
+    }
   }
 
   const fieldClass = (hasError: boolean) =>
@@ -166,15 +195,30 @@ export function CtaSection() {
 
                 <button
                   type="submit"
-                  className="group mt-2 inline-flex h-14 items-center justify-center gap-2 rounded-full bg-foreground px-8 text-base font-medium text-background transition-colors hover:bg-foreground/90"
+                  disabled={status === "sending"}
+                  className="group mt-2 inline-flex h-14 items-center justify-center gap-2 rounded-full bg-foreground px-8 text-base font-medium text-background transition-colors hover:bg-foreground/90 disabled:opacity-60"
                 >
-                  Request consultation
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  {status === "sending" ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Sending&hellip;
+                    </>
+                  ) : (
+                    <>
+                      Request consultation
+                      <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    </>
+                  )}
                 </button>
 
-                {sent && (
+                {errors.form && (
+                  <p className="text-sm text-destructive" role="alert">
+                    {errors.form}
+                  </p>
+                )}
+                {status === "sent" && (
                   <p className="text-sm text-gold" role="status">
-                    Opening your email client to send this to hello@desiherz.com&hellip;
+                    Thank you — we&rsquo;ve received your note and will write back privately.
                   </p>
                 )}
               </form>
