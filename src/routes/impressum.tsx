@@ -2,7 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/impressum")({
   head: () => ({
-    meta: [{ title: "Impressum — DesiHerz" }],
+    meta: [
+      { title: "Impressum — DesiHerz" },
+      { name: "description", content: "Legal notice (Impressum) for DesiHerz, a private matrimony service operated by Rahul und Kapil Kumar eGbR in Raunheim, Germany." },
+      { name: "robots", content: "noindex, follow" },
+    ],
+    links: [{ rel: "canonical", href: "https://desiherz.de/impressum" }],
   }),
   component: Impressum,
 });

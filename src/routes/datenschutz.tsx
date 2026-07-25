@@ -2,7 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/datenschutz")({
   head: () => ({
-    meta: [{ title: "Datenschutzerklärung — DesiHerz" }],
+    meta: [
+      { title: "Datenschutzerklärung — DesiHerz" },
+      { name: "description", content: "Privacy policy for DesiHerz, a private matrimony service operated by Rahul und Kapil Kumar eGbR in Raunheim, Germany." },
+      { name: "robots", content: "noindex, follow" },
+    ],
+    links: [{ rel: "canonical", href: "https://desiherz.de/datenschutz" }],
   }),
   component: Datenschutz,
 });

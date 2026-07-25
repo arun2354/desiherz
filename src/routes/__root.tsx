@@ -83,9 +83,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "DesiHerz is a private matrimony house for discerning people and families.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "DesiHerz" },
+      { property: "og:locale", content: "en_DE" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "theme-color", content: "#140c08" },
     ],
     links: [
+      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {

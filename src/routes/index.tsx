@@ -13,35 +13,48 @@ import { FooterSection } from "@/components/landing/footer-section";
 
 const SITE = {
   name: "DesiHerz",
+  url: "https://desiherz.de/",
+  title: "DesiHerz — Private Matrimony & Matchmaking in Germany",
   description:
-    "DesiHerz is a private matrimony house for discerning people and families who value privacy, character and human curation in Germany and beyond.",
+    "DesiHerz is a private matrimony house for discerning South Asian families in Germany — hand-vetted introductions in Frankfurt, Munich and Berlin. No public profiles, no browsing, no apps. Just one carefully considered introduction at a time.",
 };
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "DesiHerz — Private Matrimony for the Discerning" },
+      { title: SITE.title },
       { name: "description", content: SITE.description },
-      { property: "og:title", content: "DesiHerz — Private Matrimony" },
+      { name: "keywords", content: "private matrimony Germany, matrimony service Germany, private matchmaking Germany, discreet matchmaking, Heiratsvermittlung Deutschland, Partnervermittlung diskret, South Asian matrimony Germany, matrimony Frankfurt, matrimony Munich, matrimony Berlin" },
+      { property: "og:title", content: SITE.title },
       { property: "og:description", content: SITE.description },
       { property: "og:type", content: "website" },
-      { name: "theme-color", content: "#faf4e9" },
-      {
-        name: "keywords",
-        content:
-          "private matrimony, luxury matchmaking, curated introductions, discreet matchmaking, Frankfurt matrimony, Germany",
-      },
+      { property: "og:url", content: SITE.url },
+      { property: "og:image", content: "https://desiherz.de/images/hero-poster.jpg" },
+      { name: "twitter:title", content: SITE.title },
+      { name: "twitter:description", content: SITE.description },
+      { name: "twitter:image", content: "https://desiherz.de/images/hero-poster.jpg" },
     ],
+    links: [{ rel: "canonical", href: SITE.url }],
     scripts: [
       {
         type: "application/ld+json",
         children: JSON.stringify({
           "@context": "https://schema.org",
-          "@type": "Organization",
+          "@type": "LocalBusiness",
           name: SITE.name,
           description: SITE.description,
-          url: "/",
-          areaServed: "Germany",
+          url: SITE.url,
+          email: "hello@desiherz.com",
+          telephone: "+498000060452",
+          priceRange: "€39",
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: "Ludwig Str. 17",
+            postalCode: "65479",
+            addressLocality: "Raunheim",
+            addressCountry: "DE",
+          },
+          areaServed: ["Germany", "Frankfurt", "Munich", "Berlin"],
         }),
       },
     ],
