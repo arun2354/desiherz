@@ -12,10 +12,6 @@ function Impressum() {
     <main className="legal-page">
       <Link to="/" className="legal-back">← Back to DesiHerz</Link>
       <h1>Impressum</h1>
-      <p className="legal-note">
-        Angaben gemäß § 5 TMG / § 18 MStV. This page is a placeholder — replace the
-        bracketed fields with the business's real registration details before launch.
-      </p>
 
       <h2>Angaben gemäß § 5 TMG</h2>
       <p>

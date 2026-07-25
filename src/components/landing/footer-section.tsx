@@ -21,7 +21,7 @@ export function FooterSection() {
           <a href="#" className="font-display text-3xl lg:text-4xl">
             Desi<span className="text-rose">♥</span>Herz
           </a>
-          <p className="font-accent text-xl text-gold-light/80">By invitation only.</p>
+          <p className="font-accent text-xl text-gold-light/80">Private, by design.</p>
         </div>
 
         {/* Main footer */}
@@ -88,7 +88,7 @@ export function FooterSection() {
           <div className="flex items-center gap-4 text-sm text-ink-muted-foreground/70">
             <span className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-gold" />
-              Private matrimony, by invitation
+              Private matrimony, by design
             </span>
           </div>
         </div>

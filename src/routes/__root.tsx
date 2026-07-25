@@ -80,7 +80,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "DesiHerz — Private Matrimony" },
       {
         name: "description",
-        content: "DesiHerz is an invitation-only matrimony house for discerning people and families.",
+        content: "DesiHerz is a private matrimony house for discerning people and families.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

@@ -14,7 +14,7 @@ import { FooterSection } from "@/components/landing/footer-section";
 const SITE = {
   name: "DesiHerz",
   description:
-    "DesiHerz is an invitation-only matrimony house for discerning people and families who value privacy, character and human curation in Germany and beyond.",
+    "DesiHerz is a private matrimony house for discerning people and families who value privacy, character and human curation in Germany and beyond.",
 };
 
 export const Route = createFileRoute("/")({
@@ -29,7 +29,7 @@ export const Route = createFileRoute("/")({
       {
         name: "keywords",
         content:
-          "private matrimony, luxury matchmaking, curated introductions, invitation only matchmaking, Frankfurt matrimony, Germany",
+          "private matrimony, luxury matchmaking, curated introductions, discreet matchmaking, Frankfurt matrimony, Germany",
       },
     ],
     scripts: [

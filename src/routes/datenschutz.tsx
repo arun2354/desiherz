@@ -12,11 +12,6 @@ function Datenschutz() {
     <main className="legal-page">
       <Link to="/" className="legal-back">← Back to DesiHerz</Link>
       <h1>Datenschutzerklärung</h1>
-      <p className="legal-note">
-        This page is a placeholder — replace the bracketed fields with the business's real
-        details before launch, and have it reviewed against current GDPR/TMG/TTDSG
-        obligations before publishing.
-      </p>
 
       <h2>1. Verantwortlicher</h2>
       <p>

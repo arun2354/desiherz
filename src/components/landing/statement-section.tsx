@@ -4,7 +4,7 @@ import { BrandMark } from "./brand-mark";
 const marqueeItems = [
   "Private",
   "Curated by hand",
-  "By invitation",
+  "By appointment",
   "Frankfurt am Main",
   "No profiles, no swiping",
   "Two families, one table",

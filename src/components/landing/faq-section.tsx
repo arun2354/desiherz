@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 const faqs = [
   {
     q: "What is DesiHerz?",
-    a: "An invitation-led matrimony house — we search our vetted circle and introduce by hand.",
+    a: "A private matrimony house — we search our vetted circle and introduce by hand.",
   },
   {
     q: "Is my profile ever made public?",

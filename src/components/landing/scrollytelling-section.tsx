@@ -294,8 +294,10 @@ export function ScrollytellingSection() {
             </span>
           </div>
 
-          {/* caption band: solid, high-contrast, fixed at the bottom —
-              legible over any frame, not a translucent floating card */}
+          {/* caption card: small and translucent (frosted glass, like a
+              macOS/iOS control-centre widget) on mobile, growing into a
+              fuller band on larger screens. Legibility comes from the
+              blur + tint combination, not from an opaque fill. */}
           {steps.map((step, i) => (
             <div
               key={step.n}
@@ -305,24 +307,30 @@ export function ScrollytellingSection() {
               className="absolute inset-x-0 bottom-0 transition-none"
               style={{ opacity: 0 }}
             >
-              <div className="mx-auto max-w-5xl px-6 pb-10 lg:px-16 lg:pb-14">
+              <div className="mx-auto max-w-5xl px-4 pb-5 sm:px-6 sm:pb-8 lg:px-16 lg:pb-14">
                 <div
-                  className="rounded-2xl px-6 py-6 lg:px-10 lg:py-8"
+                  className="rounded-xl px-4 py-3.5 sm:rounded-2xl sm:px-6 sm:py-5 lg:px-10 lg:py-8"
                   style={{
-                    background: "rgba(15,9,6,0.92)",
-                    borderTop: "2px solid #d9a760",
-                    boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
+                    background: "rgba(15,9,6,0.55)",
+                    backdropFilter: "blur(24px) saturate(140%)",
+                    WebkitBackdropFilter: "blur(24px) saturate(140%)",
+                    border: "1px solid rgba(217,167,96,0.28)",
+                    boxShadow: "0 12px 32px rgba(0,0,0,0.35)",
                   }}
                 >
-                  <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:gap-10">
-                    <div className="flex shrink-0 items-baseline gap-3 lg:w-24 lg:flex-col lg:items-start lg:gap-1">
-                      <span className="font-display text-5xl leading-none text-[#d9a760] lg:text-6xl">{step.n}</span>
-                      <span className="font-mono text-[10px] tracking-[0.2em] text-white/40">/ 06</span>
+                  <div className="flex flex-col gap-2.5 sm:gap-4 lg:flex-row lg:items-end lg:gap-10">
+                    <div className="flex shrink-0 items-baseline gap-2 sm:gap-3 lg:w-24 lg:flex-col lg:items-start lg:gap-1">
+                      <span className="font-display text-2xl leading-none text-[#d9a760] sm:text-4xl lg:text-6xl">
+                        {step.n}
+                      </span>
+                      <span className="font-mono text-[8px] tracking-[0.2em] text-white/40 sm:text-[10px]">/ 06</span>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h3 className="mb-2 font-display text-3xl leading-tight text-white lg:text-4xl">{step.title}</h3>
-                      <p className="mb-3 text-base text-[#f5e9dc] lg:text-lg">{step.line}</p>
-                      <span className="inline-flex items-center gap-2 font-mono text-[10px] tracking-[0.15em] text-[#d9a760]">
+                      <h3 className="mb-1 font-display text-lg leading-tight text-white sm:mb-2 sm:text-2xl lg:text-4xl">
+                        {step.title}
+                      </h3>
+                      <p className="mb-1.5 text-xs text-[#f5e9dc] sm:mb-3 sm:text-base lg:text-lg">{step.line}</p>
+                      <span className="inline-flex items-center gap-1.5 font-mono text-[8px] tracking-[0.12em] text-[#d9a760] sm:gap-2 sm:text-[10px] sm:tracking-[0.15em]">
                         <span>✦</span>
                         {step.tag}
                       </span>
@@ -339,20 +347,20 @@ export function ScrollytellingSection() {
 
                   {step.final && (
                     <>
-                      <div className="mt-6">
+                      <div className="mt-3 sm:mt-6">
                         <a
                           href="#contact"
-                          className="inline-flex h-12 items-center justify-center rounded-full bg-[#f5e9dc] px-8 text-sm font-medium text-[#140c08] transition-colors hover:bg-white"
+                          className="inline-flex h-9 items-center justify-center rounded-full bg-[#f5e9dc] px-5 text-xs font-medium text-[#140c08] transition-colors hover:bg-white sm:h-12 sm:px-8 sm:text-sm"
                         >
                           Begin privately
                         </a>
                       </div>
-                      <div className="mt-6 grid grid-cols-2 gap-4 border-t border-white/10 pt-6 sm:grid-cols-4">
+                      <div className="mt-3 grid grid-cols-2 gap-2 border-t border-white/10 pt-3 sm:mt-6 sm:gap-4 sm:pt-6 sm:grid-cols-4">
                         {CLOSING_TAGS.map((t) => (
-                          <div key={t.label} className="flex flex-col items-center gap-2 text-center">
+                          <div key={t.label} className="flex flex-col items-center gap-1 text-center sm:gap-2">
                             <svg
                               viewBox="0 0 24 24"
-                              className="h-4 w-4 text-[#d9a760] lg:h-5 lg:w-5"
+                              className="h-3 w-3 text-[#d9a760] sm:h-4 sm:w-4 lg:h-5 lg:w-5"
                               fill="none"
                               stroke="currentColor"
                               strokeWidth={1.4}
@@ -361,7 +369,7 @@ export function ScrollytellingSection() {
                             >
                               <path d={t.d} />
                             </svg>
-                            <span className="max-w-[100px] text-[10px] leading-tight text-white/60">{t.label}</span>
+                            <span className="max-w-[100px] text-[8px] leading-tight text-white/60 sm:text-[10px]">{t.label}</span>
                           </div>
                         ))}
                       </div>
