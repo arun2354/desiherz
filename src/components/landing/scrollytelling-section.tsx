@@ -15,13 +15,17 @@ import { useEffect, useRef } from "react";
   breakpoint) without a full remount.
 
   Frames decode via createImageBitmap when available (cheaper to draw,
-  decoded off the main thread) with a plain <img> fallback, and are
-  cached by index for the component's lifetime — nothing is fetched
-  twice. The first frame loads and paints before anything else; the
-  rest load in the background, continuously re-prioritised toward
-  whatever frame the user is currently scrolled near, so a frame
-  that's already loaded is always what's on screen (no blank canvas)
-  even if the exact target frame hasn't arrived yet.
+  decoded off the main thread) with a plain <img> fallback. A decoded
+  frame is a full-resolution raw bitmap (~8MB each for these sources),
+  so caching all 348 forever would hold ~2.7GB in memory — that made
+  the whole page (not just this section) sluggish. Instead only a
+  window of frames around the current scroll position stays decoded;
+  anything that drifts outside it is closed and evicted. The first
+  frame loads and paints before anything else; the rest load in the
+  background within that window, continuously re-centred on wherever
+  the user is currently scrolled, so a frame that's already loaded is
+  always what's on screen (no blank canvas) even if the exact target
+  frame hasn't arrived yet.
 
   The enter/leave windows below are mapped to what the footage actually
   shows at each point in the timeline (0–1, resolution-independent —
@@ -159,6 +163,26 @@ export function ScrollytellingSection() {
     let eased = 0;
     let rafId = 0;
 
+    // decoded frames are full-resolution raw bitmaps (~8MB each); only
+    // keep this many on either side of the current position resident,
+    // closing/evicting anything further away, so memory stays bounded
+    // regardless of the sequence length
+    const FRAME_WINDOW = 25;
+
+    const evictOutsideWindow = (centerIndex: number) => {
+      const lo = centerIndex - FRAME_WINDOW;
+      const hi = centerIndex + FRAME_WINDOW;
+      for (let i = 0; i < cache.length; i++) {
+        if (i < lo || i > hi) {
+          const frame = cache[i];
+          if (frame) {
+            if ("close" in frame) frame.close();
+            cache[i] = undefined;
+          }
+        }
+      }
+    };
+
     const framePath = (dev: DeviceKind, i: number) => `${BASE_PATH}/${dev}/frame_${String(i + 1).padStart(5, "0")}.jpg`;
 
     const decodeFrame = async (dev: DeviceKind, i: number): Promise<Frame | undefined> => {
@@ -190,17 +214,24 @@ export function ScrollytellingSection() {
       });
     };
 
-    // background loader: repeatedly picks the CONCURRENCY frames nearest
-    // the current scroll target that aren't loaded/loading yet, so
-    // priority keeps following the user rather than staying fixed at 0.
+    // background loader: keeps only a FRAME_WINDOW-wide band around the
+    // current scroll target loaded, re-centring continuously as the
+    // target moves — this never terminates (the window keeps shifting
+    // for as long as the section exists), and never grows the cache
+    // beyond that band.
     const preloadAll = async (dev: DeviceKind, gen: number, total: number) => {
       const CONCURRENCY = 6;
       while (!cancelled && gen === generation) {
+        const lo = Math.max(0, currentTargetIndex - FRAME_WINDOW);
+        const hi = Math.min(total - 1, currentTargetIndex + FRAME_WINDOW);
         const missing: number[] = [];
-        for (let i = 0; i < total; i++) {
+        for (let i = lo; i <= hi; i++) {
           if (!cache[i] && !inFlight.has(i)) missing.push(i);
         }
-        if (missing.length === 0) return;
+        if (missing.length === 0) {
+          await new Promise((r) => setTimeout(r, 120));
+          continue;
+        }
         missing.sort((a, b) => Math.abs(a - currentTargetIndex) - Math.abs(b - currentTargetIndex));
         await Promise.all(missing.slice(0, CONCURRENCY).map((i) => ensureFrame(dev, i, gen)));
       }
@@ -240,7 +271,10 @@ export function ScrollytellingSection() {
       const index = Math.min(Math.round(p * (frameCount - 1)), frameCount - 1);
       currentTargetIndex = index;
       if (cache[index]) {
-        if (index !== lastDrawnIndex) drawFrame(index);
+        if (index !== lastDrawnIndex) {
+          drawFrame(index);
+          evictOutsideWindow(index);
+        }
       } else {
         // keep showing whatever's already on screen; just make sure this
         // frame jumps the preload queue for next time
