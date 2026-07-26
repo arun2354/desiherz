@@ -262,17 +262,7 @@ export function ScrollytellingSection() {
       const dh = ih * scale;
       ctx.fillStyle = "oklch(0.16 0.025 45)"; // --ink-background, exact site token
       ctx.fillRect(0, 0, cw, ch);
-      // the source footage runs cooler/brighter than the site's velvety
-      // cream/espresso/gold palette, which made it read as a pasted-in
-      // clip rather than part of the page — grade it warmer and quieter
-      // to match, then lay a soft ink-toned veil over it for cohesion
-      ctx.filter = "sepia(0.22) saturate(0.82) contrast(1.05) brightness(0.96)";
       ctx.drawImage(frame, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
-      ctx.filter = "none";
-      ctx.globalCompositeOperation = "multiply";
-      ctx.fillStyle = "oklch(0.16 0.025 45 / 0.16)";
-      ctx.fillRect(0, 0, cw, ch);
-      ctx.globalCompositeOperation = "source-over";
       lastDrawnIndex = index;
     };
 
