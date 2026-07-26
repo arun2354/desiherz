@@ -149,6 +149,7 @@ export function ScrollytellingSection() {
   const captionRefs = useRef<(HTMLDivElement | null)[]>([]);
   const barFillRef = useRef<HTMLSpanElement>(null);
   const counterRef = useRef<HTMLSpanElement>(null);
+  const entryFadeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -290,6 +291,15 @@ export function ScrollytellingSection() {
         // frame jumps the preload queue for next time
         ensureFrame(device, index, gen);
       }
+
+      // this section sits between two of the site's cream-background
+      // sections (Statement above, Pledges below); a hard cut straight
+      // into full-screen dark footage read as a pasted-in clip rather
+      // than part of the page. Fading from the site's own cream token
+      // right at the very start, and dissolving into it right at the
+      // very end, makes the boundary feel intentional instead of a cut
+      // — without touching the footage itself, just the site's own UI.
+      if (entryFadeRef.current) entryFadeRef.current.style.opacity = String(1 - smoothstep(Math.min(p / 0.06, 1)));
 
       const fade = 0.045;
       let activeIdx = 0;
@@ -449,6 +459,19 @@ export function ScrollytellingSection() {
       <div ref={containerRef} className="relative h-[600vh]">
         <div className="sticky top-0 h-screen overflow-hidden">
           <canvas ref={canvasRef} className="absolute inset-0" aria-hidden="true" />
+
+          {/* entry: a brief cream fade at the very start, echoing the
+              cream Statement section just above, so the section feels
+              like it emerges from the page rather than cutting into it.
+              (No equivalent exit fade: the final caption stays on
+              screen right through the end — that's the conversion
+              moment — and washing the background toward cream while its
+              dark card is still up would clash rather than help.) */}
+          <div
+            ref={entryFadeRef}
+            className="absolute inset-0 pointer-events-none"
+            style={{ background: "linear-gradient(180deg, oklch(0.975 0.012 85) 0%, transparent 55%)", opacity: 1 }}
+          />
 
           {/* just enough scrim at the very bottom for the band to sit on;
               the footage stays otherwise untouched/undimmed. Uses the
