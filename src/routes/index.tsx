@@ -44,7 +44,7 @@ export const Route = createFileRoute("/")({
           name: SITE.name,
           description: SITE.description,
           url: SITE.url,
-          email: "hello@desiherz.com",
+          email: "hello@desiherz.de",
           telephone: "+498000060452",
           priceRange: "€39",
           address: {

@@ -7,6 +7,30 @@ import { BrandMark } from "@/components/landing/brand-mark";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const EASE = [0.16, 1, 0.3, 1] as const;
+const CONTACT_EMAIL = "hello@desiherz.de";
+
+// mailto: links (including ones triggered via window.location.href, as
+// below) open an OS app-chooser when there's no default mail client, and
+// picking a plain browser from that list does nothing — undetectable
+// from JS, so we can't know whether it actually worked. This gives a
+// guaranteed-working fallback: copy the note to the clipboard.
+function CopyButton({ value, label }: { value: string; label: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        navigator.clipboard?.writeText(value).then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1800);
+        });
+      }}
+      className="font-medium text-gold underline underline-offset-2 hover:text-gold-light"
+    >
+      {copied ? "Copied" : label}
+    </button>
+  );
+}
 
 // Web3Forms: a free form-delivery service — submissions POST straight to
 // their API and land in the inbox tied to this access key. No backend code
@@ -21,7 +45,7 @@ export function CtaSection() {
   const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
   const [errors, setErrors] = useState<{ name?: string; email?: string; note?: string; form?: string }>({});
-  const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "mailto-fallback">("idle");
 
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -43,11 +67,15 @@ export function CtaSection() {
     if (Object.keys(nextErrors).length > 0) return;
 
     if (!WEB3FORMS_KEY) {
-      // Not configured yet — fall back to mailto rather than silently failing.
+      // Not configured yet — best-effort mailto, but JS has no way to
+      // detect whether it actually opened a mail client (an OS
+      // app-chooser with no default mail app just silently does
+      // nothing), so don't claim the note was sent — show a fallback
+      // that's guaranteed to work instead.
       const subject = encodeURIComponent(`Private enquiry from ${name.trim()}`);
       const body = encodeURIComponent(`${note.trim()}\n\n— ${name.trim()} (${email.trim()})`);
-      window.location.href = `mailto:hello@desiherz.com?subject=${subject}&body=${body}`;
-      setStatus("sent");
+      window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
+      setStatus("mailto-fallback");
       return;
     }
 
@@ -70,7 +98,7 @@ export function CtaSection() {
       setStatus("sent");
     } catch {
       setStatus("idle");
-      setErrors({ form: "That didn't send — please try again, or email hello@desiherz.com directly." });
+      setErrors({ form: "That didn't send — please try again, or email hello@desiherz.de directly." });
     }
   }
 
@@ -219,6 +247,13 @@ export function CtaSection() {
                 {status === "sent" && (
                   <p className="text-sm text-gold" role="status">
                     Thank you — we&rsquo;ve received your note and will write back privately.
+                  </p>
+                )}
+                {status === "mailto-fallback" && (
+                  <p className="text-sm text-muted-foreground" role="status">
+                    We&rsquo;ve opened your email app with your note ready to send — if nothing opened,{" "}
+                    <CopyButton value={`${note.trim()}\n\n— ${name.trim()} (${email.trim()})`} label="copy your note" /> and email it to{" "}
+                    <CopyButton value={CONTACT_EMAIL} label={CONTACT_EMAIL} /> directly.
                   </p>
                 )}
               </form>

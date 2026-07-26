@@ -1,5 +1,30 @@
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { BrandMark } from "@/components/landing/brand-mark";
+
+// mailto:/tel: links open an OS app-chooser dialog when no default
+// mail/phone app is configured, and picking a plain browser from that
+// list does nothing — there's no way to detect or fix that from here.
+// Copying the value instead always works, so that's the primary click
+// action; the real mailto:/tel: href stays for right-click/middle-click.
+function CopyableContact({ value, href, display }: { value: string; href: string; display: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <a
+      href={href}
+      onClick={(e) => {
+        e.preventDefault();
+        navigator.clipboard?.writeText(value).then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1800);
+        });
+      }}
+      className="transition-colors hover:text-ink-foreground"
+    >
+      {copied ? "Copied to clipboard" : display}
+    </a>
+  );
+}
 
 const exploreLinks = [
   { name: "Journey", href: "#journey" },
@@ -55,9 +80,10 @@ export function FooterSection() {
                 <li>Frankfurt am Main</li>
                 <li>By appointment only</li>
                 <li>
-                  <a href="mailto:hello@desiherz.com" className="transition-colors hover:text-ink-foreground">
-                    hello@desiherz.com
-                  </a>
+                  <CopyableContact href="mailto:hello@desiherz.de" value="hello@desiherz.de" display="hello@desiherz.de" />
+                </li>
+                <li>
+                  <CopyableContact href="tel:+498000060452" value="+49 800 0060452" display="0800 00 60452" />
                 </li>
               </ul>
             </div>
