@@ -6,7 +6,11 @@ import { useEffect, useRef } from "react";
   manually extracted — not re-derived here) drawn to canvas, while a
   caption band fades through six progress windows.
 
-  Frame source: public/scrollytelling/hero/{desktop,mobile}/frame_NNNNN.jpg.
+  Frame source: public/scrollytelling/hero/{desktop,mobile}/frame_NNNNN.webp
+  (re-encoded from the original extracted JPEGs — same 348 frames, same
+  content, same moments, just ~50% smaller per file with no visible
+  quality loss, since that raw payload was the hard floor on how fast
+  this could ever load on a cold connection).
   Desktop is the 16:9 cut, mobile a separate 9:16 crop — only the
   active device's set is ever fetched, and a manifest.json in each
   folder (written once from the real file count, not hardcoded) tells
@@ -184,7 +188,7 @@ export function ScrollytellingSection() {
     // see the nearViewport handling in loop() below. That keeps the
     // in-section experience identical to the smooth version while still
     // not holding ~2.7GB for the rest of the page visit.
-    const framePath = (dev: DeviceKind, i: number) => `${BASE_PATH}/${dev}/frame_${String(i + 1).padStart(5, "0")}.jpg`;
+    const framePath = (dev: DeviceKind, i: number) => `${BASE_PATH}/${dev}/frame_${String(i + 1).padStart(5, "0")}.webp`;
 
     const decodeFrame = async (dev: DeviceKind, i: number): Promise<Frame | undefined> => {
       const src = framePath(dev, i);
