@@ -15,17 +15,25 @@ import { useEffect, useRef } from "react";
   breakpoint) without a full remount.
 
   Frames decode via createImageBitmap when available (cheaper to draw,
-  decoded off the main thread) with a plain <img> fallback. A decoded
-  frame is a full-resolution raw bitmap (~8MB each for these sources),
-  so caching all 348 forever would hold ~2.7GB in memory — that made
-  the whole page (not just this section) sluggish. Instead only a
-  window of frames around the current scroll position stays decoded;
-  anything that drifts outside it is closed and evicted. The first
+  decoded off the main thread) with a plain <img> fallback. The first
   frame loads and paints before anything else; the rest load in the
-  background within that window, continuously re-centred on wherever
-  the user is currently scrolled, so a frame that's already loaded is
-  always what's on screen (no blank canvas) even if the exact target
-  frame hasn't arrived yet.
+  background, always prioritised by distance from wherever the user is
+  currently scrolled, so a frame that's already loaded is always what's
+  on screen (no blank canvas) even if the exact target frame hasn't
+  arrived yet.
+
+  A decoded frame is a full-resolution raw bitmap (~8MB each for these
+  sources), so caching all 348 forever would hold ~2.7GB — fine while
+  the user is actually scrubbing through this section, but not for the
+  rest of the page visit. An earlier version evicted anything outside a
+  window around the current frame to bound memory at all times, but
+  that reintroduced network/decode latency every time the user scrolled
+  back over ground that had just been evicted, which felt worse than
+  the memory cost it was solving. Instead every decoded frame stays
+  resident for as long as the user is in or near this section — exactly
+  like caching everything forever — and the whole cache is only
+  released once they've scrolled well past it (see the nearViewport
+  handling in loop()), reloading fresh if they scroll back.
 
   The enter/leave windows below are mapped to what the footage actually
   shows at each point in the timeline (0–1, resolution-independent —
@@ -162,32 +170,19 @@ export function ScrollytellingSection() {
     let currentTargetIndex = 0;
     let eased = 0;
     let rafId = 0;
+    let released = false; // whole cache freed after leaving the section
 
-    // decoded frames are full-resolution raw bitmaps (~8MB each); only
-    // keep this many on either side of the current position resident,
-    // closing/evicting anything further away, so memory stays bounded
-    // regardless of the sequence length. 40 covers ~116vh of scroll in
-    // either direction — comfortably more than a single fast mobile
-    // flick, so the picture doesn't freeze waiting on a refetch outside
-    // slower/interrupted connections. Costs ~640MB worst case, which is
-    // fine since it's only resident while the user is actually in this
-    // section, not for the whole page visit.
-    const FRAME_WINDOW = 40;
-
-    const evictOutsideWindow = (centerIndex: number) => {
-      const lo = centerIndex - FRAME_WINDOW;
-      const hi = centerIndex + FRAME_WINDOW;
-      for (let i = 0; i < cache.length; i++) {
-        if (i < lo || i > hi) {
-          const frame = cache[i];
-          if (frame) {
-            if ("close" in frame) frame.close();
-            cache[i] = undefined;
-          }
-        }
-      }
-    };
-
+    // A capped eviction window (only keep frames within N of the current
+    // position, discard the rest) sounded right for memory, but in
+    // practice it reintroduced network/decode latency every time the
+    // user scrolled back over ground that had just been evicted — the
+    // original all-cached-forever version was genuinely smoother to
+    // scrub. So: while the user is actually in/near this section, every
+    // decoded frame stays resident (exactly like the original), and the
+    // whole cache is only released once they've scrolled well past —
+    // see the nearViewport handling in loop() below. That keeps the
+    // in-section experience identical to the smooth version while still
+    // not holding ~2.7GB for the rest of the page visit.
     const framePath = (dev: DeviceKind, i: number) => `${BASE_PATH}/${dev}/frame_${String(i + 1).padStart(5, "0")}.jpg`;
 
     const decodeFrame = async (dev: DeviceKind, i: number): Promise<Frame | undefined> => {
@@ -219,24 +214,18 @@ export function ScrollytellingSection() {
       });
     };
 
-    // background loader: keeps only a FRAME_WINDOW-wide band around the
-    // current scroll target loaded, re-centring continuously as the
-    // target moves — this never terminates (the window keeps shifting
-    // for as long as the section exists), and never grows the cache
-    // beyond that band.
+    // background loader: fills the entire sequence, always prioritising
+    // whatever's nearest the current scroll target first, so scrubbing
+    // in either direction hits an already-decoded frame as soon as
+    // possible and — once fully loaded — never needs the network again.
     const preloadAll = async (dev: DeviceKind, gen: number, total: number) => {
       const CONCURRENCY = 10;
       while (!cancelled && gen === generation) {
-        const lo = Math.max(0, currentTargetIndex - FRAME_WINDOW);
-        const hi = Math.min(total - 1, currentTargetIndex + FRAME_WINDOW);
         const missing: number[] = [];
-        for (let i = lo; i <= hi; i++) {
+        for (let i = 0; i < total; i++) {
           if (!cache[i] && !inFlight.has(i)) missing.push(i);
         }
-        if (missing.length === 0) {
-          await new Promise((r) => setTimeout(r, 120));
-          continue;
-        }
+        if (missing.length === 0) return;
         missing.sort((a, b) => Math.abs(a - currentTargetIndex) - Math.abs(b - currentTargetIndex));
         await Promise.all(missing.slice(0, CONCURRENCY).map((i) => ensureFrame(dev, i, gen)));
       }
@@ -278,7 +267,6 @@ export function ScrollytellingSection() {
       if (cache[index]) {
         if (index !== lastDrawnIndex) {
           drawFrame(index);
-          evictOutsideWindow(index);
         }
       } else {
         // keep showing whatever's already on screen; just make sure this
@@ -310,10 +298,28 @@ export function ScrollytellingSection() {
       const rect = container.getBoundingClientRect();
       const nearViewport = rect.top < window.innerHeight * 1.5 && rect.bottom > -window.innerHeight * 0.5;
       if (nearViewport) {
+        if (released) {
+          // scrolled back in after being released — reload from scratch;
+          // start() bumps the generation and schedules its own loop
+          released = false;
+          start(device);
+          return;
+        }
         const target = targetProgress();
         eased += (target - eased) * 0.12;
         if (Math.abs(target - eased) < 0.0004) eased = target;
         applyProgress(eased, gen);
+      } else if (!released && frameCount > 0) {
+        // the user has moved well past this section — free every
+        // decoded frame instead of holding up to ~2.7GB for the rest of
+        // the page visit. Scrolling back triggers a fresh load above.
+        released = true;
+        for (const frame of cache) {
+          if (frame && "close" in frame) frame.close();
+        }
+        cache = [];
+        inFlight.clear();
+        lastDrawnIndex = -1;
       }
       if (gen === generation) rafId = requestAnimationFrame(() => loop(gen));
     };
