@@ -255,10 +255,27 @@ export function ScrollytellingSection() {
       lastDrawnIndex = index;
     };
 
-    const targetProgress = () => {
+    // getBoundingClientRect()/offsetTop force the browser to run layout
+    // if anything on the page has pending style changes — calling that
+    // every animation frame during a fast scroll, while framer-motion is
+    // simultaneously writing styles for whileInView reveals elsewhere on
+    // the page, is textbook layout thrashing and was the real source of
+    // the jank. Cache the container's position/height once (recomputed
+    // only on resize, not every frame) and drive the per-frame math off
+    // window.scrollY instead, which never forces layout.
+    let containerTop = 0;
+    let containerHeight = 0;
+    const measureContainer = () => {
       const rect = container.getBoundingClientRect();
-      const total = container.offsetHeight - window.innerHeight;
-      return Math.min(1, Math.max(0, -rect.top / total));
+      containerTop = rect.top + window.scrollY;
+      containerHeight = rect.height;
+    };
+    measureContainer();
+
+    const targetProgress = () => {
+      const top = containerTop - window.scrollY;
+      const total = containerHeight - window.innerHeight;
+      return Math.min(1, Math.max(0, -top / total));
     };
 
     const applyProgress = (p: number, gen: number) => {
@@ -295,8 +312,9 @@ export function ScrollytellingSection() {
     };
 
     const loop = (gen: number) => {
-      const rect = container.getBoundingClientRect();
-      const nearViewport = rect.top < window.innerHeight * 1.5 && rect.bottom > -window.innerHeight * 0.5;
+      const top = containerTop - window.scrollY;
+      const bottom = top + containerHeight;
+      const nearViewport = top < window.innerHeight * 1.5 && bottom > -window.innerHeight * 0.5;
       if (nearViewport) {
         if (released) {
           // scrolled back in after being released — reload from scratch;
@@ -326,6 +344,7 @@ export function ScrollytellingSection() {
 
     const onResize = () => {
       sizeCanvas();
+      measureContainer();
       if (lastDrawnIndex >= 0) drawFrame(lastDrawnIndex);
     };
     sizeCanvas();
