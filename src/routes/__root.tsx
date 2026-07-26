@@ -7,10 +7,56 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { BrandMark } from "@/components/landing/brand-mark";
+
+// A brief gate on just the truly critical stuff — webfonts and the hero
+// poster image — so the page never flashes unstyled/fallback-font text
+// or a blank hero before its background is ready. Deliberately NOT
+// waiting on the hero video or anything below the fold: those are much
+// larger and load progressively in the background regardless, and
+// blocking on them would mean a 30+ second blank screen on an average
+// connection instead of a fraction of a second. Capped at 1.2s so a
+// slow/failed font or image load can never hold the page hostage.
+function CriticalLoader() {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      setReady(true);
+    };
+
+    const fontsPromise = "fonts" in document ? document.fonts.ready : Promise.resolve();
+    const posterPromise = new Promise<void>((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve();
+      img.onerror = () => resolve();
+      img.src = window.matchMedia("(max-width: 767px)").matches
+        ? "/images/hero-poster-mobile.jpg"
+        : "/images/hero-poster.jpg";
+    });
+
+    Promise.all([fontsPromise, posterPromise]).then(finish);
+    const timeout = setTimeout(finish, 1200);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  return (
+    <div
+      aria-hidden="true"
+      className="fixed inset-0 z-[999] flex items-center justify-center bg-[#140c08] transition-opacity duration-500 ease-out"
+      style={{ opacity: ready ? 0 : 1, pointerEvents: ready ? "none" : "auto" }}
+    >
+      <BrandMark size={40} />
+    </div>
+  );
+}
 
 function NotFoundComponent() {
   return (
@@ -127,6 +173,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <CriticalLoader />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
     </QueryClientProvider>
