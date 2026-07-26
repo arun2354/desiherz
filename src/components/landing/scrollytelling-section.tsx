@@ -15,13 +15,25 @@ import { useEffect, useRef } from "react";
   breakpoint) without a full remount.
 
   Frames decode via createImageBitmap when available (cheaper to draw,
-  decoded off the main thread) with a plain <img> fallback, and are
-  cached by index for the component's lifetime — nothing is fetched
-  twice. The first frame loads and paints before anything else; the
-  rest load in the background, continuously re-prioritised toward
-  whatever frame the user is currently scrolled near, so a frame
-  that's already loaded is always what's on screen (no blank canvas)
-  even if the exact target frame hasn't arrived yet.
+  decoded off the main thread) with a plain <img> fallback. The first
+  frame loads and paints before anything else; the rest load in the
+  background, always prioritised by distance from wherever the user is
+  currently scrolled, so a frame that's already loaded is always what's
+  on screen (no blank canvas) even if the exact target frame hasn't
+  arrived yet.
+
+  A decoded frame is a full-resolution raw bitmap (~8MB each for these
+  sources), so caching all 348 forever would hold ~2.7GB — fine while
+  the user is actually scrubbing through this section, but not for the
+  rest of the page visit. An earlier version evicted anything outside a
+  window around the current frame to bound memory at all times, but
+  that reintroduced network/decode latency every time the user scrolled
+  back over ground that had just been evicted, which felt worse than
+  the memory cost it was solving. Instead every decoded frame stays
+  resident for as long as the user is in or near this section — exactly
+  like caching everything forever — and the whole cache is only
+  released once they've scrolled well past it (see the nearViewport
+  handling in loop()), reloading fresh if they scroll back.
 
   The enter/leave windows below are mapped to what the footage actually
   shows at each point in the timeline (0–1, resolution-independent —
@@ -158,7 +170,19 @@ export function ScrollytellingSection() {
     let currentTargetIndex = 0;
     let eased = 0;
     let rafId = 0;
+    let released = false; // whole cache freed after leaving the section
 
+    // A capped eviction window (only keep frames within N of the current
+    // position, discard the rest) sounded right for memory, but in
+    // practice it reintroduced network/decode latency every time the
+    // user scrolled back over ground that had just been evicted — the
+    // original all-cached-forever version was genuinely smoother to
+    // scrub. So: while the user is actually in/near this section, every
+    // decoded frame stays resident (exactly like the original), and the
+    // whole cache is only released once they've scrolled well past —
+    // see the nearViewport handling in loop() below. That keeps the
+    // in-section experience identical to the smooth version while still
+    // not holding ~2.7GB for the rest of the page visit.
     const framePath = (dev: DeviceKind, i: number) => `${BASE_PATH}/${dev}/frame_${String(i + 1).padStart(5, "0")}.jpg`;
 
     const decodeFrame = async (dev: DeviceKind, i: number): Promise<Frame | undefined> => {
@@ -190,11 +214,12 @@ export function ScrollytellingSection() {
       });
     };
 
-    // background loader: repeatedly picks the CONCURRENCY frames nearest
-    // the current scroll target that aren't loaded/loading yet, so
-    // priority keeps following the user rather than staying fixed at 0.
+    // background loader: fills the entire sequence, always prioritising
+    // whatever's nearest the current scroll target first, so scrubbing
+    // in either direction hits an already-decoded frame as soon as
+    // possible and — once fully loaded — never needs the network again.
     const preloadAll = async (dev: DeviceKind, gen: number, total: number) => {
-      const CONCURRENCY = 6;
+      const CONCURRENCY = 10;
       while (!cancelled && gen === generation) {
         const missing: number[] = [];
         for (let i = 0; i < total; i++) {
@@ -224,23 +249,42 @@ export function ScrollytellingSection() {
       const scale = Math.max(cw / iw, ch / ih);
       const dw = iw * scale;
       const dh = ih * scale;
-      ctx.fillStyle = "#140c08";
+      ctx.fillStyle = "oklch(0.16 0.025 45)"; // --ink-background, exact site token
       ctx.fillRect(0, 0, cw, ch);
       ctx.drawImage(frame, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
       lastDrawnIndex = index;
     };
 
-    const targetProgress = () => {
+    // getBoundingClientRect()/offsetTop force the browser to run layout
+    // if anything on the page has pending style changes — calling that
+    // every animation frame during a fast scroll, while framer-motion is
+    // simultaneously writing styles for whileInView reveals elsewhere on
+    // the page, is textbook layout thrashing and was the real source of
+    // the jank. Cache the container's position/height once (recomputed
+    // only on resize, not every frame) and drive the per-frame math off
+    // window.scrollY instead, which never forces layout.
+    let containerTop = 0;
+    let containerHeight = 0;
+    const measureContainer = () => {
       const rect = container.getBoundingClientRect();
-      const total = container.offsetHeight - window.innerHeight;
-      return Math.min(1, Math.max(0, -rect.top / total));
+      containerTop = rect.top + window.scrollY;
+      containerHeight = rect.height;
+    };
+    measureContainer();
+
+    const targetProgress = () => {
+      const top = containerTop - window.scrollY;
+      const total = containerHeight - window.innerHeight;
+      return Math.min(1, Math.max(0, -top / total));
     };
 
     const applyProgress = (p: number, gen: number) => {
       const index = Math.min(Math.round(p * (frameCount - 1)), frameCount - 1);
       currentTargetIndex = index;
       if (cache[index]) {
-        if (index !== lastDrawnIndex) drawFrame(index);
+        if (index !== lastDrawnIndex) {
+          drawFrame(index);
+        }
       } else {
         // keep showing whatever's already on screen; just make sure this
         // frame jumps the preload queue for next time
@@ -268,19 +312,39 @@ export function ScrollytellingSection() {
     };
 
     const loop = (gen: number) => {
-      const rect = container.getBoundingClientRect();
-      const nearViewport = rect.top < window.innerHeight * 1.5 && rect.bottom > -window.innerHeight * 0.5;
+      const top = containerTop - window.scrollY;
+      const bottom = top + containerHeight;
+      const nearViewport = top < window.innerHeight * 1.5 && bottom > -window.innerHeight * 0.5;
       if (nearViewport) {
+        if (released) {
+          // scrolled back in after being released — reload from scratch;
+          // start() bumps the generation and schedules its own loop
+          released = false;
+          start(device);
+          return;
+        }
         const target = targetProgress();
         eased += (target - eased) * 0.12;
         if (Math.abs(target - eased) < 0.0004) eased = target;
         applyProgress(eased, gen);
+      } else if (!released && frameCount > 0) {
+        // the user has moved well past this section — free every
+        // decoded frame instead of holding up to ~2.7GB for the rest of
+        // the page visit. Scrolling back triggers a fresh load above.
+        released = true;
+        for (const frame of cache) {
+          if (frame && "close" in frame) frame.close();
+        }
+        cache = [];
+        inFlight.clear();
+        lastDrawnIndex = -1;
       }
       if (gen === generation) rafId = requestAnimationFrame(() => loop(gen));
     };
 
     const onResize = () => {
       sizeCanvas();
+      measureContainer();
       if (lastDrawnIndex >= 0) drawFrame(lastDrawnIndex);
     };
     sizeCanvas();
@@ -295,15 +359,18 @@ export function ScrollytellingSection() {
       lastDrawnIndex = -1;
       frameCount = 0;
 
+      const manifestPromise = fetch(`${BASE_PATH}/${dev}/manifest.json`)
+        .then((res) => res.json())
+        .catch(() => null);
+      // frame 0's index doesn't depend on the manifest, so kick off its
+      // fetch immediately instead of waiting on the manifest round-trip
+      // first — that extra sequential RTT was delaying first paint,
+      // especially noticeable on higher-latency mobile connections.
+      const frame0Promise = ensureFrame(dev, 0, gen);
+
       let count = 1;
-      try {
-        const res = await fetch(`${BASE_PATH}/${dev}/manifest.json`);
-        const data = await res.json();
-        if (typeof data.count === "number" && data.count > 0) count = data.count;
-      } catch {
-        // manifest missing/unreachable — fall back to a single-frame set
-        // rather than guessing a frame count that may not exist
-      }
+      const data = await manifestPromise;
+      if (data && typeof data.count === "number" && data.count > 0) count = data.count;
       if (cancelled || gen !== generation) return;
       frameCount = count;
 
@@ -318,7 +385,7 @@ export function ScrollytellingSection() {
         return;
       }
 
-      await ensureFrame(dev, 0, gen);
+      await frame0Promise;
       if (cancelled || gen !== generation) return;
       if (cache[0]) drawFrame(0);
 
@@ -330,16 +397,35 @@ export function ScrollytellingSection() {
       rafId = requestAnimationFrame(() => loop(gen));
     };
 
-    start(device);
+    // this section sits well below the fold — fetching its frames
+    // immediately on mount would compete with the hero's video/fonts for
+    // bandwidth on the initial page load. Instead wait until the user is
+    // actually approaching it before the pipeline starts.
+    let started = false;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (started || cancelled) return;
+        if (entries.some((e) => e.isIntersecting)) {
+          started = true;
+          io.disconnect();
+          start(device);
+        }
+      },
+      { rootMargin: "0px 0px 40% 0px" }
+    );
+    io.observe(container);
 
     // rotating a phone (or resizing past the breakpoint) switches the
     // active frame set safely: invalidate the old generation, drop its
-    // cache, and restart the pipeline for the new device kind
+    // cache, and restart the pipeline for the new device kind. If the
+    // pipeline hasn't started yet, just record the new device — the
+    // eventual intersection-triggered start() will pick it up.
     const deviceQuery = window.matchMedia("(max-width: 767px)");
     const onDeviceChange = () => {
       const next: DeviceKind = deviceQuery.matches ? "mobile" : "desktop";
       if (next === device) return;
       device = next;
+      if (!started) return;
       cancelAnimationFrame(rafId);
       start(device);
     };
@@ -349,6 +435,7 @@ export function ScrollytellingSection() {
       cancelled = true;
       generation++;
       cancelAnimationFrame(rafId);
+      io.disconnect();
       window.removeEventListener("resize", onResize);
       deviceQuery.removeEventListener("change", onDeviceChange);
       for (const frame of cache) {
@@ -364,23 +451,26 @@ export function ScrollytellingSection() {
           <canvas ref={canvasRef} className="absolute inset-0" aria-hidden="true" />
 
           {/* just enough scrim at the very bottom for the band to sit on;
-              the footage stays otherwise untouched/undimmed */}
+              the footage stays otherwise untouched/undimmed. Uses the
+              same ink-background token as the rest of the site's dark
+              sections (Voices/Testimonials/CTA) so this reads as part
+              of that family rather than its own isolated color. */}
           <div
             className="absolute inset-x-0 bottom-0 h-[45vh] pointer-events-none"
-            style={{ background: "linear-gradient(180deg, transparent 0%, rgba(15,9,6,0.5) 55%, rgba(15,9,6,0.85) 100%)" }}
+            style={{ background: "linear-gradient(180deg, transparent 0%, oklch(0.16 0.025 45 / 0.5) 55%, oklch(0.16 0.025 45 / 0.85) 100%)" }}
           />
 
           {/* top progress bar: a thin gold line that fills across the
               full 600vh scroll, so "how far through" is always visible */}
-          <div className="absolute top-0 inset-x-0 h-[3px] bg-[#e9cfae]/10">
+          <div className="absolute top-0 inset-x-0 h-[3px] bg-gold/15">
             <span
               ref={barFillRef}
-              className="block h-full bg-[#d9a760]"
+              className="block h-full bg-gold-light"
               style={{ width: "0%" }}
             />
           </div>
           <div className="absolute top-4 right-5 lg:right-8">
-            <span ref={counterRef} className="font-mono text-[10px] tracking-[0.18em] text-[#f5e9dc]/70 whitespace-nowrap">
+            <span ref={counterRef} className="font-mono text-[10px] tracking-[0.18em] text-ink-foreground/70 whitespace-nowrap">
               01 / 06 — Discovery
             </span>
           </div>
@@ -402,26 +492,26 @@ export function ScrollytellingSection() {
                 <div
                   className="rounded-xl px-4 py-3.5 sm:rounded-2xl sm:px-6 sm:py-5 lg:px-10 lg:py-8"
                   style={{
-                    background: "rgba(15,9,6,0.55)",
+                    background: "oklch(0.16 0.025 45 / 0.55)",
                     backdropFilter: "blur(24px) saturate(140%)",
                     WebkitBackdropFilter: "blur(24px) saturate(140%)",
-                    border: "1px solid rgba(217,167,96,0.28)",
+                    border: "1px solid rgba(184,134,62,0.28)",
                     boxShadow: "0 12px 32px rgba(0,0,0,0.35)",
                   }}
                 >
                   <div className="flex flex-col gap-2.5 sm:gap-4 lg:flex-row lg:items-end lg:gap-10">
                     <div className="flex shrink-0 items-baseline gap-2 sm:gap-3 lg:w-24 lg:flex-col lg:items-start lg:gap-1">
-                      <span className="font-display text-2xl leading-none text-[#d9a760] sm:text-4xl lg:text-6xl">
+                      <span className="font-display text-2xl leading-none text-gold-light sm:text-4xl lg:text-6xl">
                         {step.n}
                       </span>
-                      <span className="font-mono text-[8px] tracking-[0.2em] text-white/40 sm:text-[10px]">/ 06</span>
+                      <span className="font-mono text-[8px] tracking-[0.2em] text-ink-foreground/40 sm:text-[10px]">/ 06</span>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h3 className="mb-1 font-display text-lg leading-tight text-white sm:mb-2 sm:text-2xl lg:text-4xl">
+                      <h3 className="mb-1 font-display text-lg leading-tight text-ink-foreground sm:mb-2 sm:text-2xl lg:text-4xl">
                         {step.title}
                       </h3>
-                      <p className="mb-1.5 text-xs text-[#f5e9dc] sm:mb-3 sm:text-base lg:text-lg">{step.line}</p>
-                      <span className="inline-flex items-center gap-1.5 font-mono text-[8px] tracking-[0.12em] text-[#d9a760] sm:gap-2 sm:text-[10px] sm:tracking-[0.15em]">
+                      <p className="mb-1.5 text-xs text-ink-foreground sm:mb-3 sm:text-base lg:text-lg">{step.line}</p>
+                      <span className="inline-flex items-center gap-1.5 font-mono text-[8px] tracking-[0.12em] text-gold-light sm:gap-2 sm:text-[10px] sm:tracking-[0.15em]">
                         <span>✦</span>
                         {step.tag}
                       </span>
@@ -429,7 +519,7 @@ export function ScrollytellingSection() {
                     {!step.final && (
                       <a
                         href="#contact"
-                        className="hidden shrink-0 items-center justify-center self-end rounded-full bg-[#f5e9dc] px-6 h-11 text-sm font-medium text-[#140c08] transition-colors hover:bg-white lg:inline-flex"
+                        className="hidden shrink-0 items-center justify-center self-end rounded-full bg-ink-foreground px-6 h-11 text-sm font-medium text-ink-background transition-colors hover:bg-white lg:inline-flex"
                       >
                         Private enquiry
                       </a>
@@ -441,17 +531,17 @@ export function ScrollytellingSection() {
                       <div className="mt-3 sm:mt-6">
                         <a
                           href="#contact"
-                          className="inline-flex h-9 items-center justify-center rounded-full bg-[#f5e9dc] px-5 text-xs font-medium text-[#140c08] transition-colors hover:bg-white sm:h-12 sm:px-8 sm:text-sm"
+                          className="inline-flex h-9 items-center justify-center rounded-full bg-ink-foreground px-5 text-xs font-medium text-ink-background transition-colors hover:bg-white sm:h-12 sm:px-8 sm:text-sm"
                         >
                           Begin privately
                         </a>
                       </div>
-                      <div className="mt-3 grid grid-cols-2 gap-2 border-t border-white/10 pt-3 sm:mt-6 sm:gap-4 sm:pt-6 sm:grid-cols-4">
+                      <div className="mt-3 grid grid-cols-2 gap-2 border-t border-ink-border pt-3 sm:mt-6 sm:gap-4 sm:pt-6 sm:grid-cols-4">
                         {CLOSING_TAGS.map((t) => (
                           <div key={t.label} className="flex flex-col items-center gap-1 text-center sm:gap-2">
                             <svg
                               viewBox="0 0 24 24"
-                              className="h-3 w-3 text-[#d9a760] sm:h-4 sm:w-4 lg:h-5 lg:w-5"
+                              className="h-3 w-3 text-gold-light sm:h-4 sm:w-4 lg:h-5 lg:w-5"
                               fill="none"
                               stroke="currentColor"
                               strokeWidth={1.4}
@@ -460,7 +550,7 @@ export function ScrollytellingSection() {
                             >
                               <path d={t.d} />
                             </svg>
-                            <span className="max-w-[100px] text-[8px] leading-tight text-white/60 sm:text-[10px]">{t.label}</span>
+                            <span className="max-w-[100px] text-[8px] leading-tight text-ink-foreground/60 sm:text-[10px]">{t.label}</span>
                           </div>
                         ))}
                       </div>
