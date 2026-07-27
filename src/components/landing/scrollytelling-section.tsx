@@ -27,19 +27,46 @@ import { useEffect, useRef } from "react";
   arrived yet.
 
   A decoded frame is a full-resolution raw bitmap (~8MB each for these
-  sources), so caching all 348 forever holds up to ~2.7GB while the user
-  is in this section. Two different bounded-eviction schemes were tried
-  to cap that, and both made scrubbing worse: any *finite* window around
-  the current position is vulnerable to fast direction reversals, since
-  a quick up-down-up-down swing can cross the window's edges faster than
-  frames can be refetched — there's no window size that fixes that, it's
-  structural. See evictOutsideWindow (removed) in git history if
-  reintroducing this is ever reconsidered. Every decoded frame now stays
-  resident for as long as the user is in or near the section instead;
-  the whole cache is released once they've scrolled well past it (see
-  the nearViewport handling in loop()), reloading fresh if they scroll
-  back — so the ~2.7GB isn't held for the rest of the page visit, just
-  not bounded *during* active use.
+  sources), so caching all 348 forever can hold up to ~2.7GB — that's
+  what made scrubbing "everywhere sluggish", not just slow to start.
+  Two fixes, neither touching the frame files themselves (the source
+  WebPs stay exactly as provided, full 1920x1080/1080x1920 quality):
+
+  1. Frames decode at the resolution they'll actually be shown at, not
+  their full source resolution. drawFrame below does a "cover" fit —
+  scale = max(canvasW/frameW, canvasH/frameH) — so anything decoded
+  above that scale is thrown away at draw time and only ever cost
+  memory and CPU. decodeFrame computes that same scale up front and
+  passes resizeWidth/resizeHeight to createImageBitmap when it's <1,
+  so the decoded bitmap is never bigger than what will hit the screen.
+  On a retina display the source is already smaller than the canvas
+  (scale clamps to 1, no resize — same as before). On a typical 1x
+  phone or laptop this alone cuts decoded size 50-80%. The frame that's
+  fetched over the network is always the full untouched file either
+  way — only the in-memory decode target changes.
+
+  2. The resident cache is capped (CACHE_CAP) and evicted LRU — by
+  when a frame was last actually on screen or about to be, not by its
+  distance from the current index. A distance-based window was tried
+  twice before and reverted both times: it evicts anything past N
+  frames from the *current* position regardless of how recently it was
+  shown, so a fast up-down-up-down swing that had just rendered a frame
+  46 frames back finds it already evicted and stutters refetching it.
+  LRU doesn't have that failure mode — a frame shown a moment ago has a
+  fresh timestamp and survives, no matter how far the current index has
+  since moved, so reversals near wherever the user actually is stay
+  smooth. Eviction only reaches frames that genuinely haven't been
+  needed in a while. See evictLRU()/touch() below.
+
+  The background loader (preloadAll) also only fetches a window around
+  the current target (PRELOAD_RANGE either side) instead of blasting
+  the full 90MB sequence the instant the section comes near view —
+  that upfront network+decode burst was its own source of jank,
+  independent of the cache size question above.
+
+  The whole cache is still released once the user has scrolled well
+  past the section (see the nearViewport handling in loop()), reloading
+  fresh if they scroll back.
 
   The enter/leave windows below are mapped to what the footage actually
   shows at each point in the timeline (0–1, resolution-independent —
@@ -67,6 +94,21 @@ import { useEffect, useRef } from "react";
 const BASE_PATH = "/scrollytelling/hero";
 type DeviceKind = "desktop" | "mobile";
 type Frame = ImageBitmap | HTMLImageElement;
+
+// fixed dimensions of the provided source frames — used to compute how
+// much a frame can be decoded down to without ever going below what
+// the "cover" fit in drawFrame will actually display.
+const SOURCE_DIMS: Record<DeviceKind, { w: number; h: number }> = {
+  desktop: { w: 1920, h: 1080 },
+  mobile: { w: 1080, h: 1920 },
+};
+
+// resident decoded-frame cap (LRU-evicted, see touch()/evictLRU below)
+// and how far either side of the current target the background loader
+// keeps fetched. Both bound memory/network without ever touching the
+// source files.
+const CACHE_CAP = 120;
+const PRELOAD_RANGE = 60;
 
 const frameWidth = (f: Frame) => ("naturalWidth" in f ? f.naturalWidth || f.width : f.width);
 const frameHeight = (f: Frame) => ("naturalHeight" in f ? f.naturalHeight || f.height : f.height);
@@ -172,6 +214,9 @@ export function ScrollytellingSection() {
     let generation = 0; // bumped on device switch; invalidates in-flight loads from the old set
     let frameCount = 0;
     let cache: (Frame | undefined)[] = [];
+    let residentCount = 0;
+    let tick = 0;
+    let lastAccess: number[] = []; // per-index tick of last time it was shown/queued — drives LRU eviction
     const inFlight = new Set<number>();
     let lastDrawnIndex = -1;
     let currentTargetIndex = 0;
@@ -179,26 +224,31 @@ export function ScrollytellingSection() {
     let rafId = 0;
     let released = false; // whole cache freed after leaving the section
 
-    // A bounded eviction window (only keep frames within N of the
-    // current position) was tried twice to cap the ~2.7GB that caching
-    // all 348 full-resolution frames forever can hold, but any *finite*
-    // window is inherently vulnerable to rapid direction reversals: a
-    // fast up-down-up-down swing can cross the window's edges faster
-    // than frames can be refetched, which thrashes exactly the way it
-    // did here. There isn't a window size that fixes that — it's a
-    // structural property of bounding a cache by distance.
-    //
-    // The more likely actual cause of the original "everywhere sluggish"
-    // complaint that motivated the window in the first place: a real bug
-    // (fixed below) where a frame that ever failed to fetch/decode was
-    // retried forever in an infinite loop, hammering the network and CPU
-    // continuously. That alone explains site-wide jank on any connection
-    // without memory pressure needing to be the cause. So: back to
-    // caching every decoded frame for as long as the user is in/near the
-    // section (identical to the version that felt smooth), with the
-    // whole cache released once they've scrolled well past (see the
-    // nearViewport handling in loop()) to avoid holding that memory for
-    // the rest of the page visit.
+    const touch = (i: number) => {
+      lastAccess[i] = ++tick;
+    };
+
+    // evict the least-recently-shown resident frames until back at cap.
+    // O(frameCount) per call, but only runs when a new frame pushes the
+    // cache over the cap — not on every animation frame.
+    const evictLRU = () => {
+      while (residentCount > CACHE_CAP) {
+        let oldestIdx = -1;
+        let oldestTick = Infinity;
+        for (let i = 0; i < cache.length; i++) {
+          if (cache[i] && (lastAccess[i] ?? -1) < oldestTick) {
+            oldestTick = lastAccess[i] ?? -1;
+            oldestIdx = i;
+          }
+        }
+        if (oldestIdx === -1) break;
+        const frame = cache[oldestIdx];
+        if (frame && "close" in frame) frame.close();
+        cache[oldestIdx] = undefined;
+        residentCount--;
+      }
+    };
+
     const framePath = (dev: DeviceKind, i: number) => `${BASE_PATH}/${dev}/frame_${String(i + 1).padStart(5, "0")}.webp`;
 
     const decodeFrame = async (dev: DeviceKind, i: number): Promise<Frame | undefined> => {
@@ -207,6 +257,25 @@ export function ScrollytellingSection() {
         try {
           const res = await fetch(src);
           const blob = await res.blob();
+          // never decode above what drawFrame's cover-fit will actually
+          // display: same scale formula as drawFrame, so this is a
+          // strict no-op (native decode) whenever the canvas is bigger
+          // than the source (retina displays), and only ever trims
+          // pixels that would've been thrown away at draw time anyway.
+          const source = SOURCE_DIMS[dev];
+          const cw = canvas.width || source.w;
+          const ch = canvas.height || source.h;
+          const scale = Math.min(1, Math.max(cw / source.w, ch / source.h));
+          if (scale < 1) {
+            const resizeWidth = Math.max(1, Math.round(source.w * scale));
+            const resizeHeight = Math.max(1, Math.round(source.h * scale));
+            try {
+              return await createImageBitmap(blob, { resizeWidth, resizeHeight, resizeQuality: "high" });
+            } catch {
+              // some browsers may reject the resize dict; fall back to a native decode
+              return await createImageBitmap(blob);
+            }
+          }
           return await createImageBitmap(blob);
         } catch {
           // fall through to the <img> path below
@@ -230,7 +299,10 @@ export function ScrollytellingSection() {
     const failCount = new Map<number, number>();
 
     const ensureFrame = (dev: DeviceKind, i: number, gen: number): Promise<void> => {
-      if (cache[i] || inFlight.has(i)) return Promise.resolve();
+      if (cache[i] || inFlight.has(i)) {
+        if (cache[i]) touch(i);
+        return Promise.resolve();
+      }
       if ((failCount.get(i) ?? 0) >= MAX_FRAME_RETRIES) return Promise.resolve();
       inFlight.add(i);
       return decodeFrame(dev, i).then((frame) => {
@@ -238,26 +310,37 @@ export function ScrollytellingSection() {
         if (cancelled || gen !== generation) return; // stale: device changed mid-flight
         if (frame) {
           cache[i] = frame;
+          residentCount++;
+          touch(i);
           failCount.delete(i);
+          evictLRU();
         } else {
           failCount.set(i, (failCount.get(i) ?? 0) + 1);
         }
       });
     };
 
-    // background loader: fills the entire sequence, always prioritising
-    // whatever's nearest the current scroll target first, so scrubbing
-    // in either direction — including fast reversals — hits an
-    // already-decoded frame as soon as possible and, once fully loaded,
-    // never needs the network again regardless of scroll direction.
+    // background loader: keeps a PRELOAD_RANGE-wide band around the
+    // current scroll target fetched, re-centring continuously as the
+    // target moves. Bounded rather than the whole 348-frame sequence —
+    // fetching all ~90MB the instant the section comes near view was
+    // its own source of jank, on top of the memory question the LRU
+    // cap above already handles. Missing frames within the band are
+    // always fetched nearest-first, so reversals resolve as fast as
+    // possible.
     const preloadAll = async (dev: DeviceKind, gen: number, total: number) => {
-      const CONCURRENCY = 10;
+      const CONCURRENCY = 8;
       while (!cancelled && gen === generation) {
+        const lo = Math.max(0, currentTargetIndex - PRELOAD_RANGE);
+        const hi = Math.min(total - 1, currentTargetIndex + PRELOAD_RANGE);
         const missing: number[] = [];
-        for (let i = 0; i < total; i++) {
+        for (let i = lo; i <= hi; i++) {
           if (!cache[i] && !inFlight.has(i) && (failCount.get(i) ?? 0) < MAX_FRAME_RETRIES) missing.push(i);
         }
-        if (missing.length === 0) return;
+        if (missing.length === 0) {
+          await new Promise((r) => setTimeout(r, 120));
+          continue;
+        }
         missing.sort((a, b) => Math.abs(a - currentTargetIndex) - Math.abs(b - currentTargetIndex));
         await Promise.all(missing.slice(0, CONCURRENCY).map((i) => ensureFrame(dev, i, gen)));
       }
@@ -285,6 +368,7 @@ export function ScrollytellingSection() {
       ctx.fillRect(0, 0, cw, ch);
       ctx.drawImage(frame, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
       lastDrawnIndex = index;
+      touch(index);
     };
 
     // getBoundingClientRect()/offsetTop force the browser to run layout
@@ -370,13 +454,16 @@ export function ScrollytellingSection() {
         applyProgress(eased, gen);
       } else if (!released && frameCount > 0) {
         // the user has moved well past this section — free every
-        // decoded frame instead of holding up to ~2.7GB for the rest of
-        // the page visit. Scrolling back triggers a fresh load above.
+        // resident frame (already capped at CACHE_CAP, but zero is
+        // better than that for the rest of the page visit). Scrolling
+        // back triggers a fresh load above.
         released = true;
         for (const frame of cache) {
           if (frame && "close" in frame) frame.close();
         }
         cache = [];
+        residentCount = 0;
+        lastAccess = [];
         inFlight.clear();
         failCount.clear();
         lastDrawnIndex = -1;
@@ -397,6 +484,8 @@ export function ScrollytellingSection() {
     const start = async (dev: DeviceKind) => {
       const gen = ++generation;
       cache = [];
+      residentCount = 0;
+      lastAccess = [];
       inFlight.clear();
       failCount.clear();
       lastDrawnIndex = -1;
