@@ -1,13 +1,53 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { BrandMark } from "@/components/landing/brand-mark";
+import { useLocale } from "@/lib/use-locale";
+
+const copy = {
+  en: {
+    tagline: "Private, by design.",
+    brandLine: "Private matrimony for discerning people and families. By introduction only.",
+    explore: "Explore",
+    contact: "Contact",
+    legal: "Legal",
+    address: "Frankfurt am Main",
+    byAppointment: "By appointment only",
+    copied: "Copied to clipboard",
+    rights: "© 2026 DesiHerz. All rights reserved.",
+    bottomTagline: "Private matrimony, by design",
+    navLinks: [
+      { name: "Journey", href: "#journey" },
+      { name: "Pledges", href: "#pledges" },
+      { name: "Voices", href: "#voices" },
+      { name: "FAQ", href: "#faq" },
+    ],
+  },
+  de: {
+    tagline: "Privat, von Grund auf.",
+    brandLine: "Private Eheanbahnung für anspruchsvolle Menschen und Familien. Nur auf Vorstellung.",
+    explore: "Entdecken",
+    contact: "Kontakt",
+    legal: "Rechtliches",
+    address: "Frankfurt am Main",
+    byAppointment: "Nur nach Vereinbarung",
+    copied: "In die Zwischenablage kopiert",
+    rights: "© 2026 DesiHerz. Alle Rechte vorbehalten.",
+    bottomTagline: "Private Eheanbahnung, ganz bewusst",
+    navLinks: [
+      { name: "Reise", href: "#journey" },
+      { name: "Versprechen", href: "#pledges" },
+      { name: "Stimmen", href: "#voices" },
+      { name: "FAQ", href: "#faq" },
+    ],
+  },
+} as const;
 
 // mailto:/tel: links open an OS app-chooser dialog when no default
 // mail/phone app is configured, and picking a plain browser from that
 // list does nothing — there's no way to detect or fix that from here.
 // Copying the value instead always works, so that's the primary click
 // action; the real mailto:/tel: href stays for right-click/middle-click.
-function CopyableContact({ value, href, display }: { value: string; href: string; display: string }) {
+function CopyableContact({ value, href, display, copiedLabel }: { value: string; href: string; display: string; copiedLabel: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <a
@@ -21,19 +61,15 @@ function CopyableContact({ value, href, display }: { value: string; href: string
       }}
       className="transition-colors hover:text-ink-foreground"
     >
-      {copied ? "Copied to clipboard" : display}
+      {copied ? copiedLabel : display}
     </a>
   );
 }
 
-const exploreLinks = [
-  { name: "Journey", href: "#journey" },
-  { name: "Pledges", href: "#pledges" },
-  { name: "Voices", href: "#voices" },
-  { name: "FAQ", href: "#faq" },
-];
-
 export function FooterSection() {
+  const locale = useLocale();
+  const t = copy[locale];
+
   return (
     <footer className="bg-grain bg-ink-gradient relative overflow-hidden text-ink-foreground">
       {/* top hairline, gold at the centre fading to nothing at the edges */}
@@ -46,7 +82,7 @@ export function FooterSection() {
           <a href="#" className="font-display text-3xl lg:text-4xl">
             Desi<span className="text-rose">♥</span>Herz
           </a>
-          <p className="font-accent text-xl text-gold-light/80">Private, by design.</p>
+          <p className="font-accent text-xl text-gold-light/80">{t.tagline}</p>
         </div>
 
         {/* Main footer */}
@@ -54,16 +90,14 @@ export function FooterSection() {
           <div className="grid grid-cols-2 gap-12 md:grid-cols-5 lg:gap-8">
             {/* Brand */}
             <div className="col-span-2">
-              <p className="mb-8 max-w-xs text-sm leading-relaxed text-ink-muted-foreground">
-                Private matrimony for discerning people and families. By introduction only.
-              </p>
+              <p className="mb-8 max-w-xs text-sm leading-relaxed text-ink-muted-foreground">{t.brandLine}</p>
             </div>
 
             {/* Explore */}
             <div>
-              <h3 className="mb-6 font-mono text-xs tracking-[0.2em] text-gold-light/70 uppercase">Explore</h3>
+              <h3 className="mb-6 font-mono text-xs tracking-[0.2em] text-gold-light/70 uppercase">{t.explore}</h3>
               <ul className="space-y-4">
-                {exploreLinks.map((link) => (
+                {t.navLinks.map((link) => (
                   <li key={link.name}>
                     <a href={link.href} className="text-sm text-ink-muted-foreground transition-colors hover:text-ink-foreground">
                       {link.name}
@@ -75,22 +109,27 @@ export function FooterSection() {
 
             {/* Contact */}
             <div>
-              <h3 className="mb-6 font-mono text-xs tracking-[0.2em] text-gold-light/70 uppercase">Contact</h3>
+              <h3 className="mb-6 font-mono text-xs tracking-[0.2em] text-gold-light/70 uppercase">{t.contact}</h3>
               <ul className="space-y-4 text-sm text-ink-muted-foreground">
-                <li>Frankfurt am Main</li>
-                <li>By appointment only</li>
+                <li>{t.address}</li>
+                <li>{t.byAppointment}</li>
                 <li>
-                  <CopyableContact href="mailto:hello@desiherz.de" value="hello@desiherz.de" display="hello@desiherz.de" />
+                  <CopyableContact
+                    href="mailto:hello@desiherz.de"
+                    value="hello@desiherz.de"
+                    display="hello@desiherz.de"
+                    copiedLabel={t.copied}
+                  />
                 </li>
                 <li>
-                  <CopyableContact href="tel:+498000060452" value="+49 800 0060452" display="0800 00 60452" />
+                  <CopyableContact href="tel:+498000060452" value="+49 800 0060452" display="0800 00 60452" copiedLabel={t.copied} />
                 </li>
               </ul>
             </div>
 
             {/* Legal */}
             <div>
-              <h3 className="mb-6 font-mono text-xs tracking-[0.2em] text-gold-light/70 uppercase">Legal</h3>
+              <h3 className="mb-6 font-mono text-xs tracking-[0.2em] text-gold-light/70 uppercase">{t.legal}</h3>
               <ul className="space-y-4">
                 <li>
                   <Link to="/impressum" className="text-sm text-ink-muted-foreground transition-colors hover:text-ink-foreground">
@@ -109,12 +148,12 @@ export function FooterSection() {
 
         {/* Bottom bar */}
         <div className="flex flex-col items-center justify-between gap-4 border-t border-ink-border py-8 md:flex-row">
-          <p className="text-sm text-ink-muted-foreground/70">&copy; 2026 DesiHerz. All rights reserved.</p>
+          <p className="text-sm text-ink-muted-foreground/70">{t.rights}</p>
 
           <div className="flex items-center gap-4 text-sm text-ink-muted-foreground/70">
             <span className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-gold" />
-              Private matrimony, by design
+              {t.bottomTagline}
             </span>
           </div>
         </div>

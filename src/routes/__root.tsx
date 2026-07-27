@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -158,8 +159,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
+  // /impressum and /datenschutz are always German content — a legal
+  // requirement under German law — regardless of which language variant
+  // of the marketing site the visitor came from, so they're "de" even
+  // though they're not under the /de prefix.
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const lang = pathname.startsWith("/de") || pathname === "/impressum" || pathname === "/datenschutz" ? "de" : "en";
+
   return (
-    <html lang="en">
+    <html lang={lang}>
       <head>
         <HeadContent />
       </head>

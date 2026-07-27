@@ -12,6 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ImpressumRouteImport } from './routes/impressum'
 import { Route as DatenschutzRouteImport } from './routes/datenschutz'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DeIndexRouteImport } from './routes/de/index'
+import { Route as DeImpressumRouteImport } from './routes/de/impressum'
+import { Route as DeDatenschutzRouteImport } from './routes/de/datenschutz'
 
 const ImpressumRoute = ImpressumRouteImport.update({
   id: '/impressum',
@@ -28,35 +31,81 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DeIndexRoute = DeIndexRouteImport.update({
+  id: '/de/',
+  path: '/de/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeImpressumRoute = DeImpressumRouteImport.update({
+  id: '/de/impressum',
+  path: '/de/impressum',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeDatenschutzRoute = DeDatenschutzRouteImport.update({
+  id: '/de/datenschutz',
+  path: '/de/datenschutz',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/datenschutz': typeof DatenschutzRoute
   '/impressum': typeof ImpressumRoute
+  '/de/datenschutz': typeof DeDatenschutzRoute
+  '/de/impressum': typeof DeImpressumRoute
+  '/de/': typeof DeIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/datenschutz': typeof DatenschutzRoute
   '/impressum': typeof ImpressumRoute
+  '/de/datenschutz': typeof DeDatenschutzRoute
+  '/de/impressum': typeof DeImpressumRoute
+  '/de': typeof DeIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/datenschutz': typeof DatenschutzRoute
   '/impressum': typeof ImpressumRoute
+  '/de/datenschutz': typeof DeDatenschutzRoute
+  '/de/impressum': typeof DeImpressumRoute
+  '/de/': typeof DeIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/datenschutz' | '/impressum'
+  fullPaths:
+    | '/'
+    | '/datenschutz'
+    | '/impressum'
+    | '/de/datenschutz'
+    | '/de/impressum'
+    | '/de/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/datenschutz' | '/impressum'
-  id: '__root__' | '/' | '/datenschutz' | '/impressum'
+  to:
+    | '/'
+    | '/datenschutz'
+    | '/impressum'
+    | '/de/datenschutz'
+    | '/de/impressum'
+    | '/de'
+  id:
+    | '__root__'
+    | '/'
+    | '/datenschutz'
+    | '/impressum'
+    | '/de/datenschutz'
+    | '/de/impressum'
+    | '/de/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DatenschutzRoute: typeof DatenschutzRoute
   ImpressumRoute: typeof ImpressumRoute
+  DeDatenschutzRoute: typeof DeDatenschutzRoute
+  DeImpressumRoute: typeof DeImpressumRoute
+  DeIndexRoute: typeof DeIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -82,6 +131,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/de/': {
+      id: '/de/'
+      path: '/de'
+      fullPath: '/de/'
+      preLoaderRoute: typeof DeIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/de/impressum': {
+      id: '/de/impressum'
+      path: '/de/impressum'
+      fullPath: '/de/impressum'
+      preLoaderRoute: typeof DeImpressumRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/de/datenschutz': {
+      id: '/de/datenschutz'
+      path: '/de/datenschutz'
+      fullPath: '/de/datenschutz'
+      preLoaderRoute: typeof DeDatenschutzRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -89,6 +159,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DatenschutzRoute: DatenschutzRoute,
   ImpressumRoute: ImpressumRoute,
+  DeDatenschutzRoute: DeDatenschutzRoute,
+  DeImpressumRoute: DeImpressumRoute,
+  DeIndexRoute: DeIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -1,32 +1,77 @@
 import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 import { BrandMark } from "./brand-mark";
+import { useLocale } from "@/lib/use-locale";
 
-const navLinks = [
-  { name: "Journey", href: "#journey" },
-  { name: "Pledges", href: "#pledges" },
-  { name: "Voices", href: "#voices" },
-  { name: "FAQ", href: "#faq" },
-];
+const copy = {
+  en: {
+    navLinks: [
+      { name: "Journey", href: "#journey" },
+      { name: "Pledges", href: "#pledges" },
+      { name: "Voices", href: "#voices" },
+      { name: "FAQ", href: "#faq" },
+    ],
+    enquiry: "Private enquiry",
+    toggleMenu: "Toggle menu",
+  },
+  de: {
+    navLinks: [
+      { name: "Reise", href: "#journey" },
+      { name: "Versprechen", href: "#pledges" },
+      { name: "Stimmen", href: "#voices" },
+      { name: "FAQ", href: "#faq" },
+    ],
+    enquiry: "Private Anfrage",
+    toggleMenu: "Menü öffnen",
+  },
+} as const;
 
-function Wordmark({ compact }: { compact: boolean }) {
+// same two-letter labels regardless of which language is active — this is
+// the control that switches the language, not a translated string
+const LANGUAGES = [
+  { code: "en", label: "EN", to: "/" },
+  { code: "de", label: "DE", to: "/de" },
+] as const;
+
+// Plain <a> tags, not the router's client-side <Link>, are deliberate here:
+// large parts of this page (the scrollytelling frame pipeline, the hero's
+// video source swap, several IntersectionObservers) are imperative
+// mount-once effects that assume they only ever run once per page load.
+// A client-side route transition between "/" and "/de" isn't guaranteed to
+// unmount and remount that tree, which risks stale English content
+// surviving a switch to German. A full navigation sidesteps that
+// entirely and also means the server sends fully-formed, correct
+// per-locale meta/hreflang/schema on the very first response.
+function LanguageSwitcher({ locale, compact }: { locale: "en" | "de"; compact: boolean }) {
   return (
-    <a href="#" className="flex items-center gap-2.5 group">
-      <BrandMark size={compact ? 24 : 30} />
-      <span
-        className={`font-display tracking-tight transition-all duration-500 ${
-          compact ? "text-xl text-foreground" : "text-2xl text-white"
-        }`}
-      >
-        Desi<span className={compact ? "text-rose" : "text-[#eca8d6]"}>♥</span>Herz
-      </span>
-    </a>
+    <div className={`flex items-center gap-1 font-mono text-xs tracking-wide ${compact ? "text-foreground/70" : "text-white/70"}`}>
+      {LANGUAGES.map((lang, i) => (
+        <span key={lang.code} className="flex items-center gap-1">
+          {i > 0 && <span aria-hidden="true">/</span>}
+          <a
+            href={lang.to}
+            className={`transition-colors ${
+              locale === lang.code
+                ? compact
+                  ? "text-foreground"
+                  : "text-white"
+                : "hover:text-gold-light"
+            }`}
+            aria-current={locale === lang.code ? "true" : undefined}
+          >
+            {lang.label}
+          </a>
+        </span>
+      ))}
+    </div>
   );
 }
 
 export function Navigation() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const locale = useLocale();
+  const t = copy[locale];
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -55,7 +100,7 @@ export function Navigation() {
           <Wordmark compact={isScrolled} />
 
           <div className="hidden md:flex items-center gap-12">
-            {navLinks.map((link) => (
+            {t.navLinks.map((link) => (
               <a
                 key={link.name}
                 href={link.href}
@@ -69,7 +114,8 @@ export function Navigation() {
             ))}
           </div>
 
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-6">
+            <LanguageSwitcher locale={locale} compact={isScrolled} />
             <a
               href="#contact"
               className={`rounded-full inline-flex items-center justify-center font-medium ring-1 ring-transparent transition-all duration-500 hover:ring-gold/60 ${
@@ -78,7 +124,7 @@ export function Navigation() {
                   : "bg-white hover:bg-white/90 text-black px-6 h-10 text-sm"
               }`}
             >
-              Private enquiry
+              {t.enquiry}
             </a>
           </div>
 
@@ -87,7 +133,7 @@ export function Navigation() {
             className={`md:hidden p-2 transition-colors duration-500 ${
               isScrolled || isMobileMenuOpen ? "text-foreground" : "text-white"
             }`}
-            aria-label="Toggle menu"
+            aria-label={t.toggleMenu}
           >
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -103,7 +149,7 @@ export function Navigation() {
       >
         <div className="flex flex-col h-full px-8 pt-28 pb-8">
           <div className="flex-1 flex flex-col justify-center gap-8">
-            {navLinks.map((link, i) => (
+            {t.navLinks.map((link, i) => (
               <a
                 key={link.name}
                 href={link.href}
@@ -119,21 +165,37 @@ export function Navigation() {
           </div>
 
           <div
-            className={`flex gap-4 pt-8 border-t border-foreground/10 transition-all duration-500 ${
+            className={`flex items-center justify-between gap-4 pt-8 border-t border-foreground/10 transition-all duration-500 ${
               isMobileMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
             style={{ transitionDelay: isMobileMenuOpen ? "300ms" : "0ms" }}
           >
+            <LanguageSwitcher locale={locale} compact />
             <a
               href="#contact"
               onClick={() => setIsMobileMenuOpen(false)}
               className="flex-1 bg-foreground text-background rounded-full h-14 text-base inline-flex items-center justify-center font-medium"
             >
-              Private enquiry
+              {t.enquiry}
             </a>
           </div>
         </div>
       </div>
     </header>
+  );
+}
+
+function Wordmark({ compact }: { compact: boolean }) {
+  return (
+    <a href="#" className="flex items-center gap-2.5 group">
+      <BrandMark size={compact ? 24 : 30} />
+      <span
+        className={`font-display tracking-tight transition-all duration-500 ${
+          compact ? "text-xl text-foreground" : "text-2xl text-white"
+        }`}
+      >
+        Desi<span className={compact ? "text-rose" : "text-[#eca8d6]"}>♥</span>Herz
+      </span>
+    </a>
   );
 }

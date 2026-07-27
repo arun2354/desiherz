@@ -1,7 +1,33 @@
 import { useEffect, useRef, useState } from "react";
 import { BrandMark } from "./brand-mark";
+import { useLocale } from "@/lib/use-locale";
 
-const words = ["reconsidered.", "rediscovered.", "made real.", "well matched."];
+const copy = {
+  en: {
+    eyebrow: "Private matrimony, made for each other",
+    headlineStart: "The right introduction,",
+    words: ["reconsidered.", "rediscovered.", "made real.", "well matched."],
+    watchJourney: "Watch the journey",
+    enquiry: "Private enquiry",
+    stats: [
+      { value: "0", label: "public profiles, ever" },
+      { value: "2–3", label: "introductions at a time" },
+      { value: "1", label: "matchmaker who sees your profile" },
+    ],
+  },
+  de: {
+    eyebrow: "Private Eheanbahnung, füreinander gemacht",
+    headlineStart: "Die richtige Vorstellung,",
+    words: ["neu gedacht.", "neu entdeckt.", "wahr geworden.", "gut gewählt."],
+    watchJourney: "Die Reise ansehen",
+    enquiry: "Private Anfrage",
+    stats: [
+      { value: "0", label: "öffentliche Profile, niemals" },
+      { value: "2–3", label: "Vorstellungen gleichzeitig" },
+      { value: "1", label: "Vermittler, der Ihr Profil sieht" },
+    ],
+  },
+} as const;
 
 function BlurWord({ word, trigger }: { word: string; trigger: number }) {
   const letters = word.split("");
@@ -121,13 +147,9 @@ function HeroOrnament() {
   );
 }
 
-const stats = [
-  { value: "0", label: "public profiles, ever" },
-  { value: "2–3", label: "introductions at a time" },
-  { value: "1", label: "matchmaker who sees your profile" },
-];
-
 export function HeroSection() {
+  const locale = useLocale();
+  const t = copy[locale];
   const [isVisible, setIsVisible] = useState(false);
   const [wordIndex, setWordIndex] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -138,10 +160,11 @@ export function HeroSection() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setWordIndex((prev) => (prev + 1) % words.length);
+      setWordIndex((prev) => (prev + 1) % t.words.length);
     }, 2500);
     return () => clearInterval(interval);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locale]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -210,7 +233,7 @@ export function HeroSection() {
               style={{ textShadow: "0 1px 14px rgba(10,5,2,0.65)" }}
             >
               <BrandMark size={24} />
-              Private matrimony, made for each other
+              {t.eyebrow}
             </span>
           </div>
 
@@ -220,10 +243,10 @@ export function HeroSection() {
                 isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
               }`}
             >
-              <span className="block whitespace-nowrap">The right introduction,</span>
+              <span className="block whitespace-nowrap">{t.headlineStart}</span>
               <span className="block italic">
                 <span className="relative inline-block">
-                  <BlurWord word={words[wordIndex]} trigger={wordIndex} />
+                  <BlurWord word={t.words[wordIndex % t.words.length]} trigger={wordIndex} />
                 </span>
               </span>
             </h1>
@@ -238,13 +261,13 @@ export function HeroSection() {
               href="#journey"
               className="inline-flex items-center justify-center h-12 px-8 rounded-full bg-[#f5e9dc] text-[#140c08] text-sm font-medium hover:bg-white transition-colors"
             >
-              Watch the journey
+              {t.watchJourney}
             </a>
             <a
               href="#contact"
               className="inline-flex items-center justify-center h-12 px-8 rounded-full border border-[#e9cfae]/40 text-[#f5e9dc] text-sm hover:border-[#e9cfae] transition-colors"
             >
-              Private enquiry
+              {t.enquiry}
             </a>
           </div>
         </div>
@@ -257,7 +280,7 @@ export function HeroSection() {
         }`}
       >
         <div className="max-w-[1400px] mx-auto flex items-start gap-10 lg:gap-20">
-          {stats.map((stat, i) => (
+          {t.stats.map((stat, i) => (
             <div
               key={stat.label}
               className={`flex flex-col gap-2 ${i > 0 ? "border-l border-[#e9cfae]/15 pl-10 lg:pl-20" : ""}`}

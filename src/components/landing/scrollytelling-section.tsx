@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useLocale } from "@/lib/use-locale";
 
 /*
   Scrollytelling: a 600vh container with a sticky full-viewport canvas.
@@ -118,85 +119,64 @@ const PRELOAD_RANGE = 60;
 const frameWidth = (f: Frame) => ("naturalWidth" in f ? f.naturalWidth || f.width : f.width);
 const frameHeight = (f: Frame) => ("naturalHeight" in f ? f.naturalHeight || f.height : f.height);
 
-const steps = [
-  {
-    n: "01",
-    title: "Discovery",
-    line: "It starts with one quiet click.",
-    tag: "100% PRIVATE · NO PUBLIC PROFILES",
-    enter: 0.03,
-    leave: 0.19,
-    final: false,
-  },
-  {
-    n: "02",
-    title: "The circle",
-    line: "Private, vetted, never browsed.",
-    tag: "VETTED BY HAND · NEVER BROWSED",
-    enter: 0.21,
-    leave: 0.44,
-    final: false,
-  },
-  {
-    n: "03",
-    title: "The match",
-    line: "Heritage and heart, made whole.",
-    tag: "HERITAGE & VALUES CONSIDERED",
-    enter: 0.46,
-    leave: 0.6,
-    final: false,
-  },
-  {
-    n: "04",
-    title: "The proposal",
-    line: "You decide, freely.",
-    tag: "YOUR DECISION, ALWAYS",
-    enter: 0.62,
-    leave: 0.77,
-    final: false,
-  },
-  {
-    n: "05",
-    title: "Hand in hand",
-    line: "From strangers to promised, quietly.",
-    tag: "AT YOUR OWN, QUIET PACE",
-    enter: 0.79,
-    leave: 0.88,
-    final: false,
-  },
-  {
-    n: "06",
-    title: "The altar",
-    line: "One ring. One introduction. One yes.",
-    tag: "ONE INTRODUCTION, DONE RIGHT",
-    enter: 0.9,
-    leave: 1.02,
-    final: true,
-  },
+// timing (enter/leave, tuned against the actual footage — see the file
+// header) is locale-independent structure; only the copy below varies.
+const stepTimings = [
+  { n: "01", enter: 0.03, leave: 0.19, final: false },
+  { n: "02", enter: 0.21, leave: 0.44, final: false },
+  { n: "03", enter: 0.46, leave: 0.6, final: false },
+  { n: "04", enter: 0.62, leave: 0.77, final: false },
+  { n: "05", enter: 0.79, leave: 0.88, final: false },
+  { n: "06", enter: 0.9, leave: 1.02, final: true },
 ] as const;
 
-const CLOSING_TAGS = [
-  {
-    label: "Private by design",
-    d: "M6.5 11.5h11a1.5 1.5 0 011.5 1.5v8a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 015 21v-8a1.5 1.5 0 011.5-1.5z M8.5 11.5V8a3.5 3.5 0 017 0v3.5",
-  },
-  {
-    label: "Human reviewed",
-    d: "M12 3l7 3v5c0 4.6-3 7.9-7 10-4-2.1-7-5.4-7-10V6l7-3z M9 12.2l2 2 4-4.2",
-  },
-  {
-    label: "Intent focused",
-    d: "M12 20.5s-7-4.4-9.3-8.8C1.2 8 2.4 5 5.6 4.3 8 3.8 10 5 12 7.4 14 5 16 3.8 18.4 4.3 21.6 5 22.8 8 21.3 11.2 19 15.6 12 20.5 12 20.5z",
-  },
-  {
-    label: "Meaningful introductions",
-    d: "M8.5 8a2.6 2.6 0 100-5.2A2.6 2.6 0 008.5 8z M15.5 8a2.6 2.6 0 100-5.2A2.6 2.6 0 0015.5 8z M3.5 19c0-2.9 2.3-5 5-5s5 2.1 5 5 M10.5 19c0-2.9 2.3-5 5-5s5 2.1 5 5",
-  },
+const stepCopy = {
+  en: [
+    { title: "Discovery", line: "It starts with one quiet click.", tag: "100% PRIVATE · NO PUBLIC PROFILES" },
+    { title: "The circle", line: "Private, vetted, never browsed.", tag: "VETTED BY HAND · NEVER BROWSED" },
+    { title: "The match", line: "Heritage and heart, made whole.", tag: "HERITAGE & VALUES CONSIDERED" },
+    { title: "The proposal", line: "You decide, freely.", tag: "YOUR DECISION, ALWAYS" },
+    { title: "Hand in hand", line: "From strangers to promised, quietly.", tag: "AT YOUR OWN, QUIET PACE" },
+    { title: "The altar", line: "One ring. One introduction. One yes.", tag: "ONE INTRODUCTION, DONE RIGHT" },
+  ],
+  de: [
+    { title: "Entdeckung", line: "Es beginnt mit einem stillen Klick.", tag: "100% PRIVAT · KEINE ÖFFENTLICHEN PROFILE" },
+    { title: "Der Kreis", line: "Privat, geprüft, niemals durchstöbert.", tag: "VON HAND GEPRÜFT · NIEMALS DURCHSTÖBERT" },
+    { title: "Die Verbindung", line: "Herkunft und Herz, im Einklang.", tag: "HERKUNFT & WERTE BERÜCKSICHTIGT" },
+    { title: "Der Antrag", line: "Sie entscheiden, frei.", tag: "IHRE ENTSCHEIDUNG, IMMER" },
+    { title: "Hand in Hand", line: "Von Fremden zu Versprochenen, still.", tag: "IN IHREM EIGENEN, RUHIGEN TEMPO" },
+    { title: "Der Altar", line: "Ein Ring. Eine Vorstellung. Ein Ja.", tag: "EINE VORSTELLUNG, RICHTIG GEMACHT" },
+  ],
+} as const;
+
+const CLOSING_TAG_ICONS = [
+  "M6.5 11.5h11a1.5 1.5 0 011.5 1.5v8a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 015 21v-8a1.5 1.5 0 011.5-1.5z M8.5 11.5V8a3.5 3.5 0 017 0v3.5",
+  "M12 3l7 3v5c0 4.6-3 7.9-7 10-4-2.1-7-5.4-7-10V6l7-3z M9 12.2l2 2 4-4.2",
+  "M12 20.5s-7-4.4-9.3-8.8C1.2 8 2.4 5 5.6 4.3 8 3.8 10 5 12 7.4 14 5 16 3.8 18.4 4.3 21.6 5 22.8 8 21.3 11.2 19 15.6 12 20.5 12 20.5z",
+  "M8.5 8a2.6 2.6 0 100-5.2A2.6 2.6 0 008.5 8z M15.5 8a2.6 2.6 0 100-5.2A2.6 2.6 0 0015.5 8z M3.5 19c0-2.9 2.3-5 5-5s5 2.1 5 5 M10.5 19c0-2.9 2.3-5 5-5s5 2.1 5 5",
 ] as const;
+
+const closingTagLabels = {
+  en: ["Private by design", "Human reviewed", "Intent focused", "Meaningful introductions"],
+  de: ["Privat von Grund auf", "Von Menschen geprüft", "Auf Ernsthaftigkeit fokussiert", "Bedeutungsvolle Vorstellungen"],
+} as const;
+
+const scrollyCopy = {
+  en: { enquiry: "Private enquiry", begin: "Begin privately" },
+  de: { enquiry: "Private Anfrage", begin: "Privat beginnen" },
+} as const;
 
 const smoothstep = (t: number) => t * t * (3 - 2 * t);
 
 export function ScrollytellingSection() {
+  const locale = useLocale();
+  // language switching is a full page navigation (see navigation.tsx), so
+  // this component always mounts fresh for its locale — no need for this
+  // to be reactive to a locale change after mount
+  const steps = stepTimings.map((timing, i) => ({ ...timing, ...stepCopy[locale][i] }));
+  const CLOSING_TAGS = CLOSING_TAG_ICONS.map((d, i) => ({ d, label: closingTagLabels[locale][i] }));
+  const t = scrollyCopy[locale];
+
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const captionRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -583,6 +563,10 @@ export function ScrollytellingSection() {
         if (frame && "close" in frame) frame.close();
       }
     };
+    // `steps` is intentionally read from the closure captured at mount —
+    // see the locale comment above, a language switch always remounts
+    // this component fresh
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -625,7 +609,7 @@ export function ScrollytellingSection() {
           </div>
           <div className="absolute top-4 right-5 lg:right-8">
             <span ref={counterRef} className="font-mono text-[10px] tracking-[0.18em] text-ink-foreground/70 whitespace-nowrap">
-              01 / 06 — Discovery
+              {steps[0].n} / 06 — {steps[0].title}
             </span>
           </div>
 
@@ -675,7 +659,7 @@ export function ScrollytellingSection() {
                         href="#contact"
                         className="hidden shrink-0 items-center justify-center self-end rounded-full bg-ink-foreground px-6 h-11 text-sm font-medium text-ink-background transition-colors hover:bg-white lg:inline-flex"
                       >
-                        Private enquiry
+                        {t.enquiry}
                       </a>
                     )}
                   </div>
@@ -687,12 +671,12 @@ export function ScrollytellingSection() {
                           href="#contact"
                           className="inline-flex h-9 items-center justify-center rounded-full bg-ink-foreground px-5 text-xs font-medium text-ink-background transition-colors hover:bg-white sm:h-12 sm:px-8 sm:text-sm"
                         >
-                          Begin privately
+                          {t.begin}
                         </a>
                       </div>
                       <div className="mt-3 grid grid-cols-2 gap-2 border-t border-ink-border pt-3 sm:mt-6 sm:gap-4 sm:pt-6 sm:grid-cols-4">
-                        {CLOSING_TAGS.map((t) => (
-                          <div key={t.label} className="flex flex-col items-center gap-1 text-center sm:gap-2">
+                        {CLOSING_TAGS.map((tag) => (
+                          <div key={tag.label} className="flex flex-col items-center gap-1 text-center sm:gap-2">
                             <svg
                               viewBox="0 0 24 24"
                               className="h-3 w-3 text-gold-light sm:h-4 sm:w-4 lg:h-5 lg:w-5"
@@ -702,9 +686,9 @@ export function ScrollytellingSection() {
                               strokeLinecap="round"
                               strokeLinejoin="round"
                             >
-                              <path d={t.d} />
+                              <path d={tag.d} />
                             </svg>
-                            <span className="max-w-[100px] text-[8px] leading-tight text-ink-foreground/60 sm:text-[10px]">{t.label}</span>
+                            <span className="max-w-[100px] text-[8px] leading-tight text-ink-foreground/60 sm:text-[10px]">{tag.label}</span>
                           </div>
                         ))}
                       </div>

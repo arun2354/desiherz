@@ -1,28 +1,51 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { useLocale } from "@/lib/use-locale";
 
-const testimonials = [
-  {
-    quote: "Private without feeling cold. We were introduced with care, and no pressure to perform.",
-    who: "M. & A.",
-    city: "Frankfurt",
+const testimonialTimings = [
+  { who: "M. & A." },
+  { who: "N. & R." },
+  { who: "S. & K." },
+] as const;
+
+const copy = {
+  en: {
+    eyebrow: "Proof, softly",
+    heading: ["People remember how", " the introduction felt."],
+    introducedThrough: "Introduced through DesiHerz",
+    cities: "Cities",
+    prev: "Previous testimonial",
+    next: "Next testimonial",
+    showTestimonial: (n: number) => `Show testimonial ${n}`,
+    testimonials: [
+      { quote: "Private without feeling cold. We were introduced with care, and no pressure to perform.", city: "Frankfurt" },
+      { quote: "They understood our families mattered, but never let that overpower our own choice.", city: "Munich" },
+      { quote: "The opposite of an app. No noise, just one introduction that made sense.", city: "Berlin" },
+    ],
   },
-  {
-    quote: "They understood our families mattered, but never let that overpower our own choice.",
-    who: "N. & R.",
-    city: "Munich",
+  de: {
+    eyebrow: "Leise Beweise",
+    heading: ["Menschen erinnern sich, wie", " sich die Vorstellung angefühlt hat."],
+    introducedThrough: "Vorgestellt durch DesiHerz",
+    cities: "Städte",
+    prev: "Vorheriger Erfahrungsbericht",
+    next: "Nächster Erfahrungsbericht",
+    showTestimonial: (n: number) => `Erfahrungsbericht ${n} anzeigen`,
+    testimonials: [
+      { quote: "Privat, ohne kühl zu wirken. Wir wurden mit Sorgfalt vorgestellt, ganz ohne Erwartungsdruck.", city: "Frankfurt" },
+      { quote: "Sie verstanden, dass unsere Familien wichtig waren, ließen das aber nie unsere eigene Entscheidung überlagern.", city: "München" },
+      { quote: "Das Gegenteil einer App. Kein Lärm, nur eine Vorstellung, die Sinn ergab.", city: "Berlin" },
+    ],
   },
-  {
-    quote: "The opposite of an app. No noise, just one introduction that made sense.",
-    who: "S. & K.",
-    city: "Berlin",
-  },
-];
+} as const;
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
 export function TestimonialsSection() {
+  const locale = useLocale();
+  const t = copy[locale];
+  const testimonials = testimonialTimings.map((timing, i) => ({ ...timing, ...t.testimonials[i] }));
   const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
@@ -30,6 +53,7 @@ export function TestimonialsSection() {
       setActiveIndex((prev) => (prev + 1) % testimonials.length);
     }, 8000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const goTo = (index: number) => setActiveIndex(index);
@@ -54,25 +78,25 @@ export function TestimonialsSection() {
           <div>
             <span className="mb-4 inline-flex items-center gap-3 font-mono text-sm text-ink-muted-foreground">
               <span className="h-px w-12 bg-gold/40" />
-              Proof, softly
+              {t.eyebrow}
             </span>
             <h2 className="text-4xl font-display lg:text-5xl">
-              People remember how
-              <span className="font-accent text-ink-muted-foreground"> the introduction felt.</span>
+              {t.heading[0]}
+              <span className="font-accent text-ink-muted-foreground">{t.heading[1]}</span>
             </h2>
           </div>
 
           <div className="hidden items-center gap-2 lg:flex">
             <button
               onClick={goPrev}
-              aria-label="Previous testimonial"
+              aria-label={t.prev}
               className="border border-ink-border p-4 transition-colors hover:border-gold/60 hover:bg-ink-foreground/5"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
             <button
               onClick={goNext}
-              aria-label="Next testimonial"
+              aria-label={t.next}
               className="border border-ink-border p-4 transition-colors hover:border-gold/60 hover:bg-ink-foreground/5"
             >
               <ArrowRight className="h-5 w-5" />
@@ -111,7 +135,7 @@ export function TestimonialsSection() {
                 </div>
                 <div>
                   <p className="text-lg font-medium">{active.who}</p>
-                  <p className="text-ink-muted-foreground">Introduced through DesiHerz</p>
+                  <p className="text-ink-muted-foreground">{t.introducedThrough}</p>
                 </div>
               </motion.div>
             </div>
@@ -136,7 +160,7 @@ export function TestimonialsSection() {
                 <button
                   key={idx}
                   onClick={() => goTo(idx)}
-                  aria-label={`Show testimonial ${idx + 1}`}
+                  aria-label={t.showTestimonial(idx + 1)}
                   className="h-1 flex-1 overflow-hidden bg-ink-border"
                 >
                   <div
@@ -152,7 +176,7 @@ export function TestimonialsSection() {
             {/* City chips */}
             <div className="mt-4 border-t border-ink-border pt-6">
               <span className="mb-4 block font-mono text-xs tracking-widest text-ink-muted-foreground/70 uppercase">
-                Cities
+                {t.cities}
               </span>
               <div className="flex flex-wrap gap-3">
                 {testimonials.map((t, idx) => (

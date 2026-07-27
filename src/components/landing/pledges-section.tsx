@@ -1,5 +1,6 @@
 import { type ReactNode } from "react";
 import { motion } from "framer-motion";
+import { useLocale } from "@/lib/use-locale";
 
 const pledgeIcons: Record<string, ReactNode> = {
   lock: (
@@ -25,31 +26,38 @@ const pledgeIcons: Record<string, ReactNode> = {
   ),
 };
 
-const pledges = [
-  {
-    n: "01",
-    icon: "lock",
-    title: "Privacy",
-    line: "No public profile, ever.",
-    offset: "md:mt-0",
+const pledgeTimings = [
+  { icon: "lock", offset: "md:mt-0" },
+  { icon: "rings", offset: "md:mt-16" },
+  { icon: "hands", offset: "md:mt-32" },
+] as const;
+
+const copy = {
+  en: {
+    eyebrow: "Our pledges",
+    heading: ["Quietly ", "curated."],
+    pledges: [
+      { n: "01", title: "Privacy", line: "No public profile, ever." },
+      { n: "02", title: "Curation", line: "Every introduction made by a person, not an algorithm." },
+      { n: "03", title: "Commitment", line: "With you from first hello to the family conversation." },
+    ],
   },
-  {
-    n: "02",
-    icon: "rings",
-    title: "Curation",
-    line: "Every introduction made by a person, not an algorithm.",
-    offset: "md:mt-16",
+  de: {
+    eyebrow: "Unsere Versprechen",
+    heading: ["Still ", "kuratiert."],
+    pledges: [
+      { n: "01", title: "Privatsphäre", line: "Niemals ein öffentliches Profil." },
+      { n: "02", title: "Kuratierung", line: "Jede Vorstellung von einem Menschen gemacht, nicht von einem Algorithmus." },
+      { n: "03", title: "Verbindlichkeit", line: "An Ihrer Seite vom ersten Hallo bis zum Familiengespräch." },
+    ],
   },
-  {
-    n: "03",
-    icon: "hands",
-    title: "Commitment",
-    line: "With you from first hello to the family conversation.",
-    offset: "md:mt-32",
-  },
-];
+} as const;
 
 export function PledgesSection() {
+  const locale = useLocale();
+  const t = copy[locale];
+  const pledges = pledgeTimings.map((timing, i) => ({ ...timing, ...t.pledges[i] }));
+
   return (
     <section id="pledges" className="relative py-28 lg:py-40 overflow-hidden">
       {/* shared gradient for the pledge icons */}
@@ -81,10 +89,10 @@ export function PledgesSection() {
         >
           <span className="inline-flex items-center gap-4 text-sm font-mono text-muted-foreground mb-6">
             <span className="w-12 h-px bg-gold/40" />
-            Our pledges
+            {t.eyebrow}
           </span>
           <h2 className="text-5xl md:text-6xl lg:text-7xl font-display tracking-tight leading-[0.95]">
-            Quietly <span className="font-accent text-gold">curated.</span>
+            {t.heading[0]}<span className="font-accent text-gold">{t.heading[1]}</span>
           </h2>
         </motion.div>
 

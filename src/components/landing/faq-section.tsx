@@ -1,36 +1,40 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useLocale } from "@/lib/use-locale";
 
-export const faqs = [
-  {
-    q: "What is DesiHerz?",
-    a: "A private matrimony house — we search our vetted circle and introduce by hand.",
-  },
-  {
-    q: "Is my profile ever made public?",
-    a: "Never. Only the principal matchmaker ever sees it.",
-  },
-  {
-    q: "How many introductions do I get at once?",
-    a: "Two or three names, considered carefully — never a list.",
-  },
-  {
-    q: "Can a parent search on my behalf?",
-    a: "Yes — many families begin the enquiry together.",
-  },
-  {
-    q: "What does it cost to begin?",
-    a: "A first private consultation and screening is €39.",
-  },
-  {
-    q: "What happens after an introduction?",
-    a: "Entirely yours. We step back and stay only a message away.",
-  },
-];
+// keyed by locale; also imported by src/routes/index.tsx and
+// src/routes/de/index.tsx to build the FAQPage JSON-LD, so this stays the
+// single source of truth for both what's shown and what's marked up
+export const faqs = {
+  en: [
+    { q: "What is DesiHerz?", a: "A private matrimony house — we search our vetted circle and introduce by hand." },
+    { q: "Is my profile ever made public?", a: "Never. Only the principal matchmaker ever sees it." },
+    { q: "How many introductions do I get at once?", a: "Two or three names, considered carefully — never a list." },
+    { q: "Can a parent search on my behalf?", a: "Yes — many families begin the enquiry together." },
+    { q: "What does it cost to begin?", a: "A first private consultation and screening is €39." },
+    { q: "What happens after an introduction?", a: "Entirely yours. We step back and stay only a message away." },
+  ],
+  de: [
+    { q: "Was ist DesiHerz?", a: "Ein privates Ehevermittlungshaus — wir suchen in unserem geprüften Kreis und stellen von Hand vor." },
+    { q: "Wird mein Profil jemals öffentlich?", a: "Niemals. Nur die leitende Vermittlerin sieht es." },
+    { q: "Wie viele Vorstellungen bekomme ich auf einmal?", a: "Zwei oder drei Namen, sorgfältig ausgewählt — niemals eine Liste." },
+    { q: "Kann ein Elternteil in meinem Namen suchen?", a: "Ja — viele Familien beginnen die Anfrage gemeinsam." },
+    { q: "Was kostet der Anfang?", a: "Ein erstes privates Beratungsgespräch mit Prüfung kostet 39 €." },
+    { q: "Was passiert nach einer Vorstellung?", a: "Ganz Ihre Sache. Wir treten zurück und sind nur eine Nachricht entfernt." },
+  ],
+} as const;
+
+const copy = {
+  en: { eyebrow: "Frequently asked", heading: ["A few things", "people ask."] },
+  de: { eyebrow: "Häufig gefragt", heading: ["Ein paar Dinge,", "die man uns fragt."] },
+} as const;
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
 export function FaqSection() {
+  const locale = useLocale();
+  const t = copy[locale];
+  const items = faqs[locale];
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
@@ -54,18 +58,18 @@ export function FaqSection() {
           >
             <span className="mb-6 inline-flex items-center gap-3 text-sm font-mono text-muted-foreground">
               <span className="h-px w-12 bg-gold/40" />
-              Frequently asked
+              {t.eyebrow}
             </span>
             <h2 className="text-5xl leading-[0.95] tracking-tight md:text-6xl lg:text-7xl font-display">
-              A few things
+              {t.heading[0]}
               <br />
-              <span className="font-accent text-muted-foreground">people ask.</span>
+              <span className="font-accent text-muted-foreground">{t.heading[1]}</span>
             </h2>
           </motion.div>
 
           {/* Items */}
           <div className="lg:col-span-7">
-            {faqs.map((item, i) => {
+            {items.map((item, i) => {
               const isOpen = openIndex === i;
               return (
                 <motion.div

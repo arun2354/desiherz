@@ -4,17 +4,75 @@ import { ArrowRight, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BrandMark } from "@/components/landing/brand-mark";
+import { useLocale } from "@/lib/use-locale";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const EASE = [0.16, 1, 0.3, 1] as const;
 const CONTACT_EMAIL = "hello@desiherz.de";
+
+const copy = {
+  en: {
+    eyebrow: "Begin privately",
+    heading: ["Send a single line.", "We’ll write back."],
+    intro: "No public profile. Your note is seen only by the principal matchmaker.",
+    priceLine: ["First consultation & screening — ", "€39"],
+    nameLabel: "Your name",
+    namePlaceholder: "As your family calls you",
+    emailLabel: "Email",
+    emailPlaceholder: "discreet@you.com",
+    noteLabel: "A note",
+    notePlaceholder: "One or two sentences is enough.",
+    sending: "Sending…",
+    submit: "Request consultation",
+    sent: "Thank you — we’ve received your note and will write back privately.",
+    mailtoIntro: "We’ve opened your email app with your note ready to send — if nothing opened,",
+    mailtoMiddle: "and email it to",
+    mailtoEnd: "directly.",
+    copyNote: "copy your note",
+    copied: "Copied",
+    errors: {
+      name: "Please tell us your name.",
+      emailRequired: "Please add an email so we can write back.",
+      emailInvalid: "That email doesn't look right.",
+      note: "A line or two helps us understand you.",
+      submitFailed: `That didn't send — please try again, or email ${CONTACT_EMAIL} directly.`,
+    },
+  },
+  de: {
+    eyebrow: "Privat beginnen",
+    heading: ["Schreiben Sie eine Zeile.", "Wir schreiben zurück."],
+    intro: "Kein öffentliches Profil. Ihre Nachricht sieht nur die leitende Vermittlerin.",
+    priceLine: ["Erstes Beratungsgespräch & Prüfung — ", "39 €"],
+    nameLabel: "Ihr Name",
+    namePlaceholder: "Wie Ihre Familie Sie nennt",
+    emailLabel: "E-Mail",
+    emailPlaceholder: "diskret@sie.de",
+    noteLabel: "Eine Nachricht",
+    notePlaceholder: "Ein oder zwei Sätze reichen.",
+    sending: "Wird gesendet…",
+    submit: "Beratung anfragen",
+    sent: "Vielen Dank — wir haben Ihre Nachricht erhalten und schreiben Ihnen privat zurück.",
+    mailtoIntro: "Wir haben Ihre E-Mail-App mit der fertigen Nachricht geöffnet — falls sich nichts geöffnet hat,",
+    mailtoMiddle: "und senden Sie sie direkt an",
+    mailtoEnd: "",
+    copyNote: "Nachricht kopieren",
+    copied: "Kopiert",
+    errors: {
+      name: "Bitte nennen Sie uns Ihren Namen.",
+      emailRequired: "Bitte geben Sie eine E-Mail-Adresse an, damit wir zurückschreiben können.",
+      emailInvalid: "Diese E-Mail-Adresse scheint nicht korrekt zu sein.",
+      note: "Ein oder zwei Zeilen helfen uns, Sie zu verstehen.",
+      submitFailed: `Das hat nicht funktioniert — bitte versuchen Sie es erneut oder schreiben Sie direkt an ${CONTACT_EMAIL}.`,
+    },
+  },
+} as const;
 
 // mailto: links (including ones triggered via window.location.href, as
 // below) open an OS app-chooser when there's no default mail client, and
 // picking a plain browser from that list does nothing — undetectable
 // from JS, so we can't know whether it actually worked. This gives a
 // guaranteed-working fallback: copy the note to the clipboard.
-function CopyButton({ value, label }: { value: string; label: string }) {
+function CopyButton({ value, label, copiedLabel }: { value: string; label: string; copiedLabel: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <button
@@ -27,7 +85,7 @@ function CopyButton({ value, label }: { value: string; label: string }) {
       }}
       className="font-medium text-gold underline underline-offset-2 hover:text-gold-light"
     >
-      {copied ? "Copied" : label}
+      {copied ? copiedLabel : label}
     </button>
   );
 }
@@ -39,6 +97,8 @@ function CopyButton({ value, label }: { value: string; label: string }) {
 const WEB3FORMS_KEY = import.meta.env.VITE_WEB3FORMS_KEY as string | undefined;
 
 export function CtaSection() {
+  const locale = useLocale();
+  const t = copy[locale];
   const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 });
 
   const [name, setName] = useState("");
@@ -58,10 +118,10 @@ export function CtaSection() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const nextErrors: typeof errors = {};
-    if (!name.trim()) nextErrors.name = "Please tell us your name.";
-    if (!email.trim()) nextErrors.email = "Please add an email so we can write back.";
-    else if (!EMAIL_RE.test(email.trim())) nextErrors.email = "That email doesn't look right.";
-    if (!note.trim()) nextErrors.note = "A line or two helps us understand you.";
+    if (!name.trim()) nextErrors.name = t.errors.name;
+    if (!email.trim()) nextErrors.email = t.errors.emailRequired;
+    else if (!EMAIL_RE.test(email.trim())) nextErrors.email = t.errors.emailInvalid;
+    if (!note.trim()) nextErrors.note = t.errors.note;
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
@@ -98,7 +158,7 @@ export function CtaSection() {
       setStatus("sent");
     } catch {
       setStatus("idle");
-      setErrors({ form: "That didn't send — please try again, or email hello@desiherz.de directly." });
+      setErrors({ form: t.errors.submitFailed });
     }
   }
 
@@ -139,20 +199,19 @@ export function CtaSection() {
                 </div>
                 <span className="mb-8 inline-flex items-center gap-3 text-sm font-mono text-muted-foreground">
                   <span className="h-px w-8 bg-gold/50" />
-                  Begin privately
+                  {t.eyebrow}
                 </span>
                 <h2 className="mb-8 text-5xl leading-[0.95] tracking-tight md:text-6xl lg:text-[72px] font-display">
-                  Send a single line.
+                  {t.heading[0]}
                   <br />
-                  <span className="font-accent text-muted-foreground">We&rsquo;ll write back.</span>
+                  <span className="font-accent text-muted-foreground">{t.heading[1]}</span>
                 </h2>
 
-                <p className="mb-10 max-w-xl text-xl leading-relaxed text-muted-foreground">
-                  No public profile. Your note is seen only by the principal matchmaker.
-                </p>
+                <p className="mb-10 max-w-xl text-xl leading-relaxed text-muted-foreground">{t.intro}</p>
 
                 <p className="font-mono text-sm text-muted-foreground">
-                  First consultation &amp; screening — <span className="text-gold">€39</span>
+                  {t.priceLine[0]}
+                  <span className="text-gold">{t.priceLine[1]}</span>
                 </p>
               </div>
 
@@ -160,12 +219,12 @@ export function CtaSection() {
               <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6 lg:col-span-6">
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="cta-name" className="font-mono text-xs tracking-wider text-muted-foreground uppercase">
-                    Your name
+                    {t.nameLabel}
                   </Label>
                   <Input
                     id="cta-name"
                     type="text"
-                    placeholder="As your family calls you"
+                    placeholder={t.namePlaceholder}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     aria-invalid={!!errors.name}
@@ -181,12 +240,12 @@ export function CtaSection() {
 
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="cta-email" className="font-mono text-xs tracking-wider text-muted-foreground uppercase">
-                    Email
+                    {t.emailLabel}
                   </Label>
                   <Input
                     id="cta-email"
                     type="email"
-                    placeholder="discreet@you.com"
+                    placeholder={t.emailPlaceholder}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     aria-invalid={!!errors.email}
@@ -202,12 +261,12 @@ export function CtaSection() {
 
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="cta-note" className="font-mono text-xs tracking-wider text-muted-foreground uppercase">
-                    A note
+                    {t.noteLabel}
                   </Label>
                   <Input
                     id="cta-note"
                     type="text"
-                    placeholder="One or two sentences is enough."
+                    placeholder={t.notePlaceholder}
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
                     aria-invalid={!!errors.note}
@@ -229,11 +288,11 @@ export function CtaSection() {
                   {status === "sending" ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Sending&hellip;
+                      {t.sending}
                     </>
                   ) : (
                     <>
-                      Request consultation
+                      {t.submit}
                       <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </>
                   )}
@@ -246,14 +305,19 @@ export function CtaSection() {
                 )}
                 {status === "sent" && (
                   <p className="text-sm text-gold" role="status">
-                    Thank you — we&rsquo;ve received your note and will write back privately.
+                    {t.sent}
                   </p>
                 )}
                 {status === "mailto-fallback" && (
                   <p className="text-sm text-muted-foreground" role="status">
-                    We&rsquo;ve opened your email app with your note ready to send — if nothing opened,{" "}
-                    <CopyButton value={`${note.trim()}\n\n— ${name.trim()} (${email.trim()})`} label="copy your note" /> and email it to{" "}
-                    <CopyButton value={CONTACT_EMAIL} label={CONTACT_EMAIL} /> directly.
+                    {t.mailtoIntro}{" "}
+                    <CopyButton
+                      value={`${note.trim()}\n\n— ${name.trim()} (${email.trim()})`}
+                      label={t.copyNote}
+                      copiedLabel={t.copied}
+                    />{" "}
+                    {t.mailtoMiddle}{" "}
+                    <CopyButton value={CONTACT_EMAIL} label={CONTACT_EMAIL} copiedLabel={t.copied} /> {t.mailtoEnd}
                   </p>
                 )}
               </form>

@@ -1,26 +1,38 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLocale } from "@/lib/use-locale";
 
-const FEATURES = [
-  {
-    scene: "I.",
-    title: "The founder",
-    role: "Why DesiHerz exists",
-    film: "/videos/founder.mp4",
-    alt: "The founder of DesiHerz speaking about the house.",
-  },
-  {
-    scene: "II.",
-    title: "In conversation",
-    role: "A closer look at the house",
-    film: "/videos/spokesperson.mp4",
-    alt: "A spokesperson speaking about DesiHerz.",
-  },
+const filmTimings = [
+  { scene: "I.", film: "/videos/founder.mp4" },
+  { scene: "II.", film: "/videos/spokesperson.mp4" },
 ] as const;
+
+const copy = {
+  en: {
+    eyebrow: "In their own words",
+    heading: ["Hear it", "directly."],
+    sceneLabel: "Scene",
+    play: "Play",
+    features: [
+      { title: "The founder", role: "Why DesiHerz exists", alt: "The founder of DesiHerz speaking about the house." },
+      { title: "In conversation", role: "A closer look at the house", alt: "A spokesperson speaking about DesiHerz." },
+    ],
+  },
+  de: {
+    eyebrow: "In ihren eigenen Worten",
+    heading: ["Hören Sie es", "direkt."],
+    sceneLabel: "Szene",
+    play: "Abspielen",
+    features: [
+      { title: "Der Gründer", role: "Warum es DesiHerz gibt", alt: "Der Gründer von DesiHerz spricht über das Haus." },
+      { title: "Im Gespräch", role: "Ein näherer Blick auf das Haus", alt: "Eine Sprecherin spricht über DesiHerz." },
+    ],
+  },
+} as const;
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
-function VideoPlayer({ film, alt }: { film: string; alt: string }) {
+function VideoPlayer({ film, alt, playLabel }: { film: string; alt: string; playLabel: string }) {
   const [ready, setReady] = useState(false);
   const [playing, setPlaying] = useState(false);
 
@@ -60,7 +72,7 @@ function VideoPlayer({ film, alt }: { film: string; alt: string }) {
                 const video = e.currentTarget.parentElement?.querySelector("video");
                 video?.play();
               }}
-              aria-label={`Play: ${alt}`}
+              aria-label={`${playLabel}: ${alt}`}
               className="absolute inset-0 flex items-center justify-center bg-black/20 transition-colors duration-500 hover:bg-black/10"
             >
               <span className="flex h-16 w-16 items-center justify-center rounded-full border border-gold/60 bg-black/40 backdrop-blur-sm transition-transform duration-500 hover:scale-110 hover:border-gold">
@@ -84,6 +96,9 @@ export function VoicesSection() {
   const [active, setActive] = useState(0);
   const [near, setNear] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
+  const locale = useLocale();
+  const t = copy[locale];
+  const FEATURES = filmTimings.map((f, i) => ({ ...f, ...t.features[i] }));
   const feature = FEATURES[active];
 
   // this section is well below the fold — don't check/load its video
@@ -121,12 +136,12 @@ export function VoicesSection() {
         >
           <span className="mb-6 inline-flex items-center gap-3 font-mono text-sm text-ink-muted-foreground">
             <span className="h-px w-8 bg-gold/40" />
-            In their own words
+            {t.eyebrow}
           </span>
           <h2 className="text-6xl leading-[0.9] tracking-tight md:text-7xl lg:text-[110px] font-display">
-            Hear it
+            {t.heading[0]}
             <br />
-            <span className="font-accent text-ink-muted-foreground">directly.</span>
+            <span className="font-accent text-ink-muted-foreground">{t.heading[1]}</span>
           </h2>
         </motion.div>
 
@@ -158,11 +173,11 @@ export function VoicesSection() {
           >
             <div className="mb-4 flex items-baseline gap-3 font-mono text-xs tracking-[0.2em] text-ink-muted-foreground uppercase">
               <span className="font-accent text-lg text-gold not-italic">{feature.scene}</span>
-              Scene
+              {t.sceneLabel}
             </div>
 
             {near ? (
-              <VideoPlayer film={feature.film} alt={feature.alt} />
+              <VideoPlayer film={feature.film} alt={feature.alt} playLabel={t.play} />
             ) : (
               <div className="relative overflow-hidden border border-ink-border bg-black aspect-video" aria-hidden="true" />
             )}
