@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-const faqs = [
+export const faqs = [
   {
     q: "What is DesiHerz?",
     a: "A private matrimony house — we search our vetted circle and introduce by hand.",

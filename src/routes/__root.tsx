@@ -128,6 +128,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         name: "description",
         content: "DesiHerz is a private matrimony house for discerning people and families.",
       },
+      // sane default so every route is explicitly index,follow unless it
+      // opts out (impressum/datenschutz set their own noindex, follow)
+      { name: "robots", content: "index, follow" },
       { property: "og:type", content: "website" },
       { property: "og:site_name", content: "DesiHerz" },
       { property: "og:locale", content: "en_DE" },
