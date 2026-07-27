@@ -83,12 +83,17 @@ import { useEffect, useRef } from "react";
   the bottom, scaling from a compact mobile size up to a fuller band on
   larger screens.
 
-  Smoothness: a mouse wheel moves ~100px per notch, so mapping frames
-  directly to scrollY jumps 2-3 frames per notch and looks steppy.
-  Instead a continuous rAF loop eases displayed progress toward the
-  scroll target (critically-damped lerp), so every notch plays the
-  in-between frames — and reversing scroll direction just runs the same
-  math backward, no special-casing needed.
+  Smoothness: this used to run its own lerp (progress eased toward the
+  scroll target every frame) on the theory that a raw wheel notch
+  (~100px) would otherwise jump 2-3 frames and look steppy. But Lenis
+  (smooth-scroll.tsx) is active globally and already animates
+  window.scrollY continuously toward the accumulated wheel/touch
+  target every frame — so scrollY arriving here is already smoothed
+  once. Adding a second lerp on top of an already-eased input doesn't
+  smooth anything further; it just compounds lag, which is what made
+  this section feel laggy/disconnected from the scroll input rather
+  than "steppy". Read scrollY straight through instead — one smoothing
+  pass (Lenis's), not two.
 */
 
 const BASE_PATH = "/scrollytelling/hero";
@@ -220,7 +225,7 @@ export function ScrollytellingSection() {
     const inFlight = new Set<number>();
     let lastDrawnIndex = -1;
     let currentTargetIndex = 0;
-    let eased = 0;
+    let lastAppliedP = -1; // guards the caption/bar/counter writes below against redundant re-application when scroll hasn't moved
     let rafId = 0;
     let released = false; // whole cache freed after leaving the section
 
@@ -407,6 +412,13 @@ export function ScrollytellingSection() {
         ensureFrame(device, index, gen);
       }
 
+      // everything below is a pure function of p — if scroll hasn't
+      // actually moved since the last tick (the common case whenever
+      // the loop is spinning but the user isn't actively scrolling),
+      // skip re-writing identical values into the DOM every frame.
+      if (p === lastAppliedP) return;
+      lastAppliedP = p;
+
       // this section sits between two of the site's cream-background
       // sections (Statement above, Pledges below); a hard cut straight
       // into full-screen dark footage read as a pasted-in clip rather
@@ -448,10 +460,7 @@ export function ScrollytellingSection() {
           start(device);
           return;
         }
-        const target = targetProgress();
-        eased += (target - eased) * 0.12;
-        if (Math.abs(target - eased) < 0.0004) eased = target;
-        applyProgress(eased, gen);
+        applyProgress(targetProgress(), gen);
       } else if (!released && frameCount > 0) {
         // the user has moved well past this section — free every
         // resident frame (already capped at CACHE_CAP, but zero is
@@ -489,6 +498,7 @@ export function ScrollytellingSection() {
       inFlight.clear();
       failCount.clear();
       lastDrawnIndex = -1;
+      lastAppliedP = -1;
       frameCount = 0;
 
       const manifestPromise = fetch(`${BASE_PATH}/${dev}/manifest.json`)
@@ -523,8 +533,7 @@ export function ScrollytellingSection() {
 
       preloadAll(dev, gen, frameCount);
 
-      eased = targetProgress();
-      applyProgress(eased, gen);
+      applyProgress(targetProgress(), gen);
       cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => loop(gen));
     };
