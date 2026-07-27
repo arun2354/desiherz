@@ -133,9 +133,19 @@
     animation: fadeSlideIn 0.5s ease-out forwards;
   }
 
-  /* subtle film-grain texture for dark editorial sections */
+  /* subtle film-grain texture for dark editorial sections.
+     isolation: isolate scopes the ::before's mix-blend-mode to just this
+     element's own stacking context. Without it, the blend has to be
+     computed against whatever the browser considers "underneath" across
+     the wider page stacking context, which the compositor can't safely
+     cache as a self-contained layer — it gets recomputed on every scroll
+     frame instead of scrolling as a plain bitmap, which is exactly why
+     Voices/Testimonials/Footer (bg-grain stacked on bg-ink-gradient's
+     multi-stop radial gradients) felt laggy where Hero (grain alone, no
+     gradient stack beneath it) didn't. */
   .bg-grain {
     position: relative;
+    isolation: isolate;
   }
   .bg-grain::before {
     content: "";
