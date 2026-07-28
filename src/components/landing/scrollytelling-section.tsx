@@ -101,20 +101,19 @@ const BASE_PATH = "/scrollytelling/hero";
 type DeviceKind = "desktop" | "mobile";
 type Frame = ImageBitmap | HTMLImageElement;
 
-// fixed dimensions of the provided source frames — used to compute how
-// much a frame can be decoded down to without ever going below what
-// the "cover" fit in drawFrame will actually display.
-const SOURCE_DIMS: Record<DeviceKind, { w: number; h: number }> = {
-  desktop: { w: 1920, h: 1080 },
-  mobile: { w: 1080, h: 1920 },
-};
-
 // resident decoded-frame cap (LRU-evicted, see touch()/evictLRU below)
 // and how far either side of the current target the background loader
 // keeps fetched. Both bound memory/network without ever touching the
-// source files.
-const CACHE_CAP = 120;
-const PRELOAD_RANGE = 60;
+// source files. Widened from 120/60: a single fast trackpad fling can
+// easily cover more than 60 frames' worth of scroll in one gesture,
+// which was outrunning the old preload window and showing stale/catching-up
+// frames — exactly what reads as "laggy" during an active scroll, distinct
+// from the earlier steady-state memory problem these caps were originally
+// sized for. Frames are no longer resized at decode time (see decodeFrame),
+// so each one is back to full ~8MB resident — CACHE_CAP is set with that
+// in mind rather than the smaller resized footprint.
+const CACHE_CAP = 150;
+const PRELOAD_RANGE = 70;
 
 const frameWidth = (f: Frame) => ("naturalWidth" in f ? f.naturalWidth || f.width : f.width);
 const frameHeight = (f: Frame) => ("naturalHeight" in f ? f.naturalHeight || f.height : f.height);
@@ -242,25 +241,16 @@ export function ScrollytellingSection() {
         try {
           const res = await fetch(src);
           const blob = await res.blob();
-          // never decode above what drawFrame's cover-fit will actually
-          // display: same scale formula as drawFrame, so this is a
-          // strict no-op (native decode) whenever the canvas is bigger
-          // than the source (retina displays), and only ever trims
-          // pixels that would've been thrown away at draw time anyway.
-          const source = SOURCE_DIMS[dev];
-          const cw = canvas.width || source.w;
-          const ch = canvas.height || source.h;
-          const scale = Math.min(1, Math.max(cw / source.w, ch / source.h));
-          if (scale < 1) {
-            const resizeWidth = Math.max(1, Math.round(source.w * scale));
-            const resizeHeight = Math.max(1, Math.round(source.h * scale));
-            try {
-              return await createImageBitmap(blob, { resizeWidth, resizeHeight, resizeQuality: "high" });
-            } catch {
-              // some browsers may reject the resize dict; fall back to a native decode
-              return await createImageBitmap(blob);
-            }
-          }
+          // A resizeWidth/resizeHeight decode (only keep the pixels the
+          // "cover" fit in drawFrame will actually show) was tried here to
+          // cut memory, but measured ~38% slower per frame than a plain
+          // decode (~55ms vs ~40ms, tested against the real CDN, quality
+          // tier barely mattered) — real added latency at exactly the
+          // moment frames need to arrive fast, during active scrolling.
+          // The resident cache is already hard-bounded by CACHE_CAP below,
+          // which is what actually solves the memory problem, so paying
+          // extra decode time to also shrink each frame isn't a trade
+          // worth making anymore.
           return await createImageBitmap(blob);
         } catch {
           // fall through to the <img> path below
