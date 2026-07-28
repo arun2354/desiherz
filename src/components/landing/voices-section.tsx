@@ -14,8 +14,16 @@ const copy = {
     sceneLabel: "Scene",
     play: "Play",
     features: [
-      { title: "The founder", role: "Why DesiHerz exists", alt: "The founder of DesiHerz speaking about the house." },
-      { title: "In conversation", role: "A closer look at the house", alt: "A spokesperson speaking about DesiHerz." },
+      {
+        title: "The founder",
+        role: "Why DesiHerz exists",
+        alt: "The founder of DesiHerz speaking about the house.",
+      },
+      {
+        title: "In conversation",
+        role: "A closer look at the house",
+        alt: "A spokesperson speaking about DesiHerz.",
+      },
     ],
   },
   de: {
@@ -24,8 +32,16 @@ const copy = {
     sceneLabel: "Szene",
     play: "Abspielen",
     features: [
-      { title: "Der Gründer", role: "Warum es DesiHerz gibt", alt: "Der Gründer von DesiHerz spricht über das Haus." },
-      { title: "Im Gespräch", role: "Ein näherer Blick auf das Haus", alt: "Eine Sprecherin spricht über DesiHerz." },
+      {
+        title: "Der Gründer",
+        role: "Warum es DesiHerz gibt",
+        alt: "Der Gründer von DesiHerz spricht über das Haus.",
+      },
+      {
+        title: "Im Gespräch",
+        role: "Ein näherer Blick auf das Haus",
+        alt: "Eine Sprecherin spricht über DesiHerz.",
+      },
     ],
   },
 } as const;
@@ -36,57 +52,42 @@ function VideoPlayer({ film, alt, playLabel }: { film: string; alt: string; play
   const [ready, setReady] = useState(false);
   const [playing, setPlaying] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    setReady(false);
-    setPlaying(false);
-    fetch(film, { method: "HEAD" })
-      .then((res) => {
-        if (!cancelled && res.ok) setReady(true);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [film]);
-
   return (
     <div className="relative overflow-hidden border border-ink-border bg-black aspect-video transition-colors duration-500">
-      {ready ? (
-        <>
-          <video
-            key={film}
-            src={film}
-            controls={playing}
-            preload="metadata"
-            playsInline
-            aria-label={alt}
-            onPlay={() => setPlaying(true)}
-            onPause={() => setPlaying(false)}
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-          {!playing && (
-            <button
-              type="button"
-              onClick={(e) => {
-                const video = e.currentTarget.parentElement?.querySelector("video");
-                video?.play();
-              }}
-              aria-label={`${playLabel}: ${alt}`}
-              className="absolute inset-0 flex items-center justify-center bg-black/20 transition-colors duration-500 hover:bg-black/10"
-            >
-              <span className="flex h-16 w-16 items-center justify-center rounded-full border border-gold/60 bg-black/40 backdrop-blur-sm transition-transform duration-500 hover:scale-110 hover:border-gold">
-                <span className="ml-1 block h-0 w-0 border-y-[10px] border-y-transparent border-l-[16px] border-l-gold" />
-              </span>
-            </button>
-          )}
-        </>
-      ) : (
+      <video
+        key={film}
+        src={film}
+        controls={playing}
+        preload="auto"
+        playsInline
+        aria-label={alt}
+        onLoadedData={() => setReady(true)}
+        onCanPlay={() => setReady(true)}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${ready ? "opacity-100" : "opacity-0"}`}
+      />
+      {!ready && (
         <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
-          <span className="flex h-14 w-14 items-center justify-center rounded-full border border-ink-border">
-            <span className="ml-1 block h-0 w-0 border-y-[9px] border-y-transparent border-l-[14px] border-l-ink-muted-foreground" />
-          </span>
+          <span className="h-8 w-8 animate-spin rounded-full border-2 border-ink-border border-t-gold" />
         </div>
+      )}
+      {!playing && (
+        <button
+          type="button"
+          onClick={(e) => {
+            const video = e.currentTarget.parentElement?.querySelector("video");
+            video?.play().catch(() => {});
+          }}
+          aria-label={`${playLabel}: ${alt}`}
+          className={`absolute inset-0 flex items-center justify-center bg-black/20 transition-all duration-300 hover:bg-black/10 ${
+            ready ? "opacity-100" : "pointer-events-none opacity-0"
+          }`}
+        >
+          <span className="flex h-16 w-16 items-center justify-center rounded-full border border-gold/60 bg-black/40 backdrop-blur-sm transition-transform duration-500 hover:scale-110 hover:border-gold">
+            <span className="ml-1 block h-0 w-0 border-y-[10px] border-y-transparent border-l-[16px] border-l-gold" />
+          </span>
+        </button>
       )}
     </div>
   );
@@ -114,7 +115,7 @@ export function VoicesSection() {
           io.disconnect();
         }
       },
-      { rootMargin: "0px 0px 40% 0px" }
+      { rootMargin: "0px 0px 100% 0px" },
     );
     io.observe(el);
     return () => io.disconnect();
@@ -179,7 +180,10 @@ export function VoicesSection() {
             {near ? (
               <VideoPlayer film={feature.film} alt={feature.alt} playLabel={t.play} />
             ) : (
-              <div className="relative overflow-hidden border border-ink-border bg-black aspect-video" aria-hidden="true" />
+              <div
+                className="relative overflow-hidden border border-ink-border bg-black aspect-video"
+                aria-hidden="true"
+              />
             )}
 
             <figcaption className="mt-5 flex items-baseline justify-between gap-4 border-t border-ink-border pt-4">

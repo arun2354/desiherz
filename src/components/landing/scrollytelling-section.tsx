@@ -112,8 +112,13 @@ type Frame = ImageBitmap | HTMLImageElement;
 // sized for. Frames are no longer resized at decode time (see decodeFrame),
 // so each one is back to full ~8MB resident — CACHE_CAP is set with that
 // in mind rather than the smaller resized footprint.
-const CACHE_CAP = 150;
-const PRELOAD_RANGE = 70;
+// Keep the browser responsive on mid-range phones and laptops. The previous
+// 150-frame cache could retain well over 1 GB of decoded pixels even though
+// only one frame is visible. Background loading also sampled every frame,
+// creating a burst of network requests and decodes while the user scrolled.
+const CACHE_CAP = 36;
+const PRELOAD_RANGE = 28;
+const BACKGROUND_FRAME_STRIDE = 2;
 
 const frameWidth = (f: Frame) => ("naturalWidth" in f ? f.naturalWidth || f.width : f.width);
 const frameHeight = (f: Frame) => ("naturalHeight" in f ? f.naturalHeight || f.height : f.height);
@@ -131,20 +136,60 @@ const stepTimings = [
 
 const stepCopy = {
   en: [
-    { title: "Discovery", line: "It starts with one quiet click.", tag: "100% PRIVATE · NO PUBLIC PROFILES" },
-    { title: "The circle", line: "Private, vetted, never browsed.", tag: "VETTED BY HAND · NEVER BROWSED" },
-    { title: "The match", line: "Heritage and heart, made whole.", tag: "HERITAGE & VALUES CONSIDERED" },
+    {
+      title: "Discovery",
+      line: "It starts with one quiet click.",
+      tag: "100% PRIVATE · NO PUBLIC PROFILES",
+    },
+    {
+      title: "The circle",
+      line: "Private, vetted, never browsed.",
+      tag: "VETTED BY HAND · NEVER BROWSED",
+    },
+    {
+      title: "The match",
+      line: "Heritage and heart, made whole.",
+      tag: "HERITAGE & VALUES CONSIDERED",
+    },
     { title: "The proposal", line: "You decide, freely.", tag: "YOUR DECISION, ALWAYS" },
-    { title: "Hand in hand", line: "From strangers to promised, quietly.", tag: "AT YOUR OWN, QUIET PACE" },
-    { title: "The altar", line: "One ring. One introduction. One yes.", tag: "ONE INTRODUCTION, DONE RIGHT" },
+    {
+      title: "Hand in hand",
+      line: "From strangers to promised, quietly.",
+      tag: "AT YOUR OWN, QUIET PACE",
+    },
+    {
+      title: "The altar",
+      line: "One ring. One introduction. One yes.",
+      tag: "ONE INTRODUCTION, DONE RIGHT",
+    },
   ],
   de: [
-    { title: "Entdeckung", line: "Es beginnt mit einem stillen Klick.", tag: "100% PRIVAT · KEINE ÖFFENTLICHEN PROFILE" },
-    { title: "Der Kreis", line: "Privat, geprüft, niemals durchstöbert.", tag: "VON HAND GEPRÜFT · NIEMALS DURCHSTÖBERT" },
-    { title: "Die Verbindung", line: "Herkunft und Herz, im Einklang.", tag: "HERKUNFT & WERTE BERÜCKSICHTIGT" },
+    {
+      title: "Entdeckung",
+      line: "Es beginnt mit einem stillen Klick.",
+      tag: "100% PRIVAT · KEINE ÖFFENTLICHEN PROFILE",
+    },
+    {
+      title: "Der Kreis",
+      line: "Privat, geprüft, niemals durchstöbert.",
+      tag: "VON HAND GEPRÜFT · NIEMALS DURCHSTÖBERT",
+    },
+    {
+      title: "Die Verbindung",
+      line: "Herkunft und Herz, im Einklang.",
+      tag: "HERKUNFT & WERTE BERÜCKSICHTIGT",
+    },
     { title: "Der Antrag", line: "Sie entscheiden, frei.", tag: "IHRE ENTSCHEIDUNG, IMMER" },
-    { title: "Hand in Hand", line: "Von Fremden zu Versprochenen, still.", tag: "IN IHREM EIGENEN, RUHIGEN TEMPO" },
-    { title: "Der Altar", line: "Ein Ring. Eine Vorstellung. Ein Ja.", tag: "EINE VORSTELLUNG, RICHTIG GEMACHT" },
+    {
+      title: "Hand in Hand",
+      line: "Von Fremden zu Versprochenen, still.",
+      tag: "IN IHREM EIGENEN, RUHIGEN TEMPO",
+    },
+    {
+      title: "Der Altar",
+      line: "Ein Ring. Eine Vorstellung. Ein Ja.",
+      tag: "EINE VORSTELLUNG, RICHTIG GEMACHT",
+    },
   ],
 } as const;
 
@@ -157,7 +202,12 @@ const CLOSING_TAG_ICONS = [
 
 const closingTagLabels = {
   en: ["Private by design", "Human reviewed", "Intent focused", "Meaningful introductions"],
-  de: ["Privat von Grund auf", "Von Menschen geprüft", "Auf Ernsthaftigkeit fokussiert", "Bedeutungsvolle Vorstellungen"],
+  de: [
+    "Privat von Grund auf",
+    "Von Menschen geprüft",
+    "Auf Ernsthaftigkeit fokussiert",
+    "Bedeutungsvolle Vorstellungen",
+  ],
 } as const;
 
 const scrollyCopy = {
@@ -233,7 +283,8 @@ export function ScrollytellingSection() {
       }
     };
 
-    const framePath = (dev: DeviceKind, i: number) => `${BASE_PATH}/${dev}/frame_${String(i + 1).padStart(5, "0")}.webp`;
+    const framePath = (dev: DeviceKind, i: number) =>
+      `${BASE_PATH}/${dev}/frame_${String(i + 1).padStart(5, "0")}.webp`;
 
     const decodeFrame = async (dev: DeviceKind, i: number): Promise<Frame | undefined> => {
       const src = framePath(dev, i);
@@ -304,13 +355,20 @@ export function ScrollytellingSection() {
     // always fetched nearest-first, so reversals resolve as fast as
     // possible.
     const preloadAll = async (dev: DeviceKind, gen: number, total: number) => {
-      const CONCURRENCY = 8;
+      const CONCURRENCY = 4;
       while (!cancelled && gen === generation) {
         const lo = Math.max(0, currentTargetIndex - PRELOAD_RANGE);
         const hi = Math.min(total - 1, currentTargetIndex + PRELOAD_RANGE);
         const missing: number[] = [];
         for (let i = lo; i <= hi; i++) {
-          if (!cache[i] && !inFlight.has(i) && (failCount.get(i) ?? 0) < MAX_FRAME_RETRIES) missing.push(i);
+          if (
+            i % BACKGROUND_FRAME_STRIDE === 0 &&
+            !cache[i] &&
+            !inFlight.has(i) &&
+            (failCount.get(i) ?? 0) < MAX_FRAME_RETRIES
+          ) {
+            missing.push(i);
+          }
         }
         if (missing.length === 0) {
           await new Promise((r) => setTimeout(r, 120));
@@ -346,6 +404,21 @@ export function ScrollytellingSection() {
       touch(index);
     };
 
+    const drawNearestResidentFrame = (index: number) => {
+      for (let distance = 1; distance <= PRELOAD_RANGE; distance++) {
+        const before = index - distance;
+        const after = index + distance;
+        if (before >= 0 && cache[before]) {
+          if (before !== lastDrawnIndex) drawFrame(before);
+          return;
+        }
+        if (after < frameCount && cache[after]) {
+          if (after !== lastDrawnIndex) drawFrame(after);
+          return;
+        }
+      }
+    };
+
     // getBoundingClientRect()/offsetTop force the browser to run layout
     // if anything on the page has pending style changes — calling that
     // every animation frame during a fast scroll, while framer-motion is
@@ -377,8 +450,10 @@ export function ScrollytellingSection() {
           drawFrame(index);
         }
       } else {
-        // keep showing whatever's already on screen; just make sure this
-        // frame jumps the preload queue for next time
+        // Paint the nearest already-decoded frame immediately instead of
+        // visibly freezing on a distant old frame while the exact target
+        // downloads. The exact target still jumps the queue.
+        drawNearestResidentFrame(index);
         ensureFrame(device, index, gen);
       }
 
@@ -396,16 +471,19 @@ export function ScrollytellingSection() {
       // right at the very start, and dissolving into it right at the
       // very end, makes the boundary feel intentional instead of a cut
       // — without touching the footage itself, just the site's own UI.
-      if (entryFadeRef.current) entryFadeRef.current.style.opacity = String(1 - smoothstep(Math.min(p / 0.06, 1)));
+      if (entryFadeRef.current)
+        entryFadeRef.current.style.opacity = String(1 - smoothstep(Math.min(p / 0.06, 1)));
 
       const fade = 0.045;
       let activeIdx = 0;
       steps.forEach((step, i) => {
         const el = captionRefs.current[i];
         let opacity = 0;
-        if (p >= step.enter - fade && p <= step.enter) opacity = smoothstep((p - (step.enter - fade)) / fade);
+        if (p >= step.enter - fade && p <= step.enter)
+          opacity = smoothstep((p - (step.enter - fade)) / fade);
         else if (p > step.enter && p < step.leave) opacity = 1;
-        else if (p >= step.leave && p <= step.leave + fade) opacity = 1 - smoothstep((p - step.leave) / fade);
+        else if (p >= step.leave && p <= step.leave + fade)
+          opacity = 1 - smoothstep((p - step.leave) / fade);
         if (el) {
           el.style.opacity = String(opacity);
           el.style.transform = `translateY(${(1 - opacity) * 14}px)`;
@@ -415,7 +493,8 @@ export function ScrollytellingSection() {
       });
 
       if (barFillRef.current) barFillRef.current.style.width = `${p * 100}%`;
-      if (counterRef.current) counterRef.current.textContent = `${steps[activeIdx].n} / 06 — ${steps[activeIdx].title}`;
+      if (counterRef.current)
+        counterRef.current.textContent = `${steps[activeIdx].n} / 06 — ${steps[activeIdx].title}`;
     };
 
     const loop = (gen: number) => {
@@ -522,7 +601,7 @@ export function ScrollytellingSection() {
           start(device);
         }
       },
-      { rootMargin: "0px 0px 40% 0px" }
+      { rootMargin: "0px 0px 150% 0px" },
     );
     io.observe(container);
 
@@ -575,7 +654,10 @@ export function ScrollytellingSection() {
           <div
             ref={entryFadeRef}
             className="absolute inset-0 pointer-events-none"
-            style={{ background: "linear-gradient(180deg, oklch(0.975 0.012 85) 0%, transparent 55%)", opacity: 1 }}
+            style={{
+              background: "linear-gradient(180deg, oklch(0.975 0.012 85) 0%, transparent 55%)",
+              opacity: 1,
+            }}
           />
 
           {/* just enough scrim at the very bottom for the band to sit on;
@@ -585,20 +667,22 @@ export function ScrollytellingSection() {
               of that family rather than its own isolated color. */}
           <div
             className="absolute inset-x-0 bottom-0 h-[45vh] pointer-events-none"
-            style={{ background: "linear-gradient(180deg, transparent 0%, oklch(0.16 0.025 45 / 0.5) 55%, oklch(0.16 0.025 45 / 0.85) 100%)" }}
+            style={{
+              background:
+                "linear-gradient(180deg, transparent 0%, oklch(0.16 0.025 45 / 0.5) 55%, oklch(0.16 0.025 45 / 0.85) 100%)",
+            }}
           />
 
           {/* top progress bar: a thin gold line that fills across the
               full 600vh scroll, so "how far through" is always visible */}
           <div className="absolute top-0 inset-x-0 h-[3px] bg-gold/15">
-            <span
-              ref={barFillRef}
-              className="block h-full bg-gold-light"
-              style={{ width: "0%" }}
-            />
+            <span ref={barFillRef} className="block h-full bg-gold-light" style={{ width: "0%" }} />
           </div>
           <div className="absolute top-4 right-5 lg:right-8">
-            <span ref={counterRef} className="font-mono text-[10px] tracking-[0.18em] text-ink-foreground/70 whitespace-nowrap">
+            <span
+              ref={counterRef}
+              className="font-mono text-[10px] tracking-[0.18em] text-ink-foreground/70 whitespace-nowrap"
+            >
               {steps[0].n} / 06 — {steps[0].title}
             </span>
           </div>
@@ -632,13 +716,17 @@ export function ScrollytellingSection() {
                       <span className="font-display text-2xl leading-none text-gold-light sm:text-4xl lg:text-6xl">
                         {step.n}
                       </span>
-                      <span className="font-mono text-[8px] tracking-[0.2em] text-ink-foreground/40 sm:text-[10px]">/ 06</span>
+                      <span className="font-mono text-[8px] tracking-[0.2em] text-ink-foreground/40 sm:text-[10px]">
+                        / 06
+                      </span>
                     </div>
                     <div className="min-w-0 flex-1">
                       <h3 className="mb-1 font-display text-lg leading-tight text-ink-foreground sm:mb-2 sm:text-2xl lg:text-4xl">
                         {step.title}
                       </h3>
-                      <p className="mb-1.5 text-xs text-ink-foreground sm:mb-3 sm:text-base lg:text-lg">{step.line}</p>
+                      <p className="mb-1.5 text-xs text-ink-foreground sm:mb-3 sm:text-base lg:text-lg">
+                        {step.line}
+                      </p>
                       <span className="inline-flex items-center gap-1.5 font-mono text-[8px] tracking-[0.12em] text-gold-light sm:gap-2 sm:text-[10px] sm:tracking-[0.15em]">
                         <span>✦</span>
                         {step.tag}
@@ -666,7 +754,10 @@ export function ScrollytellingSection() {
                       </div>
                       <div className="mt-3 grid grid-cols-2 gap-2 border-t border-ink-border pt-3 sm:mt-6 sm:gap-4 sm:pt-6 sm:grid-cols-4">
                         {CLOSING_TAGS.map((tag) => (
-                          <div key={tag.label} className="flex flex-col items-center gap-1 text-center sm:gap-2">
+                          <div
+                            key={tag.label}
+                            className="flex flex-col items-center gap-1 text-center sm:gap-2"
+                          >
                             <svg
                               viewBox="0 0 24 24"
                               className="h-3 w-3 text-gold-light sm:h-4 sm:w-4 lg:h-5 lg:w-5"
@@ -678,7 +769,9 @@ export function ScrollytellingSection() {
                             >
                               <path d={tag.d} />
                             </svg>
-                            <span className="max-w-[100px] text-[8px] leading-tight text-ink-foreground/60 sm:text-[10px]">{tag.label}</span>
+                            <span className="max-w-[100px] text-[8px] leading-tight text-ink-foreground/60 sm:text-[10px]">
+                              {tag.label}
+                            </span>
                           </div>
                         ))}
                       </div>

@@ -4,9 +4,9 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useLocale } from "@/lib/use-locale";
 
 const testimonialTimings = [
-  { who: "M. & A." },
-  { who: "N. & R." },
-  { who: "S. & K." },
+  { who: "M. & A.", photo: "/images/testimonial-phone-1.jpg" },
+  { who: "N. & R.", photo: "/images/testimonial-phone-2.jpg" },
+  { who: "S. & K.", photo: "/images/testimonial-phone-3.jpg" },
 ] as const;
 
 const copy = {
@@ -19,9 +19,20 @@ const copy = {
     next: "Next testimonial",
     showTestimonial: (n: number) => `Show testimonial ${n}`,
     testimonials: [
-      { quote: "Private without feeling cold. We were introduced with care, and no pressure to perform.", city: "Frankfurt" },
-      { quote: "They understood our families mattered, but never let that overpower our own choice.", city: "Munich" },
-      { quote: "The opposite of an app. No noise, just one introduction that made sense.", city: "Berlin" },
+      {
+        quote:
+          "Private without feeling cold. We were introduced with care, and no pressure to perform.",
+        city: "Frankfurt",
+      },
+      {
+        quote:
+          "They understood our families mattered, but never let that overpower our own choice.",
+        city: "Munich",
+      },
+      {
+        quote: "The opposite of an app. No noise, just one introduction that made sense.",
+        city: "Berlin",
+      },
     ],
   },
   de: {
@@ -33,9 +44,20 @@ const copy = {
     next: "Nächster Erfahrungsbericht",
     showTestimonial: (n: number) => `Erfahrungsbericht ${n} anzeigen`,
     testimonials: [
-      { quote: "Privat, ohne kühl zu wirken. Wir wurden mit Sorgfalt vorgestellt, ganz ohne Erwartungsdruck.", city: "Frankfurt" },
-      { quote: "Sie verstanden, dass unsere Familien wichtig waren, ließen das aber nie unsere eigene Entscheidung überlagern.", city: "München" },
-      { quote: "Das Gegenteil einer App. Kein Lärm, nur eine Vorstellung, die Sinn ergab.", city: "Berlin" },
+      {
+        quote:
+          "Privat, ohne kühl zu wirken. Wir wurden mit Sorgfalt vorgestellt, ganz ohne Erwartungsdruck.",
+        city: "Frankfurt",
+      },
+      {
+        quote:
+          "Sie verstanden, dass unsere Familien wichtig waren, ließen das aber nie unsere eigene Entscheidung überlagern.",
+        city: "München",
+      },
+      {
+        quote: "Das Gegenteil einer App. Kein Lärm, nur eine Vorstellung, die Sinn ergab.",
+        city: "Berlin",
+      },
     ],
   },
 } as const;
@@ -57,7 +79,8 @@ export function TestimonialsSection() {
   }, []);
 
   const goTo = (index: number) => setActiveIndex(index);
-  const goPrev = () => setActiveIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+  const goPrev = () =>
+    setActiveIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
   const goNext = () => setActiveIndex((prev) => (prev + 1) % testimonials.length);
 
   const active = testimonials[activeIndex];
@@ -144,6 +167,24 @@ export function TestimonialsSection() {
           {/* City card side */}
           <div className="flex flex-col justify-center gap-6 lg:col-span-5">
             <motion.div
+              key={`photo-${activeIndex}`}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.55, ease: EASE }}
+              className="relative aspect-[4/5] overflow-hidden border border-ink-border bg-black"
+            >
+              <img
+                src={active.photo}
+                alt=""
+                aria-hidden="true"
+                loading="lazy"
+                decoding="async"
+                className="h-full w-full object-cover"
+              />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+            </motion.div>
+
+            <motion.div
               key={`metric-${activeIndex}`}
               initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -165,7 +206,11 @@ export function TestimonialsSection() {
                 >
                   <div
                     className={`h-full bg-gold transition-all duration-300 ${
-                      idx === activeIndex ? "w-full" : idx < activeIndex ? "w-full opacity-40" : "w-0"
+                      idx === activeIndex
+                        ? "w-full"
+                        : idx < activeIndex
+                          ? "w-full opacity-40"
+                          : "w-0"
                     }`}
                     style={idx === activeIndex ? { animation: "progress 8s linear forwards" } : {}}
                   />

@@ -5,11 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BrandMark } from "@/components/landing/brand-mark";
 import { useLocale } from "@/lib/use-locale";
+import { sendContactEnquiry } from "@/lib/api/contact.functions";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const EASE = [0.16, 1, 0.3, 1] as const;
-const CONTACT_EMAIL = "hello@desiherz.de";
-
 const copy = {
   en: {
     eyebrow: "Begin privately",
@@ -25,17 +24,12 @@ const copy = {
     sending: "Sending…",
     submit: "Request consultation",
     sent: "Thank you — we’ve received your note and will write back privately.",
-    mailtoIntro: "We’ve opened your email app with your note ready to send — if nothing opened,",
-    mailtoMiddle: "and email it to",
-    mailtoEnd: "directly.",
-    copyNote: "copy your note",
-    copied: "Copied",
     errors: {
       name: "Please tell us your name.",
       emailRequired: "Please add an email so we can write back.",
       emailInvalid: "That email doesn't look right.",
       note: "A line or two helps us understand you.",
-      submitFailed: `That didn't send — please try again, or email ${CONTACT_EMAIL} directly.`,
+      submitFailed: "That didn't send — please try again in a moment.",
     },
   },
   de: {
@@ -52,49 +46,15 @@ const copy = {
     sending: "Wird gesendet…",
     submit: "Beratung anfragen",
     sent: "Vielen Dank — wir haben Ihre Nachricht erhalten und schreiben Ihnen privat zurück.",
-    mailtoIntro: "Wir haben Ihre E-Mail-App mit der fertigen Nachricht geöffnet — falls sich nichts geöffnet hat,",
-    mailtoMiddle: "und senden Sie sie direkt an",
-    mailtoEnd: "",
-    copyNote: "Nachricht kopieren",
-    copied: "Kopiert",
     errors: {
       name: "Bitte nennen Sie uns Ihren Namen.",
       emailRequired: "Bitte geben Sie eine E-Mail-Adresse an, damit wir zurückschreiben können.",
       emailInvalid: "Diese E-Mail-Adresse scheint nicht korrekt zu sein.",
       note: "Ein oder zwei Zeilen helfen uns, Sie zu verstehen.",
-      submitFailed: `Das hat nicht funktioniert — bitte versuchen Sie es erneut oder schreiben Sie direkt an ${CONTACT_EMAIL}.`,
+      submitFailed: "Das hat nicht funktioniert — bitte versuchen Sie es gleich noch einmal.",
     },
   },
 } as const;
-
-// mailto: links (including ones triggered via window.location.href, as
-// below) open an OS app-chooser when there's no default mail client, and
-// picking a plain browser from that list does nothing — undetectable
-// from JS, so we can't know whether it actually worked. This gives a
-// guaranteed-working fallback: copy the note to the clipboard.
-function CopyButton({ value, label, copiedLabel }: { value: string; label: string; copiedLabel: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <button
-      type="button"
-      onClick={() => {
-        navigator.clipboard?.writeText(value).then(() => {
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1800);
-        });
-      }}
-      className="font-medium text-gold underline underline-offset-2 hover:text-gold-light"
-    >
-      {copied ? copiedLabel : label}
-    </button>
-  );
-}
-
-// Web3Forms: a free form-delivery service — submissions POST straight to
-// their API and land in the inbox tied to this access key. No backend code
-// needed on our side. Sign up at web3forms.com with the inbox you want
-// enquiries to reach, then set VITE_WEB3FORMS_KEY (see .env.example).
-const WEB3FORMS_KEY = import.meta.env.VITE_WEB3FORMS_KEY as string | undefined;
 
 export function CtaSection() {
   const locale = useLocale();
@@ -104,8 +64,14 @@ export function CtaSection() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
-  const [errors, setErrors] = useState<{ name?: string; email?: string; note?: string; form?: string }>({});
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "mailto-fallback">("idle");
+  const [company, setCompany] = useState("");
+  const [errors, setErrors] = useState<{
+    name?: string;
+    email?: string;
+    note?: string;
+    form?: string;
+  }>({});
+  const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
 
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -126,36 +92,21 @@ export function CtaSection() {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    if (!WEB3FORMS_KEY) {
-      // Not configured yet — best-effort mailto, but JS has no way to
-      // detect whether it actually opened a mail client (an OS
-      // app-chooser with no default mail app just silently does
-      // nothing), so don't claim the note was sent — show a fallback
-      // that's guaranteed to work instead.
-      const subject = encodeURIComponent(`Private enquiry from ${name.trim()}`);
-      const body = encodeURIComponent(`${note.trim()}\n\n— ${name.trim()} (${email.trim()})`);
-      window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
-      setStatus("mailto-fallback");
-      return;
-    }
-
     setStatus("sending");
     try {
-      const res = await fetch("https://api.web3forms.com/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({
-          access_key: WEB3FORMS_KEY,
-          subject: `Private enquiry from ${name.trim()}`,
-          from_name: "DesiHerz — Private enquiry",
+      await sendContactEnquiry({
+        data: {
           name: name.trim(),
           email: email.trim(),
-          message: note.trim(),
-        }),
+          note: note.trim(),
+          locale,
+          company,
+        },
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.message || "Submission failed");
       setStatus("sent");
+      setName("");
+      setEmail("");
+      setNote("");
     } catch {
       setStatus("idle");
       setErrors({ form: t.errors.submitFailed });
@@ -207,7 +158,9 @@ export function CtaSection() {
                   <span className="font-accent text-muted-foreground">{t.heading[1]}</span>
                 </h2>
 
-                <p className="mb-10 max-w-xl text-xl leading-relaxed text-muted-foreground">{t.intro}</p>
+                <p className="mb-10 max-w-xl text-xl leading-relaxed text-muted-foreground">
+                  {t.intro}
+                </p>
 
                 <p className="font-mono text-sm text-muted-foreground">
                   {t.priceLine[0]}
@@ -216,9 +169,28 @@ export function CtaSection() {
               </div>
 
               {/* Right: enquiry form */}
-              <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6 lg:col-span-6">
+              <form
+                onSubmit={handleSubmit}
+                noValidate
+                className="flex flex-col gap-6 lg:col-span-6"
+              >
+                <div className="absolute -left-[10000px]" aria-hidden="true">
+                  <Label htmlFor="cta-company">Company</Label>
+                  <Input
+                    id="cta-company"
+                    name="company"
+                    type="text"
+                    value={company}
+                    onChange={(e) => setCompany(e.target.value)}
+                    autoComplete="off"
+                    tabIndex={-1}
+                  />
+                </div>
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="cta-name" className="font-mono text-xs tracking-wider text-muted-foreground uppercase">
+                  <Label
+                    htmlFor="cta-name"
+                    className="font-mono text-xs tracking-wider text-muted-foreground uppercase"
+                  >
                     {t.nameLabel}
                   </Label>
                   <Input
@@ -239,7 +211,10 @@ export function CtaSection() {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="cta-email" className="font-mono text-xs tracking-wider text-muted-foreground uppercase">
+                  <Label
+                    htmlFor="cta-email"
+                    className="font-mono text-xs tracking-wider text-muted-foreground uppercase"
+                  >
                     {t.emailLabel}
                   </Label>
                   <Input
@@ -260,7 +235,10 @@ export function CtaSection() {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="cta-note" className="font-mono text-xs tracking-wider text-muted-foreground uppercase">
+                  <Label
+                    htmlFor="cta-note"
+                    className="font-mono text-xs tracking-wider text-muted-foreground uppercase"
+                  >
                     {t.noteLabel}
                   </Label>
                   <Input
@@ -306,18 +284,6 @@ export function CtaSection() {
                 {status === "sent" && (
                   <p className="text-sm text-gold" role="status">
                     {t.sent}
-                  </p>
-                )}
-                {status === "mailto-fallback" && (
-                  <p className="text-sm text-muted-foreground" role="status">
-                    {t.mailtoIntro}{" "}
-                    <CopyButton
-                      value={`${note.trim()}\n\n— ${name.trim()} (${email.trim()})`}
-                      label={t.copyNote}
-                      copiedLabel={t.copied}
-                    />{" "}
-                    {t.mailtoMiddle}{" "}
-                    <CopyButton value={CONTACT_EMAIL} label={CONTACT_EMAIL} copiedLabel={t.copied} /> {t.mailtoEnd}
                   </p>
                 )}
               </form>
