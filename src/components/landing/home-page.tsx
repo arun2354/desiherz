@@ -1,5 +1,4 @@
 import { Navigation } from "@/components/landing/navigation";
-import { SmoothScroll } from "@/components/landing/smooth-scroll";
 import { HeroSection } from "@/components/landing/hero-section";
 import { StatementSection } from "@/components/landing/statement-section";
 import { ScrollytellingSection } from "@/components/landing/scrollytelling-section";
@@ -19,7 +18,6 @@ export function HomePage() {
     // container, which silently breaks position:sticky (the scrollytelling
     // canvas) against the window. clip clips without doing that.
     <main className="relative min-h-screen overflow-x-clip">
-      <SmoothScroll />
       <Navigation />
       <HeroSection />
       <StatementSection />

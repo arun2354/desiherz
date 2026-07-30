@@ -4,53 +4,16 @@ import { useLocale } from "@/lib/use-locale";
 
 const copy = {
   en: {
-    heading: ["Some marriages are arranged.", "The right ones are curated."],
-    paragraph: "Scroll to watch how one introduction unfolds — from the first quiet click to the altar.",
-    marqueeItems: [
-      "Private",
-      "Curated by hand",
-      "By appointment",
-      "Frankfurt am Main",
-      "No profiles, no swiping",
-      "Two families, one table",
-    ],
+    heading: ["Some souls are destined to meet.", "We help them find each other."],
+    paragraph:
+      "Scroll to watch how one introduction unfolds — from the first quiet click to the altar.",
   },
   de: {
-    heading: ["Manche Ehen werden arrangiert.", "Die richtigen werden kuratiert."],
-    paragraph: "Scrollen Sie, um zu sehen, wie eine Vorstellung sich entfaltet — vom ersten stillen Klick bis zum Altar.",
-    marqueeItems: [
-      "Privat",
-      "Von Hand kuratiert",
-      "Nur nach Vereinbarung",
-      "Frankfurt am Main",
-      "Keine Profile, kein Wischen",
-      "Zwei Familien, ein Tisch",
-    ],
+    heading: ["Manche Seelen sind füreinander bestimmt.", "Wir helfen ihnen, einander zu finden."],
+    paragraph:
+      "Scrollen Sie, um zu sehen, wie eine Vorstellung sich entfaltet — vom ersten stillen Klick bis zum Altar.",
   },
 } as const;
-
-function MarqueeRow({ items }: { items: readonly string[] }) {
-  const row = (
-    <>
-      {items.map((item) => (
-        <span key={item} className="inline-flex items-center gap-10 mr-10">
-          <span className="font-mono text-xs lg:text-sm uppercase tracking-[0.3em] text-muted-foreground whitespace-nowrap">
-            {item}
-          </span>
-          <span className="text-gold" aria-hidden="true">
-            ✦
-          </span>
-        </span>
-      ))}
-    </>
-  );
-  return (
-    <div className="marquee-track" aria-hidden="true">
-      {row}
-      {row}
-    </div>
-  );
-}
 
 export function StatementSection() {
   const locale = useLocale();
@@ -63,14 +26,17 @@ export function StatementSection() {
       ([entry]) => {
         if (entry.isIntersecting) setIsVisible(true);
       },
-      { threshold: 0.3 }
+      { threshold: 0.3 },
     );
     if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
   }, []);
 
   return (
-    <section ref={sectionRef} className="relative py-28 lg:py-40 overflow-hidden">
+    <section
+      ref={sectionRef}
+      className="matrimony-light-bridge relative overflow-hidden pt-44 pb-28 lg:pt-56 lg:pb-40"
+    >
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12 text-center">
         <div
           className={`flex justify-center mb-10 transition-all duration-700 ${
@@ -114,15 +80,6 @@ export function StatementSection() {
             />
           </svg>
         </div>
-      </div>
-
-      {/* slow marquee strip */}
-      <div
-        className={`mt-20 lg:mt-28 border-y border-gold/20 py-5 overflow-hidden transition-opacity duration-1000 delay-300 ${
-          isVisible ? "opacity-100" : "opacity-0"
-        }`}
-      >
-        <MarqueeRow items={t.marqueeItems} />
       </div>
     </section>
   );

@@ -7,6 +7,8 @@ const testimonialTimings = [
   { who: "M. & A.", photo: "/images/testimonial-phone-1.jpg" },
   { who: "N. & R.", photo: "/images/testimonial-phone-2.jpg" },
   { who: "S. & K.", photo: "/images/testimonial-phone-3.jpg" },
+  { who: "A. & J.", photo: "/images/testimonial-phone-4.jpg" },
+  { who: "R. & P.", photo: "/images/testimonial-phone-5.jpg" },
 ] as const;
 
 const copy = {
@@ -33,6 +35,16 @@ const copy = {
         quote: "The opposite of an app. No noise, just one introduction that made sense.",
         city: "Berlin",
       },
+      {
+        quote:
+          "There was no performance and no pressure. It felt like being introduced by someone who genuinely knew us.",
+        city: "Cologne",
+      },
+      {
+        quote:
+          "We lived in different cities, but our values already felt close. DesiHerz made the first conversation easy.",
+        city: "Hamburg",
+      },
     ],
   },
   de: {
@@ -57,6 +69,16 @@ const copy = {
       {
         quote: "Das Gegenteil einer App. Kein Lärm, nur eine Vorstellung, die Sinn ergab.",
         city: "Berlin",
+      },
+      {
+        quote:
+          "Kein Schauspiel und kein Druck. Es fühlte sich an, als hätte uns jemand vorgestellt, der uns wirklich kennt.",
+        city: "Köln",
+      },
+      {
+        quote:
+          "Wir lebten in verschiedenen Städten, doch unsere Werte waren sich bereits nah. DesiHerz machte das erste Gespräch leicht.",
+        city: "Hamburg",
       },
     ],
   },

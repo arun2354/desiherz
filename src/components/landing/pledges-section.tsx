@@ -5,7 +5,15 @@ import { useLocale } from "@/lib/use-locale";
 const pledgeIcons: Record<string, ReactNode> = {
   lock: (
     <svg viewBox="0 0 64 64" fill="none" className="w-12 h-12">
-      <rect x="16" y="28" width="32" height="26" rx="3" stroke="url(#pledge-grad)" strokeWidth="1.6" />
+      <rect
+        x="16"
+        y="28"
+        width="32"
+        height="26"
+        rx="3"
+        stroke="url(#pledge-grad)"
+        strokeWidth="1.6"
+      />
       <path d="M22 28v-7a10 10 0 0120 0v7" stroke="url(#pledge-grad)" strokeWidth="1.6" />
       <circle cx="32" cy="40" r="3.5" stroke="url(#pledge-grad)" strokeWidth="1.4" />
     </svg>
@@ -14,12 +22,23 @@ const pledgeIcons: Record<string, ReactNode> = {
     <svg viewBox="0 0 64 64" fill="none" className="w-12 h-12">
       <circle cx="25" cy="34" r="14" stroke="url(#pledge-grad)" strokeWidth="1.6" />
       <circle cx="39" cy="34" r="14" stroke="url(#pledge-grad)" strokeWidth="1.6" />
-      <path d="M32 12l3 5h-6l3-5z" stroke="url(#pledge-grad)" strokeWidth="1.4" strokeLinejoin="round" />
+      <path
+        d="M32 12l3 5h-6l3-5z"
+        stroke="url(#pledge-grad)"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
     </svg>
   ),
   hands: (
     <svg viewBox="0 0 64 64" fill="none" className="w-12 h-12">
-      <path d="M14 32l12 12M50 32L38 44M26 44l6 6 6-6" stroke="url(#pledge-grad)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M14 32l12 12M50 32L38 44M26 44l6 6 6-6"
+        stroke="url(#pledge-grad)"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
       <circle cx="14" cy="28" r="4.5" stroke="url(#pledge-grad)" strokeWidth="1.6" />
       <circle cx="50" cy="28" r="4.5" stroke="url(#pledge-grad)" strokeWidth="1.6" />
     </svg>
@@ -38,8 +57,16 @@ const copy = {
     heading: ["Quietly ", "curated."],
     pledges: [
       { n: "01", title: "Privacy", line: "No public profile, ever." },
-      { n: "02", title: "Curation", line: "Every introduction made by a person, not an algorithm." },
-      { n: "03", title: "Commitment", line: "With you from first hello to the family conversation." },
+      {
+        n: "02",
+        title: "Curation",
+        line: "Every introduction made by a person, not an algorithm.",
+      },
+      {
+        n: "03",
+        title: "Commitment",
+        line: "With you from first hello to the family conversation.",
+      },
     ],
   },
   de: {
@@ -47,8 +74,16 @@ const copy = {
     heading: ["Still ", "kuratiert."],
     pledges: [
       { n: "01", title: "Privatsphäre", line: "Niemals ein öffentliches Profil." },
-      { n: "02", title: "Kuratierung", line: "Jede Vorstellung von einem Menschen gemacht, nicht von einem Algorithmus." },
-      { n: "03", title: "Verbindlichkeit", line: "An Ihrer Seite vom ersten Hallo bis zum Familiengespräch." },
+      {
+        n: "02",
+        title: "Kuratierung",
+        line: "Jede Vorstellung von einem Menschen gemacht, nicht von einem Algorithmus.",
+      },
+      {
+        n: "03",
+        title: "Verbindlichkeit",
+        line: "An Ihrer Seite vom ersten Hallo bis zum Familiengespräch.",
+      },
     ],
   },
 } as const;
@@ -59,14 +94,24 @@ export function PledgesSection() {
   const pledges = pledgeTimings.map((timing, i) => ({ ...timing, ...t.pledges[i] }));
 
   return (
-    <section id="pledges" className="relative py-28 lg:py-40 overflow-hidden">
+    <section
+      id="pledges"
+      className="matrimony-light-bridge relative overflow-hidden pt-44 pb-28 lg:pt-56 lg:pb-40"
+    >
       {/* shared gradient for the pledge icons */}
       <svg width="0" height="0" aria-hidden="true">
         <defs>
-          <linearGradient id="pledge-grad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#eca8d6" />
-            <stop offset="0.55" stopColor="#d9a760" />
-            <stop offset="1" stopColor="#eca8d6" />
+          <linearGradient
+            id="pledge-grad"
+            x1="0"
+            y1="0"
+            x2="64"
+            y2="64"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop offset="0" stopColor="#b76e79" />
+            <stop offset="0.55" stopColor="#dfc48d" />
+            <stop offset="1" stopColor="#b76e79" />
           </linearGradient>
         </defs>
       </svg>
@@ -92,7 +137,8 @@ export function PledgesSection() {
             {t.eyebrow}
           </span>
           <h2 className="text-5xl md:text-6xl lg:text-7xl font-display tracking-tight leading-[0.95]">
-            {t.heading[0]}<span className="font-accent text-gold">{t.heading[1]}</span>
+            {t.heading[0]}
+            <span className="font-accent text-gold">{t.heading[1]}</span>
           </h2>
         </motion.div>
 

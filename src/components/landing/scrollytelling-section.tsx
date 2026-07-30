@@ -1,130 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useLocale } from "@/lib/use-locale";
 
-/*
-  Scrollytelling: a 600vh container with a sticky full-viewport canvas.
-  Scroll progress scrubs the full 348-frame sequence (24fps × 14.5s,
-  manually extracted — not re-derived here) drawn to canvas, while a
-  caption band fades through six progress windows.
-
-  Frame source: public/scrollytelling/hero/{desktop,mobile}/frame_NNNNN.webp
-  (re-encoded from the original extracted JPEGs — same 348 frames, same
-  content, same moments, just ~50% smaller per file with no visible
-  quality loss, since that raw payload was the hard floor on how fast
-  this could ever load on a cold connection).
-  Desktop is the 16:9 cut, mobile a separate 9:16 crop — only the
-  active device's set is ever fetched, and a manifest.json in each
-  folder (written once from the real file count, not hardcoded) tells
-  the client how many frames exist. A matchMedia listener can switch
-  the active set at runtime (e.g. rotating a phone across the 768px
-  breakpoint) without a full remount.
-
-  Frames decode via createImageBitmap when available (cheaper to draw,
-  decoded off the main thread) with a plain <img> fallback. The first
-  frame loads and paints before anything else; the rest load in the
-  background, always prioritised by distance from wherever the user is
-  currently scrolled, so a frame that's already loaded is always what's
-  on screen (no blank canvas) even if the exact target frame hasn't
-  arrived yet.
-
-  A decoded frame is a full-resolution raw bitmap (~8MB each for these
-  sources), so caching all 348 forever can hold up to ~2.7GB — that's
-  what made scrubbing "everywhere sluggish", not just slow to start.
-  Two fixes, neither touching the frame files themselves (the source
-  WebPs stay exactly as provided, full 1920x1080/1080x1920 quality):
-
-  1. Frames decode at the resolution they'll actually be shown at, not
-  their full source resolution. drawFrame below does a "cover" fit —
-  scale = max(canvasW/frameW, canvasH/frameH) — so anything decoded
-  above that scale is thrown away at draw time and only ever cost
-  memory and CPU. decodeFrame computes that same scale up front and
-  passes resizeWidth/resizeHeight to createImageBitmap when it's <1,
-  so the decoded bitmap is never bigger than what will hit the screen.
-  On a retina display the source is already smaller than the canvas
-  (scale clamps to 1, no resize — same as before). On a typical 1x
-  phone or laptop this alone cuts decoded size 50-80%. The frame that's
-  fetched over the network is always the full untouched file either
-  way — only the in-memory decode target changes.
-
-  2. The resident cache is capped (CACHE_CAP) and evicted LRU — by
-  when a frame was last actually on screen or about to be, not by its
-  distance from the current index. A distance-based window was tried
-  twice before and reverted both times: it evicts anything past N
-  frames from the *current* position regardless of how recently it was
-  shown, so a fast up-down-up-down swing that had just rendered a frame
-  46 frames back finds it already evicted and stutters refetching it.
-  LRU doesn't have that failure mode — a frame shown a moment ago has a
-  fresh timestamp and survives, no matter how far the current index has
-  since moved, so reversals near wherever the user actually is stay
-  smooth. Eviction only reaches frames that genuinely haven't been
-  needed in a while. See evictLRU()/touch() below.
-
-  The background loader (preloadAll) also only fetches a window around
-  the current target (PRELOAD_RANGE either side) instead of blasting
-  the full 90MB sequence the instant the section comes near view —
-  that upfront network+decode burst was its own source of jank,
-  independent of the cache size question above.
-
-  The whole cache is still released once the user has scrolled well
-  past the section (see the nearViewport handling in loop()), reloading
-  fresh if they scroll back.
-
-  The enter/leave windows below are mapped to what the footage actually
-  shows at each point in the timeline (0–1, resolution-independent —
-  verified frame-by-frame, not evenly guessed):
-    0.00–0.19  laptop, glowing double-heart, a hand reaching to it
-    0.21–0.44  a floating network of vetted profiles (locks + people)
-    0.46–0.60  a heart split circuit/leaf held by two hands,
-               dissolving into a bright burst of light
-    0.62–0.77  a ring placed on a finger, hands parting in light
-    0.79–0.88  joined hands holding a sustained spark of light
-    0.90–1.00  a couple, backlit, arriving at a candlelit altar
-
-  Captions sit in a small translucent (frosted, blurred) card, fixed at
-  the bottom, scaling from a compact mobile size up to a fuller band on
-  larger screens.
-
-  Smoothness: this used to run its own lerp (progress eased toward the
-  scroll target every frame) on the theory that a raw wheel notch
-  (~100px) would otherwise jump 2-3 frames and look steppy. But Lenis
-  (smooth-scroll.tsx) is active globally and already animates
-  window.scrollY continuously toward the accumulated wheel/touch
-  target every frame — so scrollY arriving here is already smoothed
-  once. Adding a second lerp on top of an already-eased input doesn't
-  smooth anything further; it just compounds lag, which is what made
-  this section feel laggy/disconnected from the scroll input rather
-  than "steppy". Read scrollY straight through instead — one smoothing
-  pass (Lenis's), not two.
-*/
-
-const BASE_PATH = "/scrollytelling/hero";
 type DeviceKind = "desktop" | "mobile";
-type Frame = ImageBitmap | HTMLImageElement;
 
-// resident decoded-frame cap (LRU-evicted, see touch()/evictLRU below)
-// and how far either side of the current target the background loader
-// keeps fetched. Both bound memory/network without ever touching the
-// source files. Widened from 120/60: a single fast trackpad fling can
-// easily cover more than 60 frames' worth of scroll in one gesture,
-// which was outrunning the old preload window and showing stale/catching-up
-// frames — exactly what reads as "laggy" during an active scroll, distinct
-// from the earlier steady-state memory problem these caps were originally
-// sized for. Frames are no longer resized at decode time (see decodeFrame),
-// so each one is back to full ~8MB resident — CACHE_CAP is set with that
-// in mind rather than the smaller resized footprint.
-// Keep the browser responsive on mid-range phones and laptops. The previous
-// 150-frame cache could retain well over 1 GB of decoded pixels even though
-// only one frame is visible. Background loading also sampled every frame,
-// creating a burst of network requests and decodes while the user scrolled.
-const CACHE_CAP = 36;
-const PRELOAD_RANGE = 28;
-const BACKGROUND_FRAME_STRIDE = 2;
-
-const frameWidth = (f: Frame) => ("naturalWidth" in f ? f.naturalWidth || f.width : f.width);
-const frameHeight = (f: Frame) => ("naturalHeight" in f ? f.naturalHeight || f.height : f.height);
-
-// timing (enter/leave, tuned against the actual footage — see the file
-// header) is locale-independent structure; only the copy below varies.
 const stepTimings = [
   { n: "01", enter: 0.03, leave: 0.19, final: false },
   { n: "02", enter: 0.21, leave: 0.44, final: false },
@@ -179,16 +57,20 @@ const stepCopy = {
       line: "Herkunft und Herz, im Einklang.",
       tag: "HERKUNFT & WERTE BERÜCKSICHTIGT",
     },
-    { title: "Der Antrag", line: "Sie entscheiden, frei.", tag: "IHRE ENTSCHEIDUNG, IMMER" },
+    {
+      title: "Der Antrag",
+      line: "Sie entscheiden, frei.",
+      tag: "IHRE ENTSCHEIDUNG, IMMER",
+    },
     {
       title: "Hand in Hand",
-      line: "Von Fremden zu Versprochenen, still.",
-      tag: "IN IHREM EIGENEN, RUHIGEN TEMPO",
+      line: "Von Fremden zu Verbundenen, ganz in Ruhe.",
+      tag: "IN IHREM EIGENEN TEMPO",
     },
     {
       title: "Der Altar",
       line: "Ein Ring. Eine Vorstellung. Ein Ja.",
-      tag: "EINE VORSTELLUNG, RICHTIG GEMACHT",
+      tag: "EINE VORSTELLUNG, DIE PASST",
     },
   ],
 } as const;
@@ -210,24 +92,26 @@ const closingTagLabels = {
   ],
 } as const;
 
-const scrollyCopy = {
-  en: { enquiry: "Private enquiry", begin: "Begin privately" },
-  de: { enquiry: "Private Anfrage", begin: "Privat beginnen" },
+const finalCta = {
+  en: "Begin privately",
+  de: "Privat beginnen",
 } as const;
 
-const smoothstep = (t: number) => t * t * (3 - 2 * t);
+const smoothstep = (value: number) => value * value * (3 - 2 * value);
 
 export function ScrollytellingSection() {
   const locale = useLocale();
-  // language switching is a full page navigation (see navigation.tsx), so
-  // this component always mounts fresh for its locale — no need for this
-  // to be reactive to a locale change after mount
-  const steps = stepTimings.map((timing, i) => ({ ...timing, ...stepCopy[locale][i] }));
-  const CLOSING_TAGS = CLOSING_TAG_ICONS.map((d, i) => ({ d, label: closingTagLabels[locale][i] }));
-  const t = scrollyCopy[locale];
+  const steps = stepTimings.map((timing, index) => ({
+    ...timing,
+    ...stepCopy[locale][index],
+  }));
+  const closingTags = CLOSING_TAG_ICONS.map((d, index) => ({
+    d,
+    label: closingTagLabels[locale][index],
+  }));
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const captionRefs = useRef<(HTMLDivElement | null)[]>([]);
   const barFillRef = useRef<HTMLSpanElement>(null);
   const counterRef = useRef<HTMLSpanElement>(null);
@@ -235,480 +119,239 @@ export function ScrollytellingSection() {
 
   useEffect(() => {
     const container = containerRef.current;
-    const canvas = canvasRef.current;
-    if (!container || !canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    const video = videoRef.current;
+    if (!container || !video) return;
 
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const supportsBitmap = typeof createImageBitmap === "function";
-
-    let cancelled = false;
-    let device: DeviceKind = window.matchMedia("(max-width: 767px)").matches ? "mobile" : "desktop";
-    let generation = 0; // bumped on device switch; invalidates in-flight loads from the old set
-    let frameCount = 0;
-    let cache: (Frame | undefined)[] = [];
-    let residentCount = 0;
-    let tick = 0;
-    let lastAccess: number[] = []; // per-index tick of last time it was shown/queued — drives LRU eviction
-    const inFlight = new Set<number>();
-    let lastDrawnIndex = -1;
-    let currentTargetIndex = 0;
-    let lastAppliedP = -1; // guards the caption/bar/counter writes below against redundant re-application when scroll hasn't moved
-    let rafId = 0;
-    let released = false; // whole cache freed after leaving the section
-
-    const touch = (i: number) => {
-      lastAccess[i] = ++tick;
-    };
-
-    // evict the least-recently-shown resident frames until back at cap.
-    // O(frameCount) per call, but only runs when a new frame pushes the
-    // cache over the cap — not on every animation frame.
-    const evictLRU = () => {
-      while (residentCount > CACHE_CAP) {
-        let oldestIdx = -1;
-        let oldestTick = Infinity;
-        for (let i = 0; i < cache.length; i++) {
-          if (cache[i] && (lastAccess[i] ?? -1) < oldestTick) {
-            oldestTick = lastAccess[i] ?? -1;
-            oldestIdx = i;
-          }
-        }
-        if (oldestIdx === -1) break;
-        const frame = cache[oldestIdx];
-        if (frame && "close" in frame) frame.close();
-        cache[oldestIdx] = undefined;
-        residentCount--;
-      }
-    };
-
-    const framePath = (dev: DeviceKind, i: number) =>
-      `${BASE_PATH}/${dev}/frame_${String(i + 1).padStart(5, "0")}.webp`;
-
-    const decodeFrame = async (dev: DeviceKind, i: number): Promise<Frame | undefined> => {
-      const src = framePath(dev, i);
-      if (supportsBitmap) {
-        try {
-          const res = await fetch(src);
-          const blob = await res.blob();
-          // A resizeWidth/resizeHeight decode (only keep the pixels the
-          // "cover" fit in drawFrame will actually show) was tried here to
-          // cut memory, but measured ~38% slower per frame than a plain
-          // decode (~55ms vs ~40ms, tested against the real CDN, quality
-          // tier barely mattered) — real added latency at exactly the
-          // moment frames need to arrive fast, during active scrolling.
-          // The resident cache is already hard-bounded by CACHE_CAP below,
-          // which is what actually solves the memory problem, so paying
-          // extra decode time to also shrink each frame isn't a trade
-          // worth making anymore.
-          return await createImageBitmap(blob);
-        } catch {
-          // fall through to the <img> path below
-        }
-      }
-      return new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = () => resolve(undefined);
-        img.src = src;
-      });
-    };
-
-    // a frame whose fetch/decode fails (transient network error, a
-    // genuinely missing file, anything) must not be retried forever —
-    // without this, preloadAll's "missing" scan would re-queue it every
-    // single pass since it's neither cached nor in flight, hammering the
-    // network and burning CPU in an infinite loop for as long as the
-    // section is mounted. Give up on a frame after a few attempts.
-    const MAX_FRAME_RETRIES = 3;
-    const failCount = new Map<number, number>();
-
-    const ensureFrame = (dev: DeviceKind, i: number, gen: number): Promise<void> => {
-      if (cache[i] || inFlight.has(i)) {
-        if (cache[i]) touch(i);
-        return Promise.resolve();
-      }
-      if ((failCount.get(i) ?? 0) >= MAX_FRAME_RETRIES) return Promise.resolve();
-      inFlight.add(i);
-      return decodeFrame(dev, i).then((frame) => {
-        inFlight.delete(i);
-        if (cancelled || gen !== generation) return; // stale: device changed mid-flight
-        if (frame) {
-          cache[i] = frame;
-          residentCount++;
-          touch(i);
-          failCount.delete(i);
-          evictLRU();
-        } else {
-          failCount.set(i, (failCount.get(i) ?? 0) + 1);
-        }
-      });
-    };
-
-    // background loader: keeps a PRELOAD_RANGE-wide band around the
-    // current scroll target fetched, re-centring continuously as the
-    // target moves. Bounded rather than the whole 348-frame sequence —
-    // fetching all ~90MB the instant the section comes near view was
-    // its own source of jank, on top of the memory question the LRU
-    // cap above already handles. Missing frames within the band are
-    // always fetched nearest-first, so reversals resolve as fast as
-    // possible.
-    const preloadAll = async (dev: DeviceKind, gen: number, total: number) => {
-      const CONCURRENCY = 4;
-      while (!cancelled && gen === generation) {
-        const lo = Math.max(0, currentTargetIndex - PRELOAD_RANGE);
-        const hi = Math.min(total - 1, currentTargetIndex + PRELOAD_RANGE);
-        const missing: number[] = [];
-        for (let i = lo; i <= hi; i++) {
-          if (
-            i % BACKGROUND_FRAME_STRIDE === 0 &&
-            !cache[i] &&
-            !inFlight.has(i) &&
-            (failCount.get(i) ?? 0) < MAX_FRAME_RETRIES
-          ) {
-            missing.push(i);
-          }
-        }
-        if (missing.length === 0) {
-          await new Promise((r) => setTimeout(r, 120));
-          continue;
-        }
-        missing.sort((a, b) => Math.abs(a - currentTargetIndex) - Math.abs(b - currentTargetIndex));
-        await Promise.all(missing.slice(0, CONCURRENCY).map((i) => ensureFrame(dev, i, gen)));
-      }
-    };
-
-    const sizeCanvas = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = Math.round(window.innerWidth * dpr);
-      canvas.height = Math.round(window.innerHeight * dpr);
-      canvas.style.width = window.innerWidth + "px";
-      canvas.style.height = window.innerHeight + "px";
-    };
-
-    const drawFrame = (index: number) => {
-      const frame = cache[index];
-      if (!frame) return;
-      const cw = canvas.width;
-      const ch = canvas.height;
-      const iw = frameWidth(frame);
-      const ih = frameHeight(frame);
-      const scale = Math.max(cw / iw, ch / ih);
-      const dw = iw * scale;
-      const dh = ih * scale;
-      ctx.fillStyle = "oklch(0.16 0.025 45)"; // --ink-background, exact site token
-      ctx.fillRect(0, 0, cw, ch);
-      ctx.drawImage(frame, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
-      lastDrawnIndex = index;
-      touch(index);
-    };
-
-    const drawNearestResidentFrame = (index: number) => {
-      for (let distance = 1; distance <= PRELOAD_RANGE; distance++) {
-        const before = index - distance;
-        const after = index + distance;
-        if (before >= 0 && cache[before]) {
-          if (before !== lastDrawnIndex) drawFrame(before);
-          return;
-        }
-        if (after < frameCount && cache[after]) {
-          if (after !== lastDrawnIndex) drawFrame(after);
-          return;
-        }
-      }
-    };
-
-    // getBoundingClientRect()/offsetTop force the browser to run layout
-    // if anything on the page has pending style changes — calling that
-    // every animation frame during a fast scroll, while framer-motion is
-    // simultaneously writing styles for whileInView reveals elsewhere on
-    // the page, is textbook layout thrashing and was the real source of
-    // the jank. Cache the container's position/height once (recomputed
-    // only on resize, not every frame) and drive the per-frame math off
-    // window.scrollY instead, which never forces layout.
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const deviceQuery = window.matchMedia("(max-width: 767px)");
+    let device: DeviceKind = deviceQuery.matches ? "mobile" : "desktop";
+    let duration = 0;
     let containerTop = 0;
     let containerHeight = 0;
-    const measureContainer = () => {
+    let rafId = 0;
+    let lastProgress = -1;
+    let desiredTime = 0;
+    let mediaStarted = false;
+
+    const sourceFor = (kind: DeviceKind) =>
+      kind === "mobile" ? "/videos/journey-mobile.mp4" : "/videos/journey-desktop.mp4";
+
+    const measure = () => {
       const rect = container.getBoundingClientRect();
       containerTop = rect.top + window.scrollY;
       containerHeight = rect.height;
     };
-    measureContainer();
 
-    const targetProgress = () => {
-      const top = containerTop - window.scrollY;
-      const total = containerHeight - window.innerHeight;
-      return Math.min(1, Math.max(0, -top / total));
+    const progress = () => {
+      const total = Math.max(1, containerHeight - window.innerHeight);
+      return Math.min(1, Math.max(0, (window.scrollY - containerTop) / total));
     };
 
-    const applyProgress = (p: number, gen: number) => {
-      const index = Math.min(Math.round(p * (frameCount - 1)), frameCount - 1);
-      currentTargetIndex = index;
-      if (cache[index]) {
-        if (index !== lastDrawnIndex) {
-          drawFrame(index);
-        }
-      } else {
-        // Paint the nearest already-decoded frame immediately instead of
-        // visibly freezing on a distant old frame while the exact target
-        // downloads. The exact target still jumps the queue.
-        drawNearestResidentFrame(index);
-        ensureFrame(device, index, gen);
-      }
-
-      // everything below is a pure function of p — if scroll hasn't
-      // actually moved since the last tick (the common case whenever
-      // the loop is spinning but the user isn't actively scrolling),
-      // skip re-writing identical values into the DOM every frame.
-      if (p === lastAppliedP) return;
-      lastAppliedP = p;
-
-      // this section sits between two of the site's cream-background
-      // sections (Statement above, Pledges below); a hard cut straight
-      // into full-screen dark footage read as a pasted-in clip rather
-      // than part of the page. Fading from the site's own cream token
-      // right at the very start, and dissolving into it right at the
-      // very end, makes the boundary feel intentional instead of a cut
-      // — without touching the footage itself, just the site's own UI.
-      if (entryFadeRef.current)
-        entryFadeRef.current.style.opacity = String(1 - smoothstep(Math.min(p / 0.06, 1)));
-
+    const updateCaptions = (value: number) => {
       const fade = 0.045;
-      let activeIdx = 0;
-      steps.forEach((step, i) => {
-        const el = captionRefs.current[i];
+      let activeIndex = 0;
+
+      steps.forEach((step, index) => {
+        const element = captionRefs.current[index];
         let opacity = 0;
-        if (p >= step.enter - fade && p <= step.enter)
-          opacity = smoothstep((p - (step.enter - fade)) / fade);
-        else if (p > step.enter && p < step.leave) opacity = 1;
-        else if (p >= step.leave && p <= step.leave + fade)
-          opacity = 1 - smoothstep((p - step.leave) / fade);
-        if (el) {
-          el.style.opacity = String(opacity);
-          el.style.transform = `translateY(${(1 - opacity) * 14}px)`;
-          el.style.pointerEvents = opacity > 0.5 ? "auto" : "none";
+        if (value >= step.enter - fade && value <= step.enter) {
+          opacity = smoothstep((value - (step.enter - fade)) / fade);
+        } else if (value > step.enter && value < step.leave) {
+          opacity = 1;
+        } else if (value >= step.leave && value <= step.leave + fade) {
+          opacity = 1 - smoothstep((value - step.leave) / fade);
         }
-        if (p >= step.enter - fade && p < step.leave + fade) activeIdx = i;
+        if (element) {
+          element.style.opacity = String(opacity);
+          element.style.transform = `translateY(${(1 - opacity) * 14}px)`;
+          element.style.pointerEvents = opacity > 0.5 ? "auto" : "none";
+        }
+        if (value >= step.enter - fade && value < step.leave + fade) activeIndex = index;
       });
 
-      if (barFillRef.current) barFillRef.current.style.width = `${p * 100}%`;
-      if (counterRef.current)
-        counterRef.current.textContent = `${steps[activeIdx].n} / 06 — ${steps[activeIdx].title}`;
-    };
-
-    const loop = (gen: number) => {
-      const top = containerTop - window.scrollY;
-      const bottom = top + containerHeight;
-      const nearViewport = top < window.innerHeight * 1.5 && bottom > -window.innerHeight * 0.5;
-      if (nearViewport) {
-        if (released) {
-          // scrolled back in after being released — reload from scratch;
-          // start() bumps the generation and schedules its own loop
-          released = false;
-          start(device);
-          return;
-        }
-        applyProgress(targetProgress(), gen);
-      } else if (!released && frameCount > 0) {
-        // the user has moved well past this section — free every
-        // resident frame (already capped at CACHE_CAP, but zero is
-        // better than that for the rest of the page visit). Scrolling
-        // back triggers a fresh load above.
-        released = true;
-        for (const frame of cache) {
-          if (frame && "close" in frame) frame.close();
-        }
-        cache = [];
-        residentCount = 0;
-        lastAccess = [];
-        inFlight.clear();
-        failCount.clear();
-        lastDrawnIndex = -1;
+      if (entryFadeRef.current) {
+        entryFadeRef.current.style.opacity = String(1 - smoothstep(Math.min(value / 0.06, 1)));
       }
-      if (gen === generation) rafId = requestAnimationFrame(() => loop(gen));
+      if (barFillRef.current) barFillRef.current.style.width = `${value * 100}%`;
+      if (counterRef.current) {
+        counterRef.current.textContent = `${steps[activeIndex].n} / 06 — ${steps[activeIndex].title}`;
+      }
     };
 
-    const onResize = () => {
-      sizeCanvas();
-      measureContainer();
-      if (lastDrawnIndex >= 0) drawFrame(lastDrawnIndex);
+    const render = () => {
+      rafId = 0;
+      const value = reducedMotion ? 1 : progress();
+      if (Math.abs(value - lastProgress) < 0.0005) return;
+      lastProgress = value;
+      updateCaptions(value);
+
+      if (duration > 0) {
+        desiredTime = Math.min(duration - 0.04, value * duration);
+        if (!video.seeking && Math.abs(video.currentTime - desiredTime) > 0.035) {
+          video.currentTime = desiredTime;
+        }
+      }
     };
-    sizeCanvas();
-    window.addEventListener("resize", onResize);
 
-    // starts (or restarts, on a device switch) the whole pipeline for
-    // whichever set is currently active
-    const start = async (dev: DeviceKind) => {
-      const gen = ++generation;
-      cache = [];
-      residentCount = 0;
-      lastAccess = [];
-      inFlight.clear();
-      failCount.clear();
-      lastDrawnIndex = -1;
-      lastAppliedP = -1;
-      frameCount = 0;
+    const requestRender = () => {
+      if (!rafId) rafId = requestAnimationFrame(render);
+    };
 
-      const manifestPromise = fetch(`${BASE_PATH}/${dev}/manifest.json`)
-        .then((res) => res.json())
-        .catch(() => null);
-      // frame 0's index doesn't depend on the manifest, so kick off its
-      // fetch immediately instead of waiting on the manifest round-trip
-      // first — that extra sequential RTT was delaying first paint,
-      // especially noticeable on higher-latency mobile connections.
-      const frame0Promise = ensureFrame(dev, 0, gen);
+    const loadMedia = () => {
+      if (mediaStarted) return;
+      mediaStarted = true;
+      video.src = sourceFor(device);
+      video.load();
+    };
 
-      let count = 1;
-      const data = await manifestPromise;
-      if (data && typeof data.count === "number" && data.count > 0) count = data.count;
-      if (cancelled || gen !== generation) return;
-      frameCount = count;
+    const onMetadata = () => {
+      duration = Number.isFinite(video.duration) ? video.duration : 0;
+      desiredTime = progress() * duration;
+      video.currentTime = Math.min(Math.max(0, duration - 0.04), desiredTime);
 
-      if (reduce) {
-        const lastIdx = frameCount - 1;
-        await ensureFrame(dev, lastIdx, gen);
-        if (cancelled || gen !== generation) return;
-        if (cache[lastIdx]) drawFrame(lastIdx);
-        captionRefs.current.forEach((el) => {
-          if (el) el.style.opacity = "1";
+      // Prime iOS/Safari's decoder. The video remains scroll-controlled.
+      void video
+        .play()
+        .then(() => {
+          video.pause();
+          video.currentTime = desiredTime;
+        })
+        .catch(() => {
+          video.currentTime = desiredTime;
         });
-        return;
-      }
-
-      await frame0Promise;
-      if (cancelled || gen !== generation) return;
-      if (cache[0]) drawFrame(0);
-
-      preloadAll(dev, gen, frameCount);
-
-      applyProgress(targetProgress(), gen);
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => loop(gen));
+      requestRender();
     };
 
-    // this section sits well below the fold — fetching its frames
-    // immediately on mount would compete with the hero's video/fonts for
-    // bandwidth on the initial page load. Instead wait until the user is
-    // actually approaching it before the pipeline starts.
-    let started = false;
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (started || cancelled) return;
-        if (entries.some((e) => e.isIntersecting)) {
-          started = true;
-          io.disconnect();
-          start(device);
-        }
-      },
-      { rootMargin: "0px 0px 150% 0px" },
-    );
-    io.observe(container);
-
-    // rotating a phone (or resizing past the breakpoint) switches the
-    // active frame set safely: invalidate the old generation, drop its
-    // cache, and restart the pipeline for the new device kind. If the
-    // pipeline hasn't started yet, just record the new device — the
-    // eventual intersection-triggered start() will pick it up.
-    const deviceQuery = window.matchMedia("(max-width: 767px)");
     const onDeviceChange = () => {
       const next: DeviceKind = deviceQuery.matches ? "mobile" : "desktop";
       if (next === device) return;
       device = next;
-      if (!started) return;
-      cancelAnimationFrame(rafId);
-      start(device);
+      duration = 0;
+      lastProgress = -1;
+      if (mediaStarted) {
+        video.src = sourceFor(device);
+        video.load();
+      }
     };
+
+    const onSeeked = () => {
+      if (duration > 0 && Math.abs(video.currentTime - desiredTime) > 0.05) {
+        video.currentTime = desiredTime;
+      }
+    };
+
+    const onResize = () => {
+      measure();
+      requestRender();
+    };
+
+    measure();
+    updateCaptions(reducedMotion ? 1 : progress());
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          loadMedia();
+          requestRender();
+        }
+      },
+      { rootMargin: "100% 0px" },
+    );
+
+    observer.observe(container);
+    video.addEventListener("loadedmetadata", onMetadata);
+    video.addEventListener("seeked", onSeeked);
+    window.addEventListener("scroll", requestRender, { passive: true });
+    window.addEventListener("resize", onResize);
     deviceQuery.addEventListener("change", onDeviceChange);
 
     return () => {
-      cancelled = true;
-      generation++;
       cancelAnimationFrame(rafId);
-      io.disconnect();
+      observer.disconnect();
+      video.removeEventListener("loadedmetadata", onMetadata);
+      video.removeEventListener("seeked", onSeeked);
+      window.removeEventListener("scroll", requestRender);
       window.removeEventListener("resize", onResize);
       deviceQuery.removeEventListener("change", onDeviceChange);
-      for (const frame of cache) {
-        if (frame && "close" in frame) frame.close();
-      }
     };
-    // `steps` is intentionally read from the closure captured at mount —
-    // see the locale comment above, a language switch always remounts
-    // this component fresh
+    // Language switching navigates and remounts the page.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <section id="journey" aria-label="The journey, step by step">
-      <div ref={containerRef} className="relative h-[600vh]">
-        <div className="sticky top-0 h-screen overflow-hidden">
-          <canvas ref={canvasRef} className="absolute inset-0" aria-hidden="true" />
+      <div ref={containerRef} className="relative h-[480vh] sm:h-[520vh]">
+        <div className="sticky top-0 h-screen overflow-hidden bg-ink-background">
+          <picture>
+            <source
+              media="(max-width: 767px)"
+              srcSet="/scrollytelling/hero/mobile/frame_00001.webp"
+            />
+            <img
+              src="/scrollytelling/hero/desktop/frame_00001.webp"
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          </picture>
+          <video
+            ref={videoRef}
+            muted
+            playsInline
+            preload="auto"
+            disablePictureInPicture
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
 
-          {/* entry: a brief cream fade at the very start, echoing the
-              cream Statement section just above, so the section feels
-              like it emerges from the page rather than cutting into it.
-              (No equivalent exit fade: the final caption stays on
-              screen right through the end — that's the conversion
-              moment — and washing the background toward cream while its
-              dark card is still up would clash rather than help.) */}
           <div
             ref={entryFadeRef}
-            className="absolute inset-0 pointer-events-none"
+            className="pointer-events-none absolute inset-0"
             style={{
-              background: "linear-gradient(180deg, oklch(0.975 0.012 85) 0%, transparent 55%)",
+              background:
+                "linear-gradient(180deg, #f7f0e5 0%, rgba(247,240,229,0.88) 18%, rgba(90,31,43,0.2) 58%, transparent 100%)",
               opacity: 1,
             }}
           />
 
-          {/* just enough scrim at the very bottom for the band to sit on;
-              the footage stays otherwise untouched/undimmed. Uses the
-              same ink-background token as the rest of the site's dark
-              sections (Voices/Testimonials/CTA) so this reads as part
-              of that family rather than its own isolated color. */}
           <div
-            className="absolute inset-x-0 bottom-0 h-[45vh] pointer-events-none"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-[45vh]"
             style={{
               background:
-                "linear-gradient(180deg, transparent 0%, oklch(0.16 0.025 45 / 0.5) 55%, oklch(0.16 0.025 45 / 0.85) 100%)",
+                "linear-gradient(180deg, transparent 0%, rgba(90,31,43,0.5) 52%, rgba(50,16,24,0.92) 100%)",
             }}
           />
 
-          {/* top progress bar: a thin gold line that fills across the
-              full 600vh scroll, so "how far through" is always visible */}
-          <div className="absolute top-0 inset-x-0 h-[3px] bg-gold/15">
+          <div className="absolute inset-x-0 top-0 h-[3px] bg-gold/15">
             <span ref={barFillRef} className="block h-full bg-gold-light" style={{ width: "0%" }} />
           </div>
           <div className="absolute top-4 right-5 lg:right-8">
             <span
               ref={counterRef}
-              className="font-mono text-[10px] tracking-[0.18em] text-ink-foreground/70 whitespace-nowrap"
+              className="whitespace-nowrap font-mono text-[10px] tracking-[0.18em] text-ink-foreground/70"
             >
               {steps[0].n} / 06 — {steps[0].title}
             </span>
           </div>
 
-          {/* caption card: small and translucent (frosted glass, like a
-              macOS/iOS control-centre widget) on mobile, growing into a
-              fuller band on larger screens. Legibility comes from the
-              blur + tint combination, not from an opaque fill. */}
-          {steps.map((step, i) => (
+          {steps.map((step, index) => (
             <div
               key={step.n}
-              ref={(el) => {
-                captionRefs.current[i] = el;
+              ref={(element) => {
+                captionRefs.current[index] = element;
               }}
               className="absolute inset-x-0 bottom-0 transition-none"
               style={{ opacity: 0 }}
             >
               <div className="mx-auto max-w-5xl px-4 pb-5 sm:px-6 sm:pb-8 lg:px-16 lg:pb-14">
                 <div
-                  className="rounded-xl px-4 py-3.5 sm:rounded-2xl sm:px-6 sm:py-5 lg:px-10 lg:py-8"
+                  className="scrolly-caption rounded-xl px-4 py-3.5 sm:rounded-2xl sm:px-6 sm:py-5 lg:px-10 lg:py-8"
                   style={{
-                    background: "oklch(0.16 0.025 45 / 0.55)",
-                    backdropFilter: "blur(24px) saturate(140%)",
-                    WebkitBackdropFilter: "blur(24px) saturate(140%)",
-                    border: "1px solid rgba(184,134,62,0.28)",
-                    boxShadow: "0 12px 32px rgba(0,0,0,0.35)",
+                    background: "rgba(74, 21, 35, 0.72)",
+                    backdropFilter: "blur(18px) saturate(125%)",
+                    WebkitBackdropFilter: "blur(18px) saturate(125%)",
+                    border: "1px solid rgba(194,155,92,0.34)",
+                    boxShadow: "0 16px 40px rgba(42,12,20,0.42)",
                   }}
                 >
                   <div className="flex flex-col gap-2.5 sm:gap-4 lg:flex-row lg:items-end lg:gap-10">
@@ -732,14 +375,6 @@ export function ScrollytellingSection() {
                         {step.tag}
                       </span>
                     </div>
-                    {!step.final && (
-                      <a
-                        href="#contact"
-                        className="hidden shrink-0 items-center justify-center self-end rounded-full bg-ink-foreground px-6 h-11 text-sm font-medium text-ink-background transition-colors hover:bg-white lg:inline-flex"
-                      >
-                        {t.enquiry}
-                      </a>
-                    )}
                   </div>
 
                   {step.final && (
@@ -749,11 +384,11 @@ export function ScrollytellingSection() {
                           href="#contact"
                           className="inline-flex h-9 items-center justify-center rounded-full bg-ink-foreground px-5 text-xs font-medium text-ink-background transition-colors hover:bg-white sm:h-12 sm:px-8 sm:text-sm"
                         >
-                          {t.begin}
+                          {finalCta[locale]}
                         </a>
                       </div>
-                      <div className="mt-3 grid grid-cols-2 gap-2 border-t border-ink-border pt-3 sm:mt-6 sm:gap-4 sm:pt-6 sm:grid-cols-4">
-                        {CLOSING_TAGS.map((tag) => (
+                      <div className="mt-3 grid grid-cols-2 gap-2 border-t border-ink-border pt-3 sm:mt-6 sm:grid-cols-4 sm:gap-4 sm:pt-6">
+                        {closingTags.map((tag) => (
                           <div
                             key={tag.label}
                             className="flex flex-col items-center gap-1 text-center sm:gap-2"

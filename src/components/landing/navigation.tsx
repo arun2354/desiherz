@@ -44,7 +44,9 @@ const LANGUAGES = [
 // per-locale meta/hreflang/schema on the very first response.
 function LanguageSwitcher({ locale, compact }: { locale: "en" | "de"; compact: boolean }) {
   return (
-    <div className={`flex items-center gap-1 font-mono text-xs tracking-wide ${compact ? "text-foreground/70" : "text-white/70"}`}>
+    <div
+      className={`flex items-center gap-1 font-mono text-xs tracking-wide ${compact ? "text-foreground/70" : "text-white/70"}`}
+    >
       {LANGUAGES.map((lang, i) => (
         <span key={lang.code} className="flex items-center gap-1">
           {i > 0 && <span aria-hidden="true">/</span>}
@@ -105,7 +107,9 @@ export function Navigation() {
                 key={link.name}
                 href={link.href}
                 className={`text-sm font-medium transition-colors duration-300 relative group ${
-                  isScrolled ? "text-foreground hover:text-gold" : "text-white hover:text-gold-light"
+                  isScrolled
+                    ? "text-foreground hover:text-gold"
+                    : "text-white hover:text-gold-light"
                 }`}
               >
                 {link.name}
@@ -194,7 +198,7 @@ function Wordmark({ compact }: { compact: boolean }) {
           compact ? "text-xl text-foreground" : "text-2xl text-white"
         }`}
       >
-        Desi<span className={compact ? "text-rose" : "text-[#eca8d6]"}>♥</span>Herz
+        Desi<span className={compact ? "text-rose" : "text-[#b76e79]"}>♥</span>Herz
       </span>
     </a>
   );

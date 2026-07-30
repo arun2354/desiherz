@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocale } from "@/lib/use-locale";
 
 const filmTimings = [
-  { scene: "I.", film: "/videos/founder.mp4" },
-  { scene: "II.", film: "/videos/spokesperson.mp4" },
+  { scene: "I.", film: "/videos/founder-lite.mp4" },
+  { scene: "II.", film: "/videos/spokesperson-lite.mp4" },
 ] as const;
 
 const copy = {

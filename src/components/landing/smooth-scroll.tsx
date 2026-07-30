@@ -22,7 +22,11 @@ if (typeof window !== "undefined") {
  */
 export function SmoothScroll() {
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const touchFirst =
+      window.matchMedia("(pointer: coarse)").matches ||
+      window.matchMedia("(max-width: 767px)").matches;
+    if (reducedMotion || touchFirst) return;
 
     const lenis = new Lenis({
       duration: 1.1,
