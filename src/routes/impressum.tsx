@@ -4,7 +4,10 @@ export const Route = createFileRoute("/impressum")({
   head: () => ({
     meta: [
       { title: "Impressum — DesiHerz" },
-      { name: "description", content: "Legal notice (Impressum) for DesiHerz, a private matrimony service operated by Rahul und Kapil Kumar eGbR in Raunheim, Germany." },
+      {
+        name: "description",
+        content: "Anbieterkennzeichnung für DesiHerz, ein Angebot der Rahul und Kapil Kumar eGbR.",
+      },
       { name: "robots", content: "noindex, follow" },
     ],
     links: [{ rel: "canonical", href: "https://desiherz.de/impressum" }],
@@ -15,48 +18,67 @@ export const Route = createFileRoute("/impressum")({
 function Impressum() {
   return (
     <main className="legal-page">
-      <Link to="/" className="legal-back">← Back to DesiHerz</Link>
+      <Link to="/" className="legal-back">
+        ← Zurück zu DesiHerz
+      </Link>
       <h1>Impressum</h1>
 
-      <h2>Angaben gemäß § 5 TMG</h2>
+      <h2>Angaben gemäß § 5 DDG</h2>
       <p>
-        DesiHerz ist eine Initiative/Projekt von Rahul und Kapil Kumar eGbR<br />
-        Ludwig Str. 17<br />
-        65479 Raunheim<br />
-        Germany
+        DesiHerz
+        <br />
+        Ein Angebot der Rahul und Kapil Kumar eGbR
+        <br />
+        Burggraffenlacher Weg 20
+        <br />
+        65428 Rüsselsheim am Main
+        <br />
+        Deutschland
       </p>
+
+      <h2>Vertreten durch</h2>
+      <p>Rahul Kumar und Kapil Kumar, Gesellschafter der eGbR</p>
 
       <h2>Kontakt</h2>
       <p>
-        Telefon: 080000 60452<br />
-        E-Mail: info@pflege-raunheim.de
-      </p>
-
-      <h2>Vertretungsberechtigt</h2>
-      <p>
-        Rahul Kumar, Kapil Kumar
+        Telefon: <a href="tel:+4961429421212">06142 9421212</a>
         <br />
-        <em>[Bitte bestätigen: sind beide Gesellschafter einzeln vertretungsberechtigt?]</em>
+        Telefax: 06142 9421214
+        <br />
+        E-Mail: <a href="mailto:info@goethecare.de">info@goethecare.de</a>
       </p>
 
-      <h2>Registereintrag</h2>
+      <h2>Umsatzsteuer-Identifikationsnummer</h2>
+      <p>Umsatzsteuer-Identifikationsnummer gemäß § 27a UStG: DE 815623156</p>
+
+      <h2>Verantwortlich für journalistisch-redaktionelle Inhalte</h2>
       <p>
-        [Gesellschaftsregister und Registernummer der eGbR eintragen]<br />
-        [Falls zutreffend] Umsatzsteuer-ID gemäß § 27a UStG: [VAT ID]
+        Rahul Kumar und Kapil Kumar
+        <br />
+        Burggraffenlacher Weg 20
+        <br />
+        65428 Rüsselsheim am Main
       </p>
 
-      <h2>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
+      <h2>Verbraucherstreitbeilegung</h2>
       <p>
-        Rahul Kumar / Kapil Kumar<br />
-        Ludwig Str. 17, 65479 Raunheim
+        Wir sind nicht verpflichtet und nicht bereit, an einem Streitbeilegungsverfahren vor einer
+        Verbraucherschlichtungsstelle teilzunehmen.
       </p>
 
-      <h2>Streitschlichtung</h2>
+      <h2>Haftung für Inhalte und Links</h2>
       <p>
-        Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS)
-        bereit: https://ec.europa.eu/consumers/odr/. Wir sind nicht verpflichtet und nicht
-        bereit, an einem Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle
-        teilzunehmen.
+        Wir erstellen die Inhalte dieser Website mit größtmöglicher Sorgfalt. Für die Inhalte
+        externer Seiten, auf die wir verlinken, sind ausschließlich deren Betreiber verantwortlich.
+        Sollten uns konkrete Rechtsverletzungen bekannt werden, entfernen wir entsprechende Links
+        unverzüglich.
+      </p>
+
+      <h2>Urheberrecht</h2>
+      <p>
+        Die durch uns erstellten Inhalte und Werke auf dieser Website unterliegen dem deutschen
+        Urheberrecht. Jede Verwertung außerhalb der gesetzlichen Grenzen bedarf unserer vorherigen
+        schriftlichen Zustimmung.
       </p>
     </main>
   );

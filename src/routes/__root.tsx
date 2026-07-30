@@ -51,7 +51,7 @@ function CriticalLoader() {
   return (
     <div
       aria-hidden="true"
-      className="fixed inset-0 z-[999] flex items-center justify-center bg-[#140c08] transition-opacity duration-500 ease-out"
+      className="fixed inset-0 z-[999] flex items-center justify-center bg-[#2a0c14] transition-opacity duration-500 ease-out"
       style={{ opacity: ready ? 0 : 1, pointerEvents: ready ? "none" : "auto" }}
     >
       <BrandMark size={40} />
@@ -136,7 +136,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:site_name", content: "DesiHerz" },
       { property: "og:locale", content: "en_DE" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "theme-color", content: "#140c08" },
+      { name: "theme-color", content: "#2a0c14" },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
@@ -164,7 +164,10 @@ function RootShell({ children }: { children: ReactNode }) {
   // of the marketing site the visitor came from, so they're "de" even
   // though they're not under the /de prefix.
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const lang = pathname.startsWith("/de") || pathname === "/impressum" || pathname === "/datenschutz" ? "de" : "en";
+  const lang =
+    pathname.startsWith("/de") || pathname === "/impressum" || pathname === "/datenschutz"
+      ? "de"
+      : "en";
 
   return (
     <html lang={lang}>
