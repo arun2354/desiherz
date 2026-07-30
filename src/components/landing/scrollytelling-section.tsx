@@ -124,6 +124,10 @@ export function ScrollytellingSection() {
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const deviceQuery = window.matchMedia("(max-width: 767px)");
+    // Mobile uses the native, CSS-only story below. Do not install any scroll
+    // listeners or seek a video while the user is touching the page.
+    if (deviceQuery.matches) return;
+
     let device: DeviceKind = deviceQuery.matches ? "mobile" : "desktop";
     let duration = 0;
     let containerTop = 0;
@@ -332,7 +336,103 @@ export function ScrollytellingSection() {
 
   return (
     <section id="journey" aria-label="The journey, step by step" className="touch-pan-y">
-      <div ref={containerRef} className="relative h-[480svh] sm:h-[520vh]">
+      <div className="relative bg-ink-background md:hidden">
+        <div className="sticky top-0 h-[100svh] overflow-hidden">
+          <picture>
+            <source
+              media="(max-width: 767px)"
+              srcSet="/scrollytelling/hero/mobile/frame_00001.webp"
+            />
+            <img
+              src="/scrollytelling/hero/desktop/frame_00001.webp"
+              alt=""
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+            />
+          </picture>
+          <video
+            src="/videos/journey-mobile.mp4"
+            muted
+            autoPlay
+            loop
+            playsInline
+            preload="metadata"
+            disablePictureInPicture
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+          />
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(42,12,20,0.2) 0%, transparent 36%, rgba(42,12,20,0.88) 100%)",
+            }}
+          />
+        </div>
+
+        <div className="relative -mt-[100svh]">
+          {steps.map((step) => (
+            <article key={step.n} className="flex min-h-[82svh] items-end px-4 pb-6 pt-24">
+              <div className="w-full rounded-xl border border-gold/30 bg-[#4a1523]/90 px-4 py-4 shadow-[0_16px_40px_rgba(42,12,20,0.32)]">
+                <div className="mb-3 flex items-baseline justify-between border-b border-ink-border/60 pb-3">
+                  <span className="font-display text-3xl leading-none text-gold-light">
+                    {step.n}
+                  </span>
+                  <span className="font-mono text-[9px] tracking-[0.18em] text-ink-foreground/55">
+                    {step.n} / 06
+                  </span>
+                </div>
+                <h3 className="mb-1 font-display text-2xl leading-tight text-ink-foreground">
+                  {step.title}
+                </h3>
+                <p className="mb-2 text-sm leading-relaxed text-ink-foreground/90">{step.line}</p>
+                <span className="inline-flex items-center gap-1.5 font-mono text-[9px] tracking-[0.12em] text-gold-light">
+                  <span>✦</span>
+                  {step.tag}
+                </span>
+
+                {step.final && (
+                  <>
+                    <div className="mt-5">
+                      <a
+                        href="#contact"
+                        className="inline-flex h-11 items-center justify-center rounded-full bg-ink-foreground px-7 text-sm font-medium text-ink-background"
+                      >
+                        {finalCta[locale]}
+                      </a>
+                    </div>
+                    <div className="mt-5 grid grid-cols-2 gap-3 border-t border-ink-border pt-4">
+                      {closingTags.map((tag) => (
+                        <div
+                          key={tag.label}
+                          className="flex flex-col items-center gap-1.5 text-center"
+                        >
+                          <svg
+                            viewBox="0 0 24 24"
+                            className="h-4 w-4 text-gold-light"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth={1.4}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d={tag.d} />
+                          </svg>
+                          <span className="max-w-[110px] text-[9px] leading-tight text-ink-foreground/65">
+                            {tag.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+
+      <div ref={containerRef} className="relative hidden h-[520vh] md:block">
         <div className="sticky top-0 h-[100svh] overflow-hidden bg-ink-background md:h-screen">
           <picture>
             <source
