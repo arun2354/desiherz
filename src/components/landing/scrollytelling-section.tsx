@@ -111,7 +111,7 @@ export function ScrollytellingSection() {
   }));
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const captionRefs = useRef<(HTMLDivElement | null)[]>([]);
   const barFillRef = useRef<HTMLSpanElement>(null);
   const counterRef = useRef<HTMLSpanElement>(null);
@@ -119,39 +119,71 @@ export function ScrollytellingSection() {
 
   useEffect(() => {
     const container = containerRef.current;
-    const video = videoRef.current;
-    if (!container || !video) return;
+    const canvas = canvasRef.current;
+    const context = canvas?.getContext("2d", { alpha: false });
+    if (!container || !canvas || !context) return;
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const deviceQuery = window.matchMedia("(max-width: 767px)");
-    // Mobile uses the native, CSS-only story below. Do not install any scroll
-    // listeners or seek a video while the user is touching the page.
-    if (deviceQuery.matches) return;
-
     let device: DeviceKind = deviceQuery.matches ? "mobile" : "desktop";
-    let duration = 0;
     let containerTop = 0;
     let containerHeight = 0;
     let viewportHeight = window.innerHeight;
     let viewportWidth = window.innerWidth;
     let rafId = 0;
     let lastProgress = -1;
-    let desiredTime = 0;
-    let mediaStarted = false;
-    let seekTimer = 0;
     let activeStepIndex = -1;
     let lastEntryOpacity = -1;
+    let targetFrame = 1;
+    let renderedFrame = -1;
+    let loadGeneration = 0;
+    let useCounter = 0;
+    let activeLoads = 0;
+    let loadQueue: number[] = [];
+    const queuedFrames = new Set<number>();
+    const loadingFrames = new Set<number>();
+    const decodedFrames = new Map<number, { bitmap: ImageBitmap; usedAt: number }>();
     const lastCaptionOpacities = new Array(steps.length).fill(-1);
 
-    const framesPerSecond = () => (device === "mobile" ? 10 : 24);
+    const frameStride = () => (device === "mobile" ? 3 : 2);
+    const frameRoot = () => `/scrollytelling/hero/${device}`;
+    const maxDecodedFrames = () => (device === "mobile" ? 12 : 16);
+    const maxConcurrentLoads = () => (device === "mobile" ? 2 : 3);
+    const sourceAspect = () => (device === "mobile" ? 1080 / 1920 : 1920 / 1080);
+    const framePath = (frame: number) =>
+      `${frameRoot()}/frame_${String(frame).padStart(5, "0")}.webp`;
 
-    const sourceFor = (kind: DeviceKind) =>
-      kind === "mobile" ? "/videos/journey-mobile.mp4" : "/videos/journey-desktop.mp4";
+    const sourceFrameFor = (value: number) => {
+      const stride = frameStride();
+      const sampledIndex = Math.round((value * 347) / stride);
+      return Math.min(348, sampledIndex * stride + 1);
+    };
+
+    const closeDecodedFrames = () => {
+      loadGeneration += 1;
+      decodedFrames.forEach(({ bitmap }) => bitmap.close());
+      decodedFrames.clear();
+      loadQueue = [];
+      queuedFrames.clear();
+      renderedFrame = -1;
+      canvas.style.opacity = "0";
+    };
+
+    const sizeCanvas = () => {
+      const scale = Math.min(window.devicePixelRatio || 1, device === "mobile" ? 1.35 : 1.25);
+      const width = Math.max(1, Math.round(viewportWidth * scale));
+      const height = Math.max(1, Math.round(viewportHeight * scale));
+      if (canvas.width === width && canvas.height === height) return;
+      closeDecodedFrames();
+      canvas.width = width;
+      canvas.height = height;
+    };
 
     const measure = () => {
       const rect = container.getBoundingClientRect();
       containerTop = rect.top + window.scrollY;
       containerHeight = rect.height;
+      sizeCanvas();
     };
 
     const progress = () => {
@@ -196,72 +228,145 @@ export function ScrollytellingSection() {
       }
     };
 
-    const commitSeek = () => {
-      seekTimer = 0;
-      if (duration <= 0 || video.seeking) return;
-      const fps = framesPerSecond();
-      if (Math.abs(video.currentTime - desiredTime) > Math.max(0.05, 0.55 / fps)) {
-        video.currentTime = desiredTime;
+    const trimDecodedFrames = () => {
+      const maximum = maxDecodedFrames();
+      if (decodedFrames.size <= maximum) return;
+      const removable = [...decodedFrames.entries()]
+        .filter(([frame]) => frame !== targetFrame && frame !== renderedFrame)
+        .sort((a, b) => a[1].usedAt - b[1].usedAt);
+      while (decodedFrames.size > maximum && removable.length > 0) {
+        const [frame, decoded] = removable.shift()!;
+        decoded.bitmap.close();
+        decodedFrames.delete(frame);
       }
     };
 
-    const scheduleMobileSeek = () => {
-      window.clearTimeout(seekTimer);
-      seekTimer = window.setTimeout(commitSeek, 140);
+    const drawFrame = (frame: number) => {
+      const decoded = decodedFrames.get(frame);
+      if (!decoded) return false;
+      decoded.usedAt = ++useCounter;
+      const { bitmap } = decoded;
+      const x = Math.round((canvas.width - bitmap.width) / 2);
+      const y = Math.round((canvas.height - bitmap.height) / 2);
+      context.fillStyle = "#2a0c14";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(bitmap, x, y);
+      canvas.style.opacity = "1";
+      canvas.dataset.frame = String(frame);
+      renderedFrame = frame;
+      return true;
+    };
+
+    const drawNearestFrame = () => {
+      if (drawFrame(targetFrame)) return;
+      let nearest = -1;
+      let nearestDistance = Number.POSITIVE_INFINITY;
+      decodedFrames.forEach((_, frame) => {
+        const distance = Math.abs(frame - targetFrame);
+        if (distance < nearestDistance) {
+          nearest = frame;
+          nearestDistance = distance;
+        }
+      });
+      if (nearest > 0) drawFrame(nearest);
+    };
+
+    const pumpFrameQueue = () => {
+      while (activeLoads < maxConcurrentLoads() && loadQueue.length > 0) {
+        const frame = loadQueue.shift()!;
+        queuedFrames.delete(frame);
+        if (decodedFrames.has(frame) || loadingFrames.has(frame)) continue;
+
+        const generation = loadGeneration;
+        const aspect = sourceAspect();
+        const resizeWidth = Math.ceil(Math.max(canvas.width, canvas.height * aspect));
+        const resizeHeight = Math.ceil(Math.max(canvas.height, canvas.width / aspect));
+        activeLoads += 1;
+        loadingFrames.add(frame);
+
+        void fetch(framePath(frame), { cache: "force-cache" })
+          .then((response) => {
+            if (!response.ok) throw new Error(`Frame ${frame} failed to load`);
+            return response.blob();
+          })
+          .then((blob) =>
+            createImageBitmap(blob, {
+              resizeWidth,
+              resizeHeight,
+              resizeQuality: "medium",
+            }),
+          )
+          .then((bitmap) => {
+            if (generation !== loadGeneration) {
+              bitmap.close();
+              return;
+            }
+            decodedFrames.set(frame, { bitmap, usedAt: ++useCounter });
+            trimDecodedFrames();
+            if (Math.abs(frame - targetFrame) <= frameStride()) drawNearestFrame();
+          })
+          .catch(() => {
+            // The poster remains visible if a network or decoder request fails.
+          })
+          .finally(() => {
+            activeLoads -= 1;
+            loadingFrames.delete(frame);
+            pumpFrameQueue();
+          });
+      }
+    };
+
+    const queueFrame = (frame: number, urgent = false) => {
+      if (decodedFrames.has(frame) || loadingFrames.has(frame) || queuedFrames.has(frame)) return;
+      queuedFrames.add(frame);
+      if (urgent) loadQueue.unshift(frame);
+      else loadQueue.push(frame);
+      pumpFrameQueue();
+    };
+
+    const pruneFrameQueue = () => {
+      const stride = frameStride();
+      const keyFrames = new Set(
+        steps.map((step) => sourceFrameFor(Math.min(1, (step.enter + step.leave) / 2))),
+      );
+      loadQueue = loadQueue.filter((frame) => {
+        const keep = keyFrames.has(frame) || Math.abs(frame - targetFrame) <= stride * 4;
+        if (!keep) queuedFrames.delete(frame);
+        return keep;
+      });
+    };
+
+    const requestTargetFrames = () => {
+      const stride = frameStride();
+      pruneFrameQueue();
+      queueFrame(targetFrame, true);
+      queueFrame(Math.max(1, targetFrame - stride), true);
+      queueFrame(Math.min(348, targetFrame + stride), true);
+      queueFrame(Math.max(1, targetFrame - stride * 2));
+      queueFrame(Math.min(348, targetFrame + stride * 2));
     };
 
     const render = () => {
       rafId = 0;
       const value = reducedMotion ? 1 : progress();
-      const progressThreshold = device === "mobile" ? 0.0015 : 0.0005;
+      const progressThreshold = device === "mobile" ? 0.001 : 0.0005;
       if (Math.abs(value - lastProgress) < progressThreshold) return;
       lastProgress = value;
       updateCaptions(value);
-
-      if (duration > 0) {
-        const fps = framesPerSecond();
-        const exactTime = Math.min(duration - 0.04, value * duration);
-        desiredTime = Math.round(exactTime * fps) / fps;
-        if (device === "mobile") {
-          scheduleMobileSeek();
-        } else if (
-          !video.seeking &&
-          Math.abs(video.currentTime - desiredTime) > Math.max(0.035, 0.45 / fps)
-        ) {
-          video.currentTime = desiredTime;
-        }
-      }
+      targetFrame = sourceFrameFor(value);
+      drawNearestFrame();
+      requestTargetFrames();
     };
 
     const requestRender = () => {
       if (!rafId) rafId = requestAnimationFrame(render);
     };
 
-    const loadMedia = () => {
-      if (mediaStarted) return;
-      mediaStarted = true;
-      video.src = sourceFor(device);
-      video.load();
-    };
-
-    const onMetadata = () => {
-      duration = Number.isFinite(video.duration) ? video.duration : 0;
-      desiredTime = progress() * duration;
-      video.currentTime = Math.min(Math.max(0, duration - 0.04), desiredTime);
-
-      // Prime iOS/Safari's decoder. The video remains scroll-controlled.
-      if (device === "desktop") {
-        void video
-          .play()
-          .then(() => {
-            video.pause();
-            video.currentTime = desiredTime;
-          })
-          .catch(() => {
-            video.currentTime = desiredTime;
-          });
-      }
-      requestRender();
+    const warmKeyFrames = () => {
+      queueFrame(sourceFrameFor(progress()), true);
+      steps.forEach((step) => {
+        queueFrame(sourceFrameFor(Math.min(1, (step.enter + step.leave) / 2)));
+      });
     };
 
     const onDeviceChange = () => {
@@ -270,25 +375,11 @@ export function ScrollytellingSection() {
       device = next;
       viewportWidth = window.innerWidth;
       viewportHeight = window.innerHeight;
-      duration = 0;
       lastProgress = -1;
+      closeDecodedFrames();
       measure();
-      if (mediaStarted) {
-        video.src = sourceFor(device);
-        video.load();
-      }
-    };
-
-    const onSeeked = () => {
-      if (device === "mobile") {
-        if (duration > 0 && Math.abs(video.currentTime - desiredTime) > 0.12) {
-          scheduleMobileSeek();
-        }
-        return;
-      }
-      if (duration > 0 && Math.abs(video.currentTime - desiredTime) > 0.05) {
-        video.currentTime = desiredTime;
-      }
+      warmKeyFrames();
+      requestRender();
     };
 
     const onResize = () => {
@@ -296,7 +387,9 @@ export function ScrollytellingSection() {
       if (device === "mobile" && !widthChanged) return;
       viewportWidth = window.innerWidth;
       viewportHeight = window.innerHeight;
+      closeDecodedFrames();
       measure();
+      warmKeyFrames();
       requestRender();
     };
 
@@ -306,7 +399,7 @@ export function ScrollytellingSection() {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) {
-          loadMedia();
+          warmKeyFrames();
           requestRender();
         }
       },
@@ -314,21 +407,17 @@ export function ScrollytellingSection() {
     );
 
     observer.observe(container);
-    video.addEventListener("loadedmetadata", onMetadata);
-    video.addEventListener("seeked", onSeeked);
     window.addEventListener("scroll", requestRender, { passive: true });
     window.addEventListener("resize", onResize);
     deviceQuery.addEventListener("change", onDeviceChange);
 
     return () => {
       cancelAnimationFrame(rafId);
-      window.clearTimeout(seekTimer);
       observer.disconnect();
-      video.removeEventListener("loadedmetadata", onMetadata);
-      video.removeEventListener("seeked", onSeeked);
       window.removeEventListener("scroll", requestRender);
       window.removeEventListener("resize", onResize);
       deviceQuery.removeEventListener("change", onDeviceChange);
+      closeDecodedFrames();
     };
     // Language switching navigates and remounts the page.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -336,103 +425,7 @@ export function ScrollytellingSection() {
 
   return (
     <section id="journey" aria-label="The journey, step by step" className="touch-pan-y">
-      <div className="relative bg-ink-background md:hidden">
-        <div className="sticky top-0 h-[100svh] overflow-hidden">
-          <picture>
-            <source
-              media="(max-width: 767px)"
-              srcSet="/scrollytelling/hero/mobile/frame_00001.webp"
-            />
-            <img
-              src="/scrollytelling/hero/desktop/frame_00001.webp"
-              alt=""
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-            />
-          </picture>
-          <video
-            src="/videos/journey-mobile.mp4"
-            muted
-            autoPlay
-            loop
-            playsInline
-            preload="metadata"
-            disablePictureInPicture
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-          />
-          <div
-            className="pointer-events-none absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(180deg, rgba(42,12,20,0.2) 0%, transparent 36%, rgba(42,12,20,0.88) 100%)",
-            }}
-          />
-        </div>
-
-        <div className="relative -mt-[100svh]">
-          {steps.map((step) => (
-            <article key={step.n} className="flex min-h-[82svh] items-end px-4 pb-6 pt-24">
-              <div className="w-full rounded-xl border border-gold/30 bg-[#4a1523]/90 px-4 py-4 shadow-[0_16px_40px_rgba(42,12,20,0.32)]">
-                <div className="mb-3 flex items-baseline justify-between border-b border-ink-border/60 pb-3">
-                  <span className="font-display text-3xl leading-none text-gold-light">
-                    {step.n}
-                  </span>
-                  <span className="font-mono text-[9px] tracking-[0.18em] text-ink-foreground/55">
-                    {step.n} / 06
-                  </span>
-                </div>
-                <h3 className="mb-1 font-display text-2xl leading-tight text-ink-foreground">
-                  {step.title}
-                </h3>
-                <p className="mb-2 text-sm leading-relaxed text-ink-foreground/90">{step.line}</p>
-                <span className="inline-flex items-center gap-1.5 font-mono text-[9px] tracking-[0.12em] text-gold-light">
-                  <span>✦</span>
-                  {step.tag}
-                </span>
-
-                {step.final && (
-                  <>
-                    <div className="mt-5">
-                      <a
-                        href="#contact"
-                        className="inline-flex h-11 items-center justify-center rounded-full bg-ink-foreground px-7 text-sm font-medium text-ink-background"
-                      >
-                        {finalCta[locale]}
-                      </a>
-                    </div>
-                    <div className="mt-5 grid grid-cols-2 gap-3 border-t border-ink-border pt-4">
-                      {closingTags.map((tag) => (
-                        <div
-                          key={tag.label}
-                          className="flex flex-col items-center gap-1.5 text-center"
-                        >
-                          <svg
-                            viewBox="0 0 24 24"
-                            className="h-4 w-4 text-gold-light"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={1.4}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d={tag.d} />
-                          </svg>
-                          <span className="max-w-[110px] text-[9px] leading-tight text-ink-foreground/65">
-                            {tag.label}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            </article>
-          ))}
-        </div>
-      </div>
-
-      <div ref={containerRef} className="relative hidden h-[520vh] md:block">
+      <div ref={containerRef} className="relative h-[480svh] md:h-[520vh]">
         <div className="sticky top-0 h-[100svh] overflow-hidden bg-ink-background md:h-screen">
           <picture>
             <source
@@ -446,14 +439,11 @@ export function ScrollytellingSection() {
               className="pointer-events-none absolute inset-0 h-full w-full object-cover"
             />
           </picture>
-          <video
-            ref={videoRef}
-            muted
-            playsInline
-            preload="metadata"
-            disablePictureInPicture
+          <canvas
+            ref={canvasRef}
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+            className="pointer-events-none absolute inset-0 h-full w-full"
+            style={{ opacity: 0 }}
           />
 
           <div
