@@ -29,9 +29,9 @@ function Impressum() {
         <br />
         Ein Angebot der Rahul und Kapil Kumar eGbR
         <br />
-        Burggraffenlacher Weg 20
+        Ludwig Str. 17
         <br />
-        65428 Rüsselsheim am Main
+        65479 Raunheim
         <br />
         Deutschland
       </p>
@@ -55,9 +55,9 @@ function Impressum() {
       <p>
         Rahul Kumar und Kapil Kumar
         <br />
-        Burggraffenlacher Weg 20
+        Ludwig Str. 17
         <br />
-        65428 Rüsselsheim am Main
+        65479 Raunheim
       </p>
 
       <h2>Verbraucherstreitbeilegung</h2>
