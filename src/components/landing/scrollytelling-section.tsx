@@ -111,7 +111,8 @@ export function ScrollytellingSection() {
   }));
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const desktopVideoRef = useRef<HTMLVideoElement>(null);
+  const mobileFrameRef = useRef<HTMLImageElement>(null);
   const captionRefs = useRef<(HTMLDivElement | null)[]>([]);
   const barFillRef = useRef<HTMLSpanElement>(null);
   const counterRef = useRef<HTMLSpanElement>(null);
@@ -119,71 +120,40 @@ export function ScrollytellingSection() {
 
   useEffect(() => {
     const container = containerRef.current;
-    const canvas = canvasRef.current;
-    const context = canvas?.getContext("2d", { alpha: false });
-    if (!container || !canvas || !context) return;
+    const desktopVideo = desktopVideoRef.current;
+    const mobileFrame = mobileFrameRef.current;
+    if (!container || !desktopVideo || !mobileFrame) return;
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const deviceQuery = window.matchMedia("(max-width: 767px)");
     let device: DeviceKind = deviceQuery.matches ? "mobile" : "desktop";
+    let duration = 0;
     let containerTop = 0;
     let containerHeight = 0;
     let viewportHeight = window.innerHeight;
     let viewportWidth = window.innerWidth;
     let rafId = 0;
     let lastProgress = -1;
+    let desiredTime = 0;
+    let desktopMediaStarted = false;
     let activeStepIndex = -1;
     let lastEntryOpacity = -1;
-    let targetFrame = 1;
-    let renderedFrame = -1;
-    let loadGeneration = 0;
-    let useCounter = 0;
-    let activeLoads = 0;
-    let loadQueue: number[] = [];
-    const queuedFrames = new Set<number>();
-    const loadingFrames = new Set<number>();
-    const decodedFrames = new Map<number, { bitmap: ImageBitmap; usedAt: number }>();
+    let targetMobileFrame = 1;
+    let visibleMobileFrame = 1;
+    let activeMobileLoads = 0;
+    let mobileLoadQueue: number[] = [];
+    const queuedMobileFrames = new Set<number>();
+    const loadingMobileFrames = new Set<number>();
+    const loadedMobileFrames = new Map<number, HTMLImageElement>();
     const lastCaptionOpacities = new Array(steps.length).fill(-1);
 
-    const frameStride = () => (device === "mobile" ? 3 : 2);
-    const frameRoot = () => `/scrollytelling/hero/${device}`;
-    const maxDecodedFrames = () => (device === "mobile" ? 12 : 16);
-    const maxConcurrentLoads = () => (device === "mobile" ? 2 : 3);
-    const sourceAspect = () => (device === "mobile" ? 1080 / 1920 : 1920 / 1080);
-    const framePath = (frame: number) =>
-      `${frameRoot()}/frame_${String(frame).padStart(5, "0")}.webp`;
-
-    const sourceFrameFor = (value: number) => {
-      const stride = frameStride();
-      const sampledIndex = Math.round((value * 347) / stride);
-      return Math.min(348, sampledIndex * stride + 1);
-    };
-
-    const closeDecodedFrames = () => {
-      loadGeneration += 1;
-      decodedFrames.forEach(({ bitmap }) => bitmap.close());
-      decodedFrames.clear();
-      loadQueue = [];
-      queuedFrames.clear();
-      renderedFrame = -1;
-      canvas.style.opacity = "0";
-    };
-
-    const sizeCanvas = () => {
-      const scale = Math.min(window.devicePixelRatio || 1, device === "mobile" ? 1.35 : 1.25);
-      const width = Math.max(1, Math.round(viewportWidth * scale));
-      const height = Math.max(1, Math.round(viewportHeight * scale));
-      if (canvas.width === width && canvas.height === height) return;
-      closeDecodedFrames();
-      canvas.width = width;
-      canvas.height = height;
-    };
+    const mobileFramePath = (frame: number) =>
+      `/scrollytelling/hero/mobile/lite_${String(frame).padStart(2, "0")}.webp`;
 
     const measure = () => {
       const rect = container.getBoundingClientRect();
       containerTop = rect.top + window.scrollY;
       containerHeight = rect.height;
-      sizeCanvas();
     };
 
     const progress = () => {
@@ -228,145 +198,143 @@ export function ScrollytellingSection() {
       }
     };
 
-    const trimDecodedFrames = () => {
-      const maximum = maxDecodedFrames();
-      if (decodedFrames.size <= maximum) return;
-      const removable = [...decodedFrames.entries()]
-        .filter(([frame]) => frame !== targetFrame && frame !== renderedFrame)
-        .sort((a, b) => a[1].usedAt - b[1].usedAt);
-      while (decodedFrames.size > maximum && removable.length > 0) {
-        const [frame, decoded] = removable.shift()!;
-        decoded.bitmap.close();
-        decodedFrames.delete(frame);
-      }
+    const showMobileFrame = (frame: number) => {
+      if (!loadedMobileFrames.has(frame) || visibleMobileFrame === frame) return;
+      mobileFrame.src = mobileFramePath(frame);
+      mobileFrame.dataset.frame = String(frame);
+      visibleMobileFrame = frame;
     };
 
-    const drawFrame = (frame: number) => {
-      const decoded = decodedFrames.get(frame);
-      if (!decoded) return false;
-      decoded.usedAt = ++useCounter;
-      const { bitmap } = decoded;
-      const x = Math.round((canvas.width - bitmap.width) / 2);
-      const y = Math.round((canvas.height - bitmap.height) / 2);
-      context.fillStyle = "#2a0c14";
-      context.fillRect(0, 0, canvas.width, canvas.height);
-      context.drawImage(bitmap, x, y);
-      canvas.style.opacity = "1";
-      canvas.dataset.frame = String(frame);
-      renderedFrame = frame;
-      return true;
-    };
-
-    const drawNearestFrame = () => {
-      if (drawFrame(targetFrame)) return;
-      let nearest = -1;
-      let nearestDistance = Number.POSITIVE_INFINITY;
-      decodedFrames.forEach((_, frame) => {
-        const distance = Math.abs(frame - targetFrame);
-        if (distance < nearestDistance) {
+    const nearestLoadedMobileFrame = () => {
+      if (loadedMobileFrames.has(targetMobileFrame)) return targetMobileFrame;
+      let nearest = visibleMobileFrame;
+      let distance = Math.abs(nearest - targetMobileFrame);
+      loadedMobileFrames.forEach((_, frame) => {
+        const nextDistance = Math.abs(frame - targetMobileFrame);
+        if (nextDistance < distance) {
           nearest = frame;
-          nearestDistance = distance;
+          distance = nextDistance;
         }
       });
-      if (nearest > 0) drawFrame(nearest);
+      return nearest;
     };
 
-    const pumpFrameQueue = () => {
-      while (activeLoads < maxConcurrentLoads() && loadQueue.length > 0) {
-        const frame = loadQueue.shift()!;
-        queuedFrames.delete(frame);
-        if (decodedFrames.has(frame) || loadingFrames.has(frame)) continue;
+    const pumpMobileQueue = () => {
+      while (activeMobileLoads < 4 && mobileLoadQueue.length > 0) {
+        const frame = mobileLoadQueue.shift()!;
+        queuedMobileFrames.delete(frame);
+        if (loadedMobileFrames.has(frame) || loadingMobileFrames.has(frame)) continue;
 
-        const generation = loadGeneration;
-        const aspect = sourceAspect();
-        const resizeWidth = Math.ceil(Math.max(canvas.width, canvas.height * aspect));
-        const resizeHeight = Math.ceil(Math.max(canvas.height, canvas.width / aspect));
-        activeLoads += 1;
-        loadingFrames.add(frame);
-
-        void fetch(framePath(frame), { cache: "force-cache" })
-          .then((response) => {
-            if (!response.ok) throw new Error(`Frame ${frame} failed to load`);
-            return response.blob();
-          })
-          .then((blob) =>
-            createImageBitmap(blob, {
-              resizeWidth,
-              resizeHeight,
-              resizeQuality: "medium",
-            }),
-          )
-          .then((bitmap) => {
-            if (generation !== loadGeneration) {
-              bitmap.close();
-              return;
-            }
-            decodedFrames.set(frame, { bitmap, usedAt: ++useCounter });
-            trimDecodedFrames();
-            if (Math.abs(frame - targetFrame) <= frameStride()) drawNearestFrame();
-          })
-          .catch(() => {
-            // The poster remains visible if a network or decoder request fails.
-          })
-          .finally(() => {
-            activeLoads -= 1;
-            loadingFrames.delete(frame);
-            pumpFrameQueue();
-          });
+        activeMobileLoads += 1;
+        loadingMobileFrames.add(frame);
+        const image = new Image();
+        image.decoding = "async";
+        image.onload = () => {
+          loadedMobileFrames.set(frame, image);
+          if (Math.abs(frame - targetMobileFrame) <= 1) {
+            showMobileFrame(nearestLoadedMobileFrame());
+          }
+          activeMobileLoads -= 1;
+          loadingMobileFrames.delete(frame);
+          pumpMobileQueue();
+        };
+        image.onerror = () => {
+          activeMobileLoads -= 1;
+          loadingMobileFrames.delete(frame);
+          pumpMobileQueue();
+        };
+        image.src = mobileFramePath(frame);
       }
     };
 
-    const queueFrame = (frame: number, urgent = false) => {
-      if (decodedFrames.has(frame) || loadingFrames.has(frame) || queuedFrames.has(frame)) return;
-      queuedFrames.add(frame);
-      if (urgent) loadQueue.unshift(frame);
-      else loadQueue.push(frame);
-      pumpFrameQueue();
+    const queueMobileFrame = (frame: number, urgent = false) => {
+      const bounded = Math.min(48, Math.max(1, frame));
+      if (
+        loadedMobileFrames.has(bounded) ||
+        loadingMobileFrames.has(bounded) ||
+        queuedMobileFrames.has(bounded)
+      ) {
+        return;
+      }
+      queuedMobileFrames.add(bounded);
+      if (urgent) mobileLoadQueue.unshift(bounded);
+      else mobileLoadQueue.push(bounded);
+      pumpMobileQueue();
     };
 
-    const pruneFrameQueue = () => {
-      const stride = frameStride();
-      const keyFrames = new Set(
-        steps.map((step) => sourceFrameFor(Math.min(1, (step.enter + step.leave) / 2))),
+    const warmMobileFrames = () => {
+      queueMobileFrame(targetMobileFrame, true);
+      for (const frame of [1, 9, 17, 25, 33, 41, 48]) queueMobileFrame(frame);
+      const remaining = Array.from({ length: 48 }, (_, index) => index + 1).sort(
+        (a, b) => Math.abs(a - targetMobileFrame) - Math.abs(b - targetMobileFrame),
       );
-      loadQueue = loadQueue.filter((frame) => {
-        const keep = keyFrames.has(frame) || Math.abs(frame - targetFrame) <= stride * 4;
-        if (!keep) queuedFrames.delete(frame);
-        return keep;
-      });
-    };
-
-    const requestTargetFrames = () => {
-      const stride = frameStride();
-      pruneFrameQueue();
-      queueFrame(targetFrame, true);
-      queueFrame(Math.max(1, targetFrame - stride), true);
-      queueFrame(Math.min(348, targetFrame + stride), true);
-      queueFrame(Math.max(1, targetFrame - stride * 2));
-      queueFrame(Math.min(348, targetFrame + stride * 2));
+      for (const frame of remaining) queueMobileFrame(frame);
     };
 
     const render = () => {
       rafId = 0;
       const value = reducedMotion ? 1 : progress();
-      const progressThreshold = device === "mobile" ? 0.001 : 0.0005;
+      const progressThreshold = device === "mobile" ? 0.0015 : 0.0005;
       if (Math.abs(value - lastProgress) < progressThreshold) return;
       lastProgress = value;
       updateCaptions(value);
-      targetFrame = sourceFrameFor(value);
-      drawNearestFrame();
-      requestTargetFrames();
+
+      if (device === "mobile") {
+        const nextFrame = Math.min(48, Math.max(1, Math.round(value * 47) + 1));
+        if (nextFrame !== targetMobileFrame) {
+          targetMobileFrame = nextFrame;
+          queueMobileFrame(targetMobileFrame, true);
+          queueMobileFrame(targetMobileFrame + 1, true);
+          queueMobileFrame(targetMobileFrame - 1, true);
+          showMobileFrame(nearestLoadedMobileFrame());
+        }
+        return;
+      }
+
+      if (duration > 0) {
+        const exactTime = Math.min(duration - 0.04, value * duration);
+        desiredTime = Math.round(exactTime * 24) / 24;
+        if (!desktopVideo.seeking && Math.abs(desktopVideo.currentTime - desiredTime) > 0.02) {
+          desktopVideo.currentTime = desiredTime;
+        }
+      }
     };
 
     const requestRender = () => {
       if (!rafId) rafId = requestAnimationFrame(render);
     };
 
-    const warmKeyFrames = () => {
-      queueFrame(sourceFrameFor(progress()), true);
-      steps.forEach((step) => {
-        queueFrame(sourceFrameFor(Math.min(1, (step.enter + step.leave) / 2)));
-      });
+    const loadDesktopMedia = () => {
+      if (desktopMediaStarted) return;
+      desktopMediaStarted = true;
+      desktopVideo.src = "/videos/journey-desktop.mp4";
+      desktopVideo.load();
+    };
+
+    const onMetadata = () => {
+      duration = Number.isFinite(desktopVideo.duration) ? desktopVideo.duration : 0;
+      desiredTime = progress() * duration;
+      desktopVideo.currentTime = Math.min(Math.max(0, duration - 0.04), desiredTime);
+      void desktopVideo
+        .play()
+        .then(() => {
+          desktopVideo.pause();
+          desktopVideo.currentTime = desiredTime;
+        })
+        .catch(() => {
+          desktopVideo.currentTime = desiredTime;
+        });
+      requestRender();
+    };
+
+    const onSeeked = () => {
+      if (
+        device === "desktop" &&
+        duration > 0 &&
+        Math.abs(desktopVideo.currentTime - desiredTime) > 0.05
+      ) {
+        desktopVideo.currentTime = desiredTime;
+      }
     };
 
     const onDeviceChange = () => {
@@ -376,9 +344,9 @@ export function ScrollytellingSection() {
       viewportWidth = window.innerWidth;
       viewportHeight = window.innerHeight;
       lastProgress = -1;
-      closeDecodedFrames();
       measure();
-      warmKeyFrames();
+      if (device === "mobile") warmMobileFrames();
+      else loadDesktopMedia();
       requestRender();
     };
 
@@ -387,9 +355,7 @@ export function ScrollytellingSection() {
       if (device === "mobile" && !widthChanged) return;
       viewportWidth = window.innerWidth;
       viewportHeight = window.innerHeight;
-      closeDecodedFrames();
       measure();
-      warmKeyFrames();
       requestRender();
     };
 
@@ -399,7 +365,8 @@ export function ScrollytellingSection() {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) {
-          warmKeyFrames();
+          if (device === "mobile") warmMobileFrames();
+          else loadDesktopMedia();
           requestRender();
         }
       },
@@ -407,6 +374,8 @@ export function ScrollytellingSection() {
     );
 
     observer.observe(container);
+    desktopVideo.addEventListener("loadedmetadata", onMetadata);
+    desktopVideo.addEventListener("seeked", onSeeked);
     window.addEventListener("scroll", requestRender, { passive: true });
     window.addEventListener("resize", onResize);
     deviceQuery.addEventListener("change", onDeviceChange);
@@ -414,10 +383,14 @@ export function ScrollytellingSection() {
     return () => {
       cancelAnimationFrame(rafId);
       observer.disconnect();
+      desktopVideo.removeEventListener("loadedmetadata", onMetadata);
+      desktopVideo.removeEventListener("seeked", onSeeked);
       window.removeEventListener("scroll", requestRender);
       window.removeEventListener("resize", onResize);
       deviceQuery.removeEventListener("change", onDeviceChange);
-      closeDecodedFrames();
+      mobileLoadQueue = [];
+      queuedMobileFrames.clear();
+      loadedMobileFrames.clear();
     };
     // Language switching navigates and remounts the page.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -439,11 +412,23 @@ export function ScrollytellingSection() {
               className="pointer-events-none absolute inset-0 h-full w-full object-cover"
             />
           </picture>
-          <canvas
-            ref={canvasRef}
+          <img
+            ref={mobileFrameRef}
+            src="/scrollytelling/hero/mobile/lite_01.webp"
+            alt=""
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 h-full w-full"
-            style={{ opacity: 0 }}
+            decoding="async"
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover md:hidden"
+            data-frame="1"
+          />
+          <video
+            ref={desktopVideoRef}
+            muted
+            playsInline
+            preload="metadata"
+            disablePictureInPicture
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 hidden h-full w-full object-cover md:block"
           />
 
           <div
