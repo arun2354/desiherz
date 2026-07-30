@@ -128,12 +128,18 @@ export function ScrollytellingSection() {
     let duration = 0;
     let containerTop = 0;
     let containerHeight = 0;
+    let viewportHeight = window.innerHeight;
+    let viewportWidth = window.innerWidth;
     let rafId = 0;
     let lastProgress = -1;
     let desiredTime = 0;
     let mediaStarted = false;
+    let seekTimer = 0;
+    let activeStepIndex = -1;
+    let lastEntryOpacity = -1;
+    const lastCaptionOpacities = new Array(steps.length).fill(-1);
 
-    const framesPerSecond = () => (device === "mobile" ? 12 : 24);
+    const framesPerSecond = () => (device === "mobile" ? 10 : 24);
 
     const sourceFor = (kind: DeviceKind) =>
       kind === "mobile" ? "/videos/journey-mobile.mp4" : "/videos/journey-desktop.mp4";
@@ -145,7 +151,7 @@ export function ScrollytellingSection() {
     };
 
     const progress = () => {
-      const total = Math.max(1, containerHeight - window.innerHeight);
+      const total = Math.max(1, containerHeight - viewportHeight);
       return Math.min(1, Math.max(0, (window.scrollY - containerTop) / total));
     };
 
@@ -163,27 +169,48 @@ export function ScrollytellingSection() {
         } else if (value >= step.leave && value <= step.leave + fade) {
           opacity = 1 - smoothstep((value - step.leave) / fade);
         }
-        if (element) {
+        if (element && Math.abs(opacity - lastCaptionOpacities[index]) > 0.01) {
           element.style.opacity = String(opacity);
           element.style.transform = `translateY(${(1 - opacity) * 14}px)`;
           element.style.pointerEvents = opacity > 0.5 ? "auto" : "none";
+          lastCaptionOpacities[index] = opacity;
         }
         if (value >= step.enter - fade && value < step.leave + fade) activeIndex = index;
       });
 
       if (entryFadeRef.current) {
-        entryFadeRef.current.style.opacity = String(1 - smoothstep(Math.min(value / 0.06, 1)));
+        const entryOpacity = 1 - smoothstep(Math.min(value / 0.06, 1));
+        if (Math.abs(entryOpacity - lastEntryOpacity) > 0.01) {
+          entryFadeRef.current.style.opacity = String(entryOpacity);
+          lastEntryOpacity = entryOpacity;
+        }
       }
-      if (barFillRef.current) barFillRef.current.style.width = `${value * 100}%`;
-      if (counterRef.current) {
+      if (barFillRef.current) barFillRef.current.style.transform = `scaleX(${value})`;
+      if (counterRef.current && activeStepIndex !== activeIndex) {
         counterRef.current.textContent = `${steps[activeIndex].n} / 06 — ${steps[activeIndex].title}`;
+        activeStepIndex = activeIndex;
       }
+    };
+
+    const commitSeek = () => {
+      seekTimer = 0;
+      if (duration <= 0 || video.seeking) return;
+      const fps = framesPerSecond();
+      if (Math.abs(video.currentTime - desiredTime) > Math.max(0.05, 0.55 / fps)) {
+        video.currentTime = desiredTime;
+      }
+    };
+
+    const scheduleMobileSeek = () => {
+      window.clearTimeout(seekTimer);
+      seekTimer = window.setTimeout(commitSeek, 140);
     };
 
     const render = () => {
       rafId = 0;
       const value = reducedMotion ? 1 : progress();
-      if (Math.abs(value - lastProgress) < 0.0005) return;
+      const progressThreshold = device === "mobile" ? 0.0015 : 0.0005;
+      if (Math.abs(value - lastProgress) < progressThreshold) return;
       lastProgress = value;
       updateCaptions(value);
 
@@ -191,7 +218,9 @@ export function ScrollytellingSection() {
         const fps = framesPerSecond();
         const exactTime = Math.min(duration - 0.04, value * duration);
         desiredTime = Math.round(exactTime * fps) / fps;
-        if (
+        if (device === "mobile") {
+          scheduleMobileSeek();
+        } else if (
           !video.seeking &&
           Math.abs(video.currentTime - desiredTime) > Math.max(0.035, 0.45 / fps)
         ) {
@@ -217,15 +246,17 @@ export function ScrollytellingSection() {
       video.currentTime = Math.min(Math.max(0, duration - 0.04), desiredTime);
 
       // Prime iOS/Safari's decoder. The video remains scroll-controlled.
-      void video
-        .play()
-        .then(() => {
-          video.pause();
-          video.currentTime = desiredTime;
-        })
-        .catch(() => {
-          video.currentTime = desiredTime;
-        });
+      if (device === "desktop") {
+        void video
+          .play()
+          .then(() => {
+            video.pause();
+            video.currentTime = desiredTime;
+          })
+          .catch(() => {
+            video.currentTime = desiredTime;
+          });
+      }
       requestRender();
     };
 
@@ -233,8 +264,11 @@ export function ScrollytellingSection() {
       const next: DeviceKind = deviceQuery.matches ? "mobile" : "desktop";
       if (next === device) return;
       device = next;
+      viewportWidth = window.innerWidth;
+      viewportHeight = window.innerHeight;
       duration = 0;
       lastProgress = -1;
+      measure();
       if (mediaStarted) {
         video.src = sourceFor(device);
         video.load();
@@ -242,12 +276,22 @@ export function ScrollytellingSection() {
     };
 
     const onSeeked = () => {
+      if (device === "mobile") {
+        if (duration > 0 && Math.abs(video.currentTime - desiredTime) > 0.12) {
+          scheduleMobileSeek();
+        }
+        return;
+      }
       if (duration > 0 && Math.abs(video.currentTime - desiredTime) > 0.05) {
         video.currentTime = desiredTime;
       }
     };
 
     const onResize = () => {
+      const widthChanged = Math.abs(window.innerWidth - viewportWidth) > 1;
+      if (device === "mobile" && !widthChanged) return;
+      viewportWidth = window.innerWidth;
+      viewportHeight = window.innerHeight;
       measure();
       requestRender();
     };
@@ -274,6 +318,7 @@ export function ScrollytellingSection() {
 
     return () => {
       cancelAnimationFrame(rafId);
+      window.clearTimeout(seekTimer);
       observer.disconnect();
       video.removeEventListener("loadedmetadata", onMetadata);
       video.removeEventListener("seeked", onSeeked);
@@ -286,9 +331,9 @@ export function ScrollytellingSection() {
   }, []);
 
   return (
-    <section id="journey" aria-label="The journey, step by step">
-      <div ref={containerRef} className="relative h-[480vh] sm:h-[520vh]">
-        <div className="sticky top-0 h-screen overflow-hidden bg-ink-background">
+    <section id="journey" aria-label="The journey, step by step" className="touch-pan-y">
+      <div ref={containerRef} className="relative h-[480svh] sm:h-[520vh]">
+        <div className="sticky top-0 h-[100svh] overflow-hidden bg-ink-background md:h-screen">
           <picture>
             <source
               media="(max-width: 767px)"
@@ -298,7 +343,7 @@ export function ScrollytellingSection() {
               src="/scrollytelling/hero/desktop/frame_00001.webp"
               alt=""
               aria-hidden="true"
-              className="absolute inset-0 h-full w-full object-cover"
+              className="pointer-events-none absolute inset-0 h-full w-full object-cover"
             />
           </picture>
           <video
@@ -308,7 +353,7 @@ export function ScrollytellingSection() {
             preload="metadata"
             disablePictureInPicture
             aria-hidden="true"
-            className="absolute inset-0 h-full w-full object-cover"
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
           />
 
           <div
@@ -330,7 +375,11 @@ export function ScrollytellingSection() {
           />
 
           <div className="absolute inset-x-0 top-0 h-[3px] bg-gold/15">
-            <span ref={barFillRef} className="block h-full bg-gold-light" style={{ width: "0%" }} />
+            <span
+              ref={barFillRef}
+              className="block h-full w-full origin-left bg-gold-light"
+              style={{ transform: "scaleX(0)" }}
+            />
           </div>
           <div className="absolute top-4 right-5 lg:right-8">
             <span

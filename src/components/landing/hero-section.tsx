@@ -148,7 +148,7 @@ export function HeroSection() {
           poster="/images/hero-poster.jpg"
           disablePictureInPicture
           aria-hidden="true"
-          className="w-full h-full object-cover object-center"
+          className="pointer-events-none h-full w-full object-cover object-center"
         />
         {/* warm scrims — espresso, never grey; kept light so the footage stays crisp */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#2a0c14]/75 via-[#451521]/25 to-transparent" />

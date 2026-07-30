@@ -93,19 +93,19 @@ export function Navigation() {
 
   return (
     <header
-      className={`fixed z-50 transition-all duration-500 ${
+      className={`fixed z-50 md:transition-all md:duration-500 ${
         isScrolled ? "top-4 left-4 right-4" : "top-0 left-0 right-0"
       }`}
     >
       <nav
-        className={`mobile-nav-surface mx-auto transition-all duration-500 ${
+        className={`mobile-nav-surface mx-auto md:transition-all md:duration-500 ${
           isScrolled || isMobileMenuOpen
             ? "bg-background/95 md:bg-background/80 md:backdrop-blur-xl border border-foreground/10 rounded-2xl shadow-lg max-w-[1200px]"
             : "bg-transparent max-w-[1400px]"
         }`}
       >
         <div
-          className={`flex items-center justify-between transition-all duration-500 px-6 lg:px-8 ${
+          className={`flex items-center justify-between px-6 md:transition-all md:duration-500 lg:px-8 ${
             isScrolled ? "h-14" : "h-20"
           }`}
         >
@@ -204,7 +204,7 @@ function Wordmark({ compact }: { compact: boolean }) {
     <a href="#" className="flex items-center gap-2.5 group">
       <BrandMark size={compact ? 24 : 30} />
       <span
-        className={`font-display tracking-tight transition-all duration-500 ${
+        className={`font-display tracking-tight md:transition-all md:duration-500 ${
           compact ? "text-xl text-foreground" : "text-2xl text-white"
         }`}
       >
