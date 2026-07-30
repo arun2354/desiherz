@@ -33,9 +33,9 @@ function Datenschutz() {
       <p>
         Rahul und Kapil Kumar eGbR
         <br />
-        Burggraffenlacher Weg 20
+        Ludwig Str. 17
         <br />
-        65428 Rüsselsheim am Main
+        65479 Raunheim
         <br />
         Deutschland
         <br />
