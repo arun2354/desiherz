@@ -133,6 +133,8 @@ export function ScrollytellingSection() {
     let desiredTime = 0;
     let mediaStarted = false;
 
+    const framesPerSecond = () => (device === "mobile" ? 12 : 24);
+
     const sourceFor = (kind: DeviceKind) =>
       kind === "mobile" ? "/videos/journey-mobile.mp4" : "/videos/journey-desktop.mp4";
 
@@ -186,8 +188,13 @@ export function ScrollytellingSection() {
       updateCaptions(value);
 
       if (duration > 0) {
-        desiredTime = Math.min(duration - 0.04, value * duration);
-        if (!video.seeking && Math.abs(video.currentTime - desiredTime) > 0.035) {
+        const fps = framesPerSecond();
+        const exactTime = Math.min(duration - 0.04, value * duration);
+        desiredTime = Math.round(exactTime * fps) / fps;
+        if (
+          !video.seeking &&
+          Math.abs(video.currentTime - desiredTime) > Math.max(0.035, 0.45 / fps)
+        ) {
           video.currentTime = desiredTime;
         }
       }
@@ -298,7 +305,7 @@ export function ScrollytellingSection() {
             ref={videoRef}
             muted
             playsInline
-            preload="auto"
+            preload="metadata"
             disablePictureInPicture
             aria-hidden="true"
             className="absolute inset-0 h-full w-full object-cover"

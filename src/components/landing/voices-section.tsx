@@ -3,8 +3,18 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocale } from "@/lib/use-locale";
 
 const filmTimings = [
-  { scene: "I.", film: "/videos/founder-lite.mp4" },
-  { scene: "II.", film: "/videos/spokesperson-lite.mp4" },
+  {
+    scene: "I.",
+    desktopFilm: "/videos/founder-lite.mp4",
+    mobileFilm: "/videos/founder-mobile.mp4",
+    poster: "/images/founder-poster.jpg",
+  },
+  {
+    scene: "II.",
+    desktopFilm: "/videos/spokesperson-lite.mp4",
+    mobileFilm: "/videos/spokesperson-mobile.mp4",
+    poster: "/images/spokesperson-poster.jpg",
+  },
 ] as const;
 
 const copy = {
@@ -48,7 +58,17 @@ const copy = {
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
-function VideoPlayer({ film, alt, playLabel }: { film: string; alt: string; playLabel: string }) {
+function VideoPlayer({
+  film,
+  poster,
+  alt,
+  playLabel,
+}: {
+  film: string;
+  poster: string;
+  alt: string;
+  playLabel: string;
+}) {
   const [ready, setReady] = useState(false);
   const [playing, setPlaying] = useState(false);
 
@@ -57,10 +77,12 @@ function VideoPlayer({ film, alt, playLabel }: { film: string; alt: string; play
       <video
         key={film}
         src={film}
+        poster={poster}
         controls={playing}
-        preload="auto"
+        preload="metadata"
         playsInline
         aria-label={alt}
+        onLoadedMetadata={() => setReady(true)}
         onLoadedData={() => setReady(true)}
         onCanPlay={() => setReady(true)}
         onPlay={() => setPlaying(true)}
@@ -96,11 +118,20 @@ function VideoPlayer({ film, alt, playLabel }: { film: string; alt: string; play
 export function VoicesSection() {
   const [active, setActive] = useState(0);
   const [near, setNear] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const locale = useLocale();
   const t = copy[locale];
   const FEATURES = filmTimings.map((f, i) => ({ ...f, ...t.features[i] }));
   const feature = FEATURES[active];
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 767px)");
+    const update = () => setIsMobile(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
 
   // this section is well below the fold — don't check/load its video
   // until the user is actually approaching it, so it doesn't compete
@@ -166,7 +197,7 @@ export function VoicesSection() {
 
         <AnimatePresence mode="wait">
           <motion.div
-            key={feature.film}
+            key={`${isMobile ? "mobile" : "desktop"}-${feature.desktopFilm}`}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
@@ -178,7 +209,12 @@ export function VoicesSection() {
             </div>
 
             {near ? (
-              <VideoPlayer film={feature.film} alt={feature.alt} playLabel={t.play} />
+              <VideoPlayer
+                film={isMobile ? feature.mobileFilm : feature.desktopFilm}
+                poster={feature.poster}
+                alt={feature.alt}
+                playLabel={t.play}
+              />
             ) : (
               <div
                 className="relative overflow-hidden border border-ink-border bg-black aspect-video"

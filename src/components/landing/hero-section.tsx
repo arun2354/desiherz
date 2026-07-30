@@ -73,6 +73,7 @@ export function HeroSection() {
   const t = copy[locale];
   const [isVisible, setIsVisible] = useState(false);
   const [wordIndex, setWordIndex] = useState(0);
+  const sectionRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -88,32 +89,53 @@ export function HeroSection() {
   }, [locale]);
 
   useEffect(() => {
+    const section = sectionRef.current;
     const video = videoRef.current;
-    if (!video) return;
+    if (!section || !video) return;
     // <source media> selection is unreliable on mobile browsers — pick in JS
     // so the 1:1 mobile file is guaranteed to load on phones.
     const isMobile = window.matchMedia("(max-width: 767px)").matches;
     video.poster = isMobile ? "/images/hero-poster-mobile.jpg" : "/images/hero-poster.jpg";
     video.src = isMobile ? "/videos/main-loop-mobile-lite.mp4" : "/videos/main-loop-lite.mp4";
     video.load();
-    video.play().catch(() => {});
+    let isOnScreen = true;
+
+    const playWhenUseful = () => {
+      if (isOnScreen && document.visibilityState === "visible") {
+        video.play().catch(() => {});
+      } else {
+        video.pause();
+      }
+    };
+
+    playWhenUseful();
     const restart = () => {
       video.currentTime = 0;
-      video.play().catch(() => {});
+      playWhenUseful();
     };
-    const resumeIfPaused = () => {
-      if (video.paused && document.visibilityState === "visible") video.play().catch(() => {});
-    };
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isOnScreen = entry.isIntersecting;
+        playWhenUseful();
+      },
+      { threshold: 0.05 },
+    );
+
+    observer.observe(section);
     video.addEventListener("ended", restart);
-    document.addEventListener("visibilitychange", resumeIfPaused);
+    document.addEventListener("visibilitychange", playWhenUseful);
     return () => {
+      observer.disconnect();
       video.removeEventListener("ended", restart);
-      document.removeEventListener("visibilitychange", resumeIfPaused);
+      document.removeEventListener("visibilitychange", playWhenUseful);
     };
   }, []);
 
   return (
-    <section className="bg-grain relative min-h-screen flex flex-col justify-center items-start overflow-hidden bg-[#2a0c14]">
+    <section
+      ref={sectionRef}
+      className="bg-grain relative min-h-screen flex flex-col justify-center items-start overflow-hidden bg-[#2a0c14]"
+    >
       {/* Background video */}
       <div className="absolute inset-0 z-0">
         <video
@@ -122,7 +144,7 @@ export function HeroSection() {
           muted
           loop
           playsInline
-          preload="auto"
+          preload="metadata"
           poster="/images/hero-poster.jpg"
           disablePictureInPicture
           aria-hidden="true"
