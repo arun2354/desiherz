@@ -1,7 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { useLocale } from "@/lib/use-locale";
-
-type DeviceKind = "desktop" | "mobile";
+import { useScrollytellingFrames } from "@/components/landing/use-scrollytelling-frames";
 
 const stepTimings = [
   { n: "01", enter: 0.03, leave: 0.19, final: false },
@@ -97,8 +96,6 @@ const finalCta = {
   de: "Privat beginnen",
 } as const;
 
-const smoothstep = (value: number) => value * value * (3 - 2 * value);
-
 export function ScrollytellingSection() {
   const locale = useLocale();
   const steps = stepTimings.map((timing, index) => ({
@@ -111,224 +108,21 @@ export function ScrollytellingSection() {
   }));
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const captionRefs = useRef<(HTMLDivElement | null)[]>([]);
   const barFillRef = useRef<HTMLSpanElement>(null);
   const counterRef = useRef<HTMLSpanElement>(null);
   const entryFadeRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const container = containerRef.current;
-    const video = videoRef.current;
-    if (!container || !video) return;
-
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const deviceQuery = window.matchMedia("(max-width: 767px)");
-    let device: DeviceKind = deviceQuery.matches ? "mobile" : "desktop";
-    let duration = 0;
-    let containerTop = 0;
-    let containerHeight = 0;
-    let viewportHeight = window.innerHeight;
-    let viewportWidth = window.innerWidth;
-    let rafId = 0;
-    let lastProgress = -1;
-    let desiredTime = 0;
-    let mediaStarted = false;
-    let seekTimer = 0;
-    let activeStepIndex = -1;
-    let lastEntryOpacity = -1;
-    const lastCaptionOpacities = new Array(steps.length).fill(-1);
-
-    const framesPerSecond = () => (device === "mobile" ? 10 : 24);
-
-    const sourceFor = (kind: DeviceKind) =>
-      kind === "mobile" ? "/videos/journey-mobile.mp4" : "/videos/journey-desktop.mp4";
-
-    const measure = () => {
-      const rect = container.getBoundingClientRect();
-      containerTop = rect.top + window.scrollY;
-      containerHeight = rect.height;
-    };
-
-    const progress = () => {
-      const total = Math.max(1, containerHeight - viewportHeight);
-      return Math.min(1, Math.max(0, (window.scrollY - containerTop) / total));
-    };
-
-    const updateCaptions = (value: number) => {
-      const fade = 0.045;
-      let activeIndex = 0;
-
-      steps.forEach((step, index) => {
-        const element = captionRefs.current[index];
-        let opacity = 0;
-        if (value >= step.enter - fade && value <= step.enter) {
-          opacity = smoothstep((value - (step.enter - fade)) / fade);
-        } else if (value > step.enter && value < step.leave) {
-          opacity = 1;
-        } else if (value >= step.leave && value <= step.leave + fade) {
-          opacity = 1 - smoothstep((value - step.leave) / fade);
-        }
-        if (element && Math.abs(opacity - lastCaptionOpacities[index]) > 0.01) {
-          element.style.opacity = String(opacity);
-          element.style.transform = `translateY(${(1 - opacity) * 14}px)`;
-          element.style.pointerEvents = opacity > 0.5 ? "auto" : "none";
-          lastCaptionOpacities[index] = opacity;
-        }
-        if (value >= step.enter - fade && value < step.leave + fade) activeIndex = index;
-      });
-
-      if (entryFadeRef.current) {
-        const entryOpacity = 1 - smoothstep(Math.min(value / 0.06, 1));
-        if (Math.abs(entryOpacity - lastEntryOpacity) > 0.01) {
-          entryFadeRef.current.style.opacity = String(entryOpacity);
-          lastEntryOpacity = entryOpacity;
-        }
-      }
-      if (barFillRef.current) barFillRef.current.style.transform = `scaleX(${value})`;
-      if (counterRef.current && activeStepIndex !== activeIndex) {
-        counterRef.current.textContent = `${steps[activeIndex].n} / 06 — ${steps[activeIndex].title}`;
-        activeStepIndex = activeIndex;
-      }
-    };
-
-    const commitSeek = () => {
-      seekTimer = 0;
-      if (duration <= 0 || video.seeking) return;
-      const fps = framesPerSecond();
-      if (Math.abs(video.currentTime - desiredTime) > Math.max(0.05, 0.55 / fps)) {
-        video.currentTime = desiredTime;
-      }
-    };
-
-    const scheduleMobileSeek = () => {
-      window.clearTimeout(seekTimer);
-      seekTimer = window.setTimeout(commitSeek, 140);
-    };
-
-    const render = () => {
-      rafId = 0;
-      const value = reducedMotion ? 1 : progress();
-      const progressThreshold = device === "mobile" ? 0.0015 : 0.0005;
-      if (Math.abs(value - lastProgress) < progressThreshold) return;
-      lastProgress = value;
-      updateCaptions(value);
-
-      if (duration > 0) {
-        const fps = framesPerSecond();
-        const exactTime = Math.min(duration - 0.04, value * duration);
-        desiredTime = Math.round(exactTime * fps) / fps;
-        if (device === "mobile") {
-          scheduleMobileSeek();
-        } else if (
-          !video.seeking &&
-          Math.abs(video.currentTime - desiredTime) > Math.max(0.035, 0.45 / fps)
-        ) {
-          video.currentTime = desiredTime;
-        }
-      }
-    };
-
-    const requestRender = () => {
-      if (!rafId) rafId = requestAnimationFrame(render);
-    };
-
-    const loadMedia = () => {
-      if (mediaStarted) return;
-      mediaStarted = true;
-      video.src = sourceFor(device);
-      video.load();
-    };
-
-    const onMetadata = () => {
-      duration = Number.isFinite(video.duration) ? video.duration : 0;
-      desiredTime = progress() * duration;
-      video.currentTime = Math.min(Math.max(0, duration - 0.04), desiredTime);
-
-      // Prime iOS/Safari's decoder. The video remains scroll-controlled.
-      if (device === "desktop") {
-        void video
-          .play()
-          .then(() => {
-            video.pause();
-            video.currentTime = desiredTime;
-          })
-          .catch(() => {
-            video.currentTime = desiredTime;
-          });
-      }
-      requestRender();
-    };
-
-    const onDeviceChange = () => {
-      const next: DeviceKind = deviceQuery.matches ? "mobile" : "desktop";
-      if (next === device) return;
-      device = next;
-      viewportWidth = window.innerWidth;
-      viewportHeight = window.innerHeight;
-      duration = 0;
-      lastProgress = -1;
-      measure();
-      if (mediaStarted) {
-        video.src = sourceFor(device);
-        video.load();
-      }
-    };
-
-    const onSeeked = () => {
-      if (device === "mobile") {
-        if (duration > 0 && Math.abs(video.currentTime - desiredTime) > 0.12) {
-          scheduleMobileSeek();
-        }
-        return;
-      }
-      if (duration > 0 && Math.abs(video.currentTime - desiredTime) > 0.05) {
-        video.currentTime = desiredTime;
-      }
-    };
-
-    const onResize = () => {
-      const widthChanged = Math.abs(window.innerWidth - viewportWidth) > 1;
-      if (device === "mobile" && !widthChanged) return;
-      viewportWidth = window.innerWidth;
-      viewportHeight = window.innerHeight;
-      measure();
-      requestRender();
-    };
-
-    measure();
-    updateCaptions(reducedMotion ? 1 : progress());
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          loadMedia();
-          requestRender();
-        }
-      },
-      { rootMargin: "100% 0px" },
-    );
-
-    observer.observe(container);
-    video.addEventListener("loadedmetadata", onMetadata);
-    video.addEventListener("seeked", onSeeked);
-    window.addEventListener("scroll", requestRender, { passive: true });
-    window.addEventListener("resize", onResize);
-    deviceQuery.addEventListener("change", onDeviceChange);
-
-    return () => {
-      cancelAnimationFrame(rafId);
-      window.clearTimeout(seekTimer);
-      observer.disconnect();
-      video.removeEventListener("loadedmetadata", onMetadata);
-      video.removeEventListener("seeked", onSeeked);
-      window.removeEventListener("scroll", requestRender);
-      window.removeEventListener("resize", onResize);
-      deviceQuery.removeEventListener("change", onDeviceChange);
-    };
-    // Language switching navigates and remounts the page.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useScrollytellingFrames({
+    containerRef,
+    canvasRef,
+    captionRefs,
+    barFillRef,
+    counterRef,
+    entryFadeRef,
+    steps,
+  });
 
   return (
     <section id="journey" aria-label="The journey, step by step" className="touch-pan-y">
@@ -346,14 +140,10 @@ export function ScrollytellingSection() {
               className="pointer-events-none absolute inset-0 h-full w-full object-cover"
             />
           </picture>
-          <video
-            ref={videoRef}
-            muted
-            playsInline
-            preload="metadata"
-            disablePictureInPicture
+          <canvas
+            ref={canvasRef}
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+            className="pointer-events-none absolute inset-0 h-full w-full opacity-0"
           />
 
           <div
@@ -403,9 +193,7 @@ export function ScrollytellingSection() {
                 <div
                   className="scrolly-caption rounded-xl px-4 py-3.5 sm:rounded-2xl sm:px-6 sm:py-5 lg:px-10 lg:py-8"
                   style={{
-                    background: "rgba(74, 21, 35, 0.72)",
-                    backdropFilter: "blur(18px) saturate(125%)",
-                    WebkitBackdropFilter: "blur(18px) saturate(125%)",
+                    background: "rgba(74, 21, 35, 0.88)",
                     border: "1px solid rgba(194,155,92,0.34)",
                     boxShadow: "0 16px 40px rgba(42,12,20,0.42)",
                   }}
