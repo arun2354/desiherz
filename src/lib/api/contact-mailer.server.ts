@@ -1,4 +1,5 @@
 import process from "node:process";
+import { randomUUID } from "node:crypto";
 import tls from "node:tls";
 
 type ContactMessage = {
@@ -107,6 +108,7 @@ export async function sendContactEmail(message: ContactMessage) {
   const body = `${message.note}\n\n— ${message.name} (${message.email})`;
   const host = process.env.IONOS_SMTP_HOST || "smtp.ionos.de";
   const port = Number(process.env.IONOS_SMTP_PORT || 465);
+  const messageId = `<${randomUUID()}@desiherz.de>`;
   const socket = await connectSecurely(host, port);
   const smtp = new SmtpSession(socket);
 
@@ -125,6 +127,8 @@ export async function sendContactEmail(message: ContactMessage) {
       `To: ${recipient}`,
       `Reply-To: ${message.email}`,
       `Subject: ${encodeHeader(subject)}`,
+      `Date: ${new Date().toUTCString()}`,
+      `Message-ID: ${messageId}`,
       "MIME-Version: 1.0",
       'Content-Type: text/plain; charset="UTF-8"',
       "Content-Transfer-Encoding: base64",
@@ -133,7 +137,8 @@ export async function sendContactEmail(message: ContactMessage) {
     ].join("\r\n");
 
     socket.write(`${email}\r\n.\r\n`);
-    await smtp.command(undefined, [250]);
+    const accepted = await smtp.command(undefined, [250]);
+    console.info(`[contact-mail] IONOS accepted ${messageId}: ${accepted.text.replace(/\s+/g, " ")}`);
     await smtp.command("QUIT", [221]);
   } finally {
     socket.end();
