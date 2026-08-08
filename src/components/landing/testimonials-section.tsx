@@ -4,9 +4,15 @@ import { useLocale } from "@/lib/use-locale";
 
 const people = ["M. & A.", "N. & R.", "S. & K."] as const;
 const images = [
-  "/images/testimonial-hands.webp",
-  "/images/testimonial-couple-seated.jpg",
-  "/images/testimonial-couple-walking.jpg",
+  {
+    src: "/images/testimonial-couple-1.jpg",
+    faceCovers: [
+      { emoji: "😊", left: "39%", top: "27%" },
+      { emoji: "🥰", left: "66%", top: "39%" },
+    ],
+  },
+  { src: "/images/testimonial-couple-2.jpg", faceCovers: [] },
+  { src: "/images/testimonial-couple-3.jpg", faceCovers: [] },
 ] as const;
 
 const copy = {
@@ -59,12 +65,22 @@ export function TestimonialsSection() {
         <div className="relative mx-auto aspect-[4/5] w-full max-w-[470px]">
           <div className="absolute inset-0 rounded-[48%_52%_46%_54%/42%_46%_54%_58%] border border-gold/35 bg-card" />
           <img
-            key={active.image}
-            src={active.image}
+            key={active.image.src}
+            src={active.image.src}
             alt={t.imageAlt}
             loading="lazy"
             className="absolute inset-[4%] h-[92%] w-[92%] rounded-[52%_48%_54%_46%/46%_54%_46%_54%] object-cover object-center shadow-[0_28px_80px_rgba(73,48,26,0.18)]"
           />
+          {active.image.faceCovers.map((cover) => (
+            <span
+              key={`${cover.left}-${cover.top}`}
+              aria-hidden="true"
+              className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2 text-5xl drop-shadow-lg sm:text-6xl"
+              style={{ left: cover.left, top: cover.top }}
+            >
+              {cover.emoji}
+            </span>
+          ))}
           <span className="absolute bottom-[8%] right-[1%] flex h-20 w-20 items-center justify-center rounded-full border border-gold/30 bg-background font-display text-3xl text-gold shadow-lg sm:h-24 sm:w-24">
             “
           </span>

@@ -2,8 +2,8 @@ import { useEffect, useRef } from "react";
 import { useLocale } from "@/lib/use-locale";
 
 const films = [
-  { src: "/videos/founder-lite.mp4", mobileSrc: "/videos/founder-mobile.mp4", key: "founder" },
-  { src: "/videos/spokesperson-lite.mp4", mobileSrc: "/videos/spokesperson-mobile.mp4", key: "conversation" },
+  { src: "/videos/founder-full.mp4", key: "founder" },
+  { src: "/videos/member-full.mp4", key: "conversation" },
 ] as const;
 
 const copy = {
@@ -27,14 +27,13 @@ const copy = {
   },
 } as const;
 
-function FilmCard({ film, duplicate = false }: { film: (typeof films)[number]; duplicate?: boolean }) {
+function FilmCard({ film }: { film: (typeof films)[number] }) {
   const locale = useLocale();
   const [title, description] = copy[locale].labels[film.key];
 
   return (
     <article
       className="relative overflow-hidden rounded-[2rem] border border-gold/25 bg-[#140c08]"
-      aria-hidden={duplicate || undefined}
     >
       <video
         autoPlay
@@ -42,11 +41,9 @@ function FilmCard({ film, duplicate = false }: { film: (typeof films)[number]; d
         loop
         playsInline
         preload="metadata"
-        disablePictureInPicture
-        tabIndex={duplicate ? -1 : undefined}
-        className="aspect-video h-auto w-full object-cover"
+        controls
+        className="aspect-video h-auto w-full bg-black object-contain"
       >
-        <source media="(max-width: 767px)" src={film.mobileSrc} />
         <source src={film.src} />
       </video>
       <div className="flex items-end justify-between gap-6 border-t border-gold/20 bg-[#140c08] px-6 py-5 text-[#f5e9dc] sm:px-8 sm:py-6">
