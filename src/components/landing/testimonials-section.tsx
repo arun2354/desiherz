@@ -3,6 +3,11 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useLocale } from "@/lib/use-locale";
 
 const people = ["M. & A.", "N. & R.", "S. & K."] as const;
+const images = [
+  "/images/testimonial-hands.webp",
+  "/images/testimonial-couple-seated.jpg",
+  "/images/testimonial-couple-walking.jpg",
+] as const;
 
 const copy = {
   en: {
@@ -36,7 +41,7 @@ const copy = {
 export function TestimonialsSection() {
   const locale = useLocale();
   const t = copy[locale];
-  const testimonials = people.map((who, index) => ({ who, ...t.testimonials[index] }));
+  const testimonials = people.map((who, index) => ({ who, image: images[index], ...t.testimonials[index] }));
   const [activeIndex, setActiveIndex] = useState(0);
   const active = testimonials[activeIndex];
 
@@ -54,7 +59,8 @@ export function TestimonialsSection() {
         <div className="relative mx-auto aspect-[4/5] w-full max-w-[470px]">
           <div className="absolute inset-0 rounded-[48%_52%_46%_54%/42%_46%_54%_58%] border border-gold/35 bg-card" />
           <img
-            src="/images/testimonial-hands.webp"
+            key={active.image}
+            src={active.image}
             alt={t.imageAlt}
             loading="lazy"
             className="absolute inset-[4%] h-[92%] w-[92%] rounded-[52%_48%_54%_46%/46%_54%_46%_54%] object-cover object-center shadow-[0_28px_80px_rgba(73,48,26,0.18)]"

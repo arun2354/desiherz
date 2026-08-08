@@ -2,15 +2,15 @@ import { useEffect, useRef } from "react";
 import { useLocale } from "@/lib/use-locale";
 
 const films = [
-  { src: "/videos/founder.mp4", key: "founder" },
-  { src: "/videos/spokesperson.mp4", key: "conversation" },
+  { src: "/videos/founder-lite.mp4", mobileSrc: "/videos/founder-mobile.mp4", key: "founder" },
+  { src: "/videos/spokesperson-lite.mp4", mobileSrc: "/videos/spokesperson-mobile.mp4", key: "conversation" },
 ] as const;
 
 const copy = {
   en: {
     eyebrow: "In their own words",
-    heading: "Two voices. One clear intention.",
-    intro: "Meet the people behind DesiHerz — openly, personally, and without the noise of an app.",
+    heading: "Hear it directly.",
+    intro: "Two perspectives from the people behind DesiHerz — personal, direct and unfiltered.",
     labels: {
       founder: ["The founder", "Why DesiHerz exists"],
       conversation: ["In conversation", "A closer look at the service"],
@@ -18,8 +18,8 @@ const copy = {
   },
   de: {
     eyebrow: "In ihren eigenen Worten",
-    heading: "Zwei Stimmen. Eine klare Haltung.",
-    intro: "Lernen Sie die Menschen hinter DesiHerz kennen — offen, persönlich und ohne den Lärm einer App.",
+    heading: "Hören Sie es direkt.",
+    intro: "Zwei Perspektiven von den Menschen hinter DesiHerz – persönlich, direkt und ungefiltert.",
     labels: {
       founder: ["Der Gründer", "Warum es DesiHerz gibt"],
       conversation: ["Im Gespräch", "Ein näherer Blick auf das Angebot"],
@@ -33,11 +33,10 @@ function FilmCard({ film, duplicate = false }: { film: (typeof films)[number]; d
 
   return (
     <article
-      className="video-rail-card relative w-[82vw] shrink-0 overflow-hidden rounded-[2rem] border border-gold/25 bg-[#140c08] sm:w-[64vw] lg:w-[46vw]"
+      className="relative overflow-hidden rounded-[2rem] border border-gold/25 bg-[#140c08]"
       aria-hidden={duplicate || undefined}
     >
       <video
-        src={film.src}
         autoPlay
         muted
         loop
@@ -46,7 +45,10 @@ function FilmCard({ film, duplicate = false }: { film: (typeof films)[number]; d
         disablePictureInPicture
         tabIndex={duplicate ? -1 : undefined}
         className="aspect-video h-auto w-full object-cover"
-      />
+      >
+        <source media="(max-width: 767px)" src={film.mobileSrc} />
+        <source src={film.src} />
+      </video>
       <div className="flex items-end justify-between gap-6 border-t border-gold/20 bg-[#140c08] px-6 py-5 text-[#f5e9dc] sm:px-8 sm:py-6">
         <div>
           <h3 className="font-display text-2xl sm:text-3xl">{title}</h3>
@@ -87,10 +89,9 @@ export function VideoRailSection() {
         </div>
       </div>
 
-      <div className="video-rail" aria-label={t.eyebrow}>
-        <div ref={railRef} className="video-rail-track flex w-max gap-5">
+      <div className="mx-auto max-w-[1400px] px-6 lg:px-12" aria-label={t.eyebrow}>
+        <div ref={railRef} className="grid gap-6 lg:grid-cols-2">
           {films.map((film) => <FilmCard key={film.key} film={film} />)}
-          {films.map((film) => <FilmCard key={`duplicate-${film.key}`} film={film} duplicate />)}
         </div>
       </div>
     </section>

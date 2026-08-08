@@ -6,6 +6,7 @@ import { useLocale } from "@/lib/use-locale";
 const copy = {
   en: {
     navLinks: [
+      { name: "Process", href: "#journey" },
       { name: "Voices", href: "#voices" },
       { name: "Stories", href: "#testimonials" },
       { name: "FAQ", href: "#faq" },
@@ -15,6 +16,7 @@ const copy = {
   },
   de: {
     navLinks: [
+      { name: "Ablauf", href: "#journey" },
       { name: "Stimmen", href: "#voices" },
       { name: "Erfahrungen", href: "#testimonials" },
       { name: "FAQ", href: "#faq" },

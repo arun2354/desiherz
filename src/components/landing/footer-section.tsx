@@ -15,6 +15,7 @@ const copy = {
     rights: "© 2026 DesiHerz. All rights reserved.",
     bottomTagline: "Private matrimony, by design",
     navLinks: [
+      { name: "Process", href: "#journey" },
       { name: "Voices", href: "#voices" },
       { name: "Stories", href: "#testimonials" },
       { name: "FAQ", href: "#faq" },
@@ -31,6 +32,7 @@ const copy = {
     rights: "© 2026 DesiHerz. Alle Rechte vorbehalten.",
     bottomTagline: "Private Eheanbahnung, ganz bewusst",
     navLinks: [
+      { name: "Ablauf", href: "#journey" },
       { name: "Stimmen", href: "#voices" },
       { name: "Erfahrungen", href: "#testimonials" },
       { name: "FAQ", href: "#faq" },
