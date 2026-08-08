@@ -5,46 +5,49 @@
 @custom-variant dark (&:is(.dark *));
 
 /* =====================================================
-   DesiHerz — quiet Indian matrimony palette.
-   Warm ivory, bridal maroon and antique gold connect the
-   editorial sections to the earthy scrollytelling footage.
+   DesiHerz — warm ivory matrimony system on the v0 reference's
+   structure: champagne-ivory base, deep warm brown text (never
+   grey, never black), Fraunces display serif and restrained gold
+   accents. The hero video section carries
+   their own cinematic dark treatment on top of this.
    ===================================================== */
 
 :root {
-  --background: #f7f0e5;
-  --foreground: #3b211c;
-  --card: #f2e4d2;
-  --card-foreground: #3b211c;
-  --popover: #fff8ee;
-  --popover-foreground: #3b211c;
-  --primary: #5a1f2b;
-  --primary-foreground: #fff8ee;
-  --secondary: #ecdcc8;
-  --secondary-foreground: #4a2420;
-  --muted: #efe2d2;
-  --muted-foreground: #76564c;
-  --accent: #ead6c2;
-  --accent-foreground: #4a2420;
+  --background: oklch(0.975 0.012 85);
+  --foreground: oklch(0.28 0.035 45);
+  --card: oklch(0.95 0.018 80);
+  --card-foreground: oklch(0.28 0.035 45);
+  --popover: oklch(0.975 0.012 85);
+  --popover-foreground: oklch(0.28 0.035 45);
+  --primary: oklch(0.28 0.035 45);
+  --primary-foreground: oklch(0.975 0.012 85);
+  --secondary: oklch(0.93 0.02 80);
+  --secondary-foreground: oklch(0.28 0.035 45);
+  --muted: oklch(0.93 0.02 80);
+  --muted-foreground: oklch(0.5 0.045 55);
+  --accent: oklch(0.91 0.025 80);
+  --accent-foreground: oklch(0.28 0.035 45);
   --destructive: oklch(0.5 0.21 27.325);
-  --destructive-foreground: #fff8ee;
-  --border: #dcc4a9;
-  --input: #f1e5d5;
-  --ring: #8c3347;
+  --destructive-foreground: oklch(0.975 0.012 85);
+  --border: oklch(0.87 0.025 75);
+  --input: oklch(0.93 0.02 80);
+  --ring: oklch(0.28 0.035 45);
   --radius: 0.25rem;
-  --rose: #b76e79;
-  --gold: #b48a4a;
-  --gold-light: #dfc48d;
-  --ink-background: #321018;
-  --ink-foreground: #f8eddf;
-  --ink-muted-foreground: #cfaa9d;
-  --ink-border: #70404a;
+  --rose: #c2679d;
+  --gold: #b8863e;
+  --gold-light: #e0b876;
+  /* warm near-black for alternating dark editorial sections — never grey/pure-black */
+  --ink-background: oklch(0.16 0.025 45);
+  --ink-foreground: oklch(0.94 0.02 80);
+  --ink-muted-foreground: oklch(0.68 0.035 60);
+  --ink-border: oklch(0.32 0.03 50);
 }
 
 @theme inline {
-  --font-sans: "Instrument Sans", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
-  --font-display: "Fraunces", Georgia, serif;
-  --font-accent: "Cormorant Garamond", "Fraunces", Georgia, serif;
+  --font-sans: 'Instrument Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-accent: 'Cormorant Garamond', 'Fraunces', Georgia, serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -84,13 +87,6 @@
   body {
     @apply text-foreground;
     background-color: var(--background);
-    /* A single warm canvas beneath every light section. */
-    background-image:
-      radial-gradient(48% 38% at 12% -8%, rgba(90, 31, 43, 0.13), transparent 68%),
-      radial-gradient(42% 34% at 88% 6%, rgba(180, 138, 74, 0.18), transparent 65%),
-      radial-gradient(52% 40% at 52% 108%, rgba(183, 110, 121, 0.1), transparent 70%);
-    background-attachment: scroll;
-    background-repeat: no-repeat;
   }
   html {
     scroll-behavior: smooth;
@@ -100,7 +96,7 @@
     scroll-behavior: auto;
   }
   ::selection {
-    background: var(--rose);
+    background: var(--gold);
     color: oklch(0.975 0.012 85);
   }
 }
@@ -151,53 +147,23 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    opacity: 0.05;
-    mix-blend-mode: overlay;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    display: none;
   }
 
-  /* gold-foil gradient text, for numerals and ornamental emphasis */
+  /* restrained gold emphasis — no rose gradient */
   .text-foil {
-    background: linear-gradient(
-      115deg,
-      var(--gold) 10%,
-      var(--gold-light) 45%,
-      var(--rose) 65%,
-      var(--gold) 90%
-    );
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: var(--gold);
   }
 
-  .hero-word-reveal {
-    color: var(--ink-foreground);
-    animation: heroWordReveal 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-
-  /* Bridal-maroon evening canvas for the editorial dark sections. */
+  /* Apple-marketing-style ambient dark canvas: a velvety wine + aubergine +
+     gold base (feathered via the gradient stops themselves, not a blur
+     filter, so it can share the element with .bg-grain's own ::before
+     texture layer without the two fighting over the same pseudo-element).
+     Used by Voices, Testimonials and the Footer so the "dark" sections
+     still feel lit and premium rather than flat near-black. */
   .bg-ink-gradient {
     position: relative;
-    background:
-      radial-gradient(52% 46% at 10% 10%, rgba(142, 49, 67, 0.48), transparent 72%),
-      radial-gradient(44% 40% at 88% 8%, rgba(194, 155, 92, 0.2), transparent 72%),
-      radial-gradient(62% 54% at 50% 108%, rgba(183, 110, 121, 0.24), transparent 74%),
-      linear-gradient(165deg, #451521 0%, #2a0c14 52%, #3a111c 100%);
-  }
-
-  /* The ivory sections rise out of the dark film rather than cutting to it. */
-  .matrimony-light-bridge {
-    background:
-      linear-gradient(
-        180deg,
-        var(--ink-background) 0,
-        #5a1f2b 1.5rem,
-        rgba(183, 110, 121, 0.42) 4.5rem,
-        rgba(247, 240, 229, 0.92) 10rem,
-        var(--background) 15rem
-      ),
-      radial-gradient(36rem 16rem at 50% 0, rgba(194, 155, 92, 0.2), transparent 72%);
+    background: #140c08;
   }
 
   /* frosted-glass card, for panels sitting on top of .bg-ink-gradient */
@@ -209,73 +175,51 @@
   }
 }
 
-@keyframes heroWordReveal {
-  from {
-    opacity: 0;
-    filter: blur(18px);
-    transform: translateY(0.12em);
-  }
-  55% {
-    color: var(--gold-light);
-  }
-  to {
-    opacity: 1;
-    filter: blur(0);
-    transform: translateY(0);
-    color: var(--ink-foreground);
-  }
-}
-
-@media (max-width: 767px) {
-  body {
-    background-image: none;
-  }
-
-  .bg-grain::before {
-    display: none;
-  }
-
-  .bg-ink-gradient {
-    background: linear-gradient(165deg, #451521 0%, #2a0c14 58%, #3a111c 100%);
-  }
-
-  .glass-panel,
-  .scrolly-caption {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
-
-  .scrolly-caption {
-    box-shadow: none !important;
-  }
-
-  .mobile-nav-surface {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
-
-  .hero-word-reveal {
-    animation: mobileHeroWordReveal 300ms ease-out both;
-  }
-}
-
-@keyframes mobileHeroWordReveal {
-  from {
-    opacity: 0;
-    transform: translateY(0.08em);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 @keyframes progress {
-  from {
-    width: 0%;
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+/* seamless marquee: content duplicated twice, track slides half its width */
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 45s linear infinite;
+}
+
+.video-rail {
+  overflow: hidden;
+}
+
+.video-rail-track {
+  animation: videoRail 34s linear infinite;
+  will-change: transform;
+}
+
+.video-rail:hover .video-rail-track,
+.video-rail:focus-within .video-rail-track {
+  animation-play-state: paused;
+}
+
+@keyframes videoRail {
+  to { transform: translateX(calc(-50% - 0.625rem)); }
+}
+
+@keyframes marquee {
+  to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
   }
-  to {
-    width: 100%;
+
+  .video-rail {
+    overflow-x: auto;
+  }
+
+  .video-rail-track {
+    animation: none;
   }
 }
 

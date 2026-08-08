@@ -90,7 +90,7 @@ export function FaqSection() {
                       <span className={`font-mono text-xs transition-colors duration-300 ${isOpen ? "text-gold" : "text-muted-foreground"}`}>
                         {String(i + 1).padStart(2, "0")}
                       </span>
-                      <h3 className="text-lg font-medium transition-colors duration-300 group-hover:text-rose lg:text-xl">
+                      <h3 className="text-lg font-medium transition-colors duration-300 group-hover:text-gold lg:text-xl">
                         {item.q}
                       </h3>
                     </div>

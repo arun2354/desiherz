@@ -10,22 +10,8 @@ export function BrandMark({ size = 26, className = "" }: { size?: number; classN
       aria-hidden="true"
       className={className}
     >
-      <defs>
-        <linearGradient
-          id="rings-grad"
-          x1="0"
-          y1="0"
-          x2="100"
-          y2="62"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop offset="0" stopColor="#b76e79" />
-          <stop offset="0.55" stopColor="#dfc48d" />
-          <stop offset="1" stopColor="#b76e79" />
-        </linearGradient>
-      </defs>
-      <circle cx="32" cy="31" r="22" stroke="url(#rings-grad)" strokeWidth="6" />
-      <circle cx="68" cy="31" r="22" stroke="url(#rings-grad)" strokeWidth="6" />
+      <circle cx="32" cy="31" r="22" stroke="#d9a760" strokeWidth="6" />
+      <circle cx="68" cy="31" r="22" stroke="#d9a760" strokeWidth="6" />
     </svg>
   );
 }

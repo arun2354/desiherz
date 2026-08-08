@@ -1,9 +1,7 @@
 import { Navigation } from "@/components/landing/navigation";
 import { HeroSection } from "@/components/landing/hero-section";
 import { StatementSection } from "@/components/landing/statement-section";
-import { ScrollytellingSection } from "@/components/landing/scrollytelling-section";
-import { PledgesSection } from "@/components/landing/pledges-section";
-import { VoicesSection } from "@/components/landing/voices-section";
+import { VideoRailSection } from "@/components/landing/video-rail-section";
 import { TestimonialsSection } from "@/components/landing/testimonials-section";
 import { FaqSection } from "@/components/landing/faq-section";
 import { CtaSection } from "@/components/landing/cta-section";
@@ -14,16 +12,11 @@ import { FooterSection } from "@/components/landing/footer-section";
 // so the exact same tree renders correctly for either route.
 export function HomePage() {
   return (
-    // overflow-x-clip, NOT -hidden: hidden turns <main> into a scroll
-    // container, which silently breaks position:sticky (the scrollytelling
-    // canvas) against the window. clip clips without doing that.
     <main className="relative min-h-screen overflow-x-clip">
       <Navigation />
       <HeroSection />
       <StatementSection />
-      <ScrollytellingSection />
-      <PledgesSection />
-      <VoicesSection />
+      <VideoRailSection />
       <TestimonialsSection />
       <FaqSection />
       <CtaSection />

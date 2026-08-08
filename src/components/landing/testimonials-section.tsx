@@ -1,266 +1,101 @@
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useLocale } from "@/lib/use-locale";
 
-const testimonialTimings = [
-  { who: "M. & A.", photo: "/images/testimonial-phone-1.jpg" },
-  { who: "N. & R.", photo: "/images/testimonial-phone-2.jpg" },
-  { who: "S. & K.", photo: "/images/testimonial-phone-3.jpg" },
-  { who: "A. & J.", photo: "/images/testimonial-phone-4.jpg" },
-  { who: "R. & P.", photo: "/images/testimonial-phone-5.jpg" },
-] as const;
+const people = ["M. & A.", "N. & R.", "S. & K."] as const;
 
 const copy = {
   en: {
-    eyebrow: "Proof, softly",
-    heading: ["People remember how", " the introduction felt."],
-    introducedThrough: "Introduced through DesiHerz",
-    cities: "Cities",
-    prev: "Previous testimonial",
+    eyebrow: "What stays with people",
+    heading: "A considered introduction feels different.",
+    introduced: "Introduced through DesiHerz",
+    previous: "Previous testimonial",
     next: "Next testimonial",
-    showTestimonial: (n: number) => `Show testimonial ${n}`,
+    imageAlt: "Two people holding hands, one wearing an engagement ring.",
     testimonials: [
-      {
-        quote:
-          "Private without feeling cold. We were introduced with care, and no pressure to perform.",
-        city: "Frankfurt",
-      },
-      {
-        quote:
-          "They understood our families mattered, but never let that overpower our own choice.",
-        city: "Munich",
-      },
-      {
-        quote: "The opposite of an app. No noise, just one introduction that made sense.",
-        city: "Berlin",
-      },
-      {
-        quote:
-          "There was no performance and no pressure. It felt like being introduced by someone who genuinely knew us.",
-        city: "Cologne",
-      },
-      {
-        quote:
-          "We lived in different cities, but our values already felt close. DesiHerz made the first conversation easy.",
-        city: "Hamburg",
-      },
+      { quote: "Private without feeling cold. We were introduced with care, and never felt pressure to perform.", city: "Frankfurt" },
+      { quote: "They understood that our families mattered, without ever letting that overpower our own choice.", city: "Munich" },
+      { quote: "The opposite of an app: no noise, just one introduction that made sense.", city: "Berlin" },
     ],
   },
   de: {
-    eyebrow: "Leise Beweise",
-    heading: ["Menschen erinnern sich, wie", " sich die Vorstellung angefühlt hat."],
-    introducedThrough: "Vorgestellt durch DesiHerz",
-    cities: "Städte",
-    prev: "Vorheriger Erfahrungsbericht",
+    eyebrow: "Was Menschen in Erinnerung bleibt",
+    heading: "Eine sorgsame Vorstellung fühlt sich anders an.",
+    introduced: "Vorgestellt durch DesiHerz",
+    previous: "Vorheriger Erfahrungsbericht",
     next: "Nächster Erfahrungsbericht",
-    showTestimonial: (n: number) => `Erfahrungsbericht ${n} anzeigen`,
+    imageAlt: "Zwei Menschen halten sich an den Händen; eine Person trägt einen Verlobungsring.",
     testimonials: [
-      {
-        quote:
-          "Privat, ohne kühl zu wirken. Wir wurden mit Sorgfalt vorgestellt, ganz ohne Erwartungsdruck.",
-        city: "Frankfurt",
-      },
-      {
-        quote:
-          "Sie verstanden, dass unsere Familien wichtig waren, ließen das aber nie unsere eigene Entscheidung überlagern.",
-        city: "München",
-      },
-      {
-        quote: "Das Gegenteil einer App. Kein Lärm, nur eine Vorstellung, die Sinn ergab.",
-        city: "Berlin",
-      },
-      {
-        quote:
-          "Kein Schauspiel und kein Druck. Es fühlte sich an, als hätte uns jemand vorgestellt, der uns wirklich kennt.",
-        city: "Köln",
-      },
-      {
-        quote:
-          "Wir lebten in verschiedenen Städten, doch unsere Werte waren sich bereits nah. DesiHerz machte das erste Gespräch leicht.",
-        city: "Hamburg",
-      },
+      { quote: "Privat, ohne kühl zu wirken. Wir wurden mit Sorgfalt vorgestellt und fühlten uns nie unter Druck gesetzt.", city: "Frankfurt" },
+      { quote: "Sie verstanden, dass unsere Familien wichtig waren, ohne unsere eigene Entscheidung zu überlagern.", city: "München" },
+      { quote: "Das Gegenteil einer App: kein Lärm, nur eine Vorstellung, die wirklich Sinn ergab.", city: "Berlin" },
     ],
   },
 } as const;
 
-const EASE = [0.16, 1, 0.3, 1] as const;
-
 export function TestimonialsSection() {
   const locale = useLocale();
   const t = copy[locale];
-  const testimonials = testimonialTimings.map((timing, i) => ({ ...timing, ...t.testimonials[i] }));
+  const testimonials = people.map((who, index) => ({ who, ...t.testimonials[index] }));
   const [activeIndex, setActiveIndex] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % testimonials.length);
-    }, 8000);
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const goTo = (index: number) => setActiveIndex(index);
-  const goPrev = () =>
-    setActiveIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
-  const goNext = () => setActiveIndex((prev) => (prev + 1) % testimonials.length);
-
   const active = testimonials[activeIndex];
 
+  useEffect(() => {
+    const timer = window.setInterval(() => setActiveIndex((index) => (index + 1) % testimonials.length), 9000);
+    return () => window.clearInterval(timer);
+  }, [testimonials.length]);
+
+  const previous = () => setActiveIndex((index) => (index - 1 + testimonials.length) % testimonials.length);
+  const next = () => setActiveIndex((index) => (index + 1) % testimonials.length);
+
   return (
-    <section className="bg-grain bg-ink-gradient relative overflow-hidden py-32 text-ink-foreground lg:py-40">
-      {/* hairline seam so this doesn't visually fuse with the dark Voices section above it */}
-      <div className="absolute top-0 left-0 h-px w-full bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
-      <div className="relative z-10 mx-auto max-w-[1400px] px-6 lg:px-12">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.4 }}
-          transition={{ duration: 0.8, ease: EASE }}
-          className="mb-20 flex items-end justify-between gap-8"
-        >
-          <div>
-            <span className="mb-4 inline-flex items-center gap-3 font-mono text-sm text-ink-muted-foreground">
-              <span className="h-px w-12 bg-gold/40" />
-              {t.eyebrow}
-            </span>
-            <h2 className="text-4xl font-display lg:text-5xl">
-              {t.heading[0]}
-              <span className="font-accent text-ink-muted-foreground">{t.heading[1]}</span>
-            </h2>
-          </div>
+    <section id="testimonials" className="overflow-hidden bg-background py-24 lg:py-36">
+      <div className="mx-auto grid max-w-[1400px] gap-14 px-6 lg:grid-cols-[0.82fr_1.18fr] lg:items-center lg:gap-20 lg:px-12">
+        <div className="relative mx-auto aspect-[4/5] w-full max-w-[470px]">
+          <div className="absolute inset-0 rounded-[48%_52%_46%_54%/42%_46%_54%_58%] border border-gold/35 bg-card" />
+          <img
+            src="/images/testimonial-hands.webp"
+            alt={t.imageAlt}
+            loading="lazy"
+            className="absolute inset-[4%] h-[92%] w-[92%] rounded-[52%_48%_54%_46%/46%_54%_46%_54%] object-cover object-center shadow-[0_28px_80px_rgba(73,48,26,0.18)]"
+          />
+          <span className="absolute bottom-[8%] right-[1%] flex h-20 w-20 items-center justify-center rounded-full border border-gold/30 bg-background font-display text-3xl text-gold shadow-lg sm:h-24 sm:w-24">
+            “
+          </span>
+        </div>
 
-          <div className="hidden items-center gap-2 lg:flex">
-            <button
-              onClick={goPrev}
-              aria-label={t.prev}
-              className="border border-ink-border p-4 transition-colors hover:border-gold/60 hover:bg-ink-foreground/5"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <button
-              onClick={goNext}
-              aria-label={t.next}
-              className="border border-ink-border p-4 transition-colors hover:border-gold/60 hover:bg-ink-foreground/5"
-            >
-              <ArrowRight className="h-5 w-5" />
-            </button>
-          </div>
-        </motion.div>
+        <div>
+          <span className="mb-6 inline-flex items-center gap-3 font-mono text-xs uppercase tracking-[0.2em] text-gold">
+            <span className="h-px w-10 bg-gold/60" />
+            {t.eyebrow}
+          </span>
+          <h2 className="max-w-3xl font-display text-5xl leading-[0.98] tracking-tight sm:text-6xl lg:text-7xl">
+            {t.heading}
+          </h2>
 
-        {/* Split layout */}
-        <div className="grid gap-12 lg:grid-cols-12 lg:gap-20">
-          {/* Quote */}
-          <div className="relative lg:col-span-7">
-            <span className="text-foil absolute -top-8 -left-4 font-display text-[200px] leading-none select-none opacity-30">
-              &ldquo;
-            </span>
+          <blockquote key={activeIndex} className="animate-fadeSlideIn mt-12 max-w-3xl font-display text-3xl leading-[1.25] text-foreground sm:text-4xl">
+            “{active.quote}”
+          </blockquote>
 
-            <div className="relative min-h-[220px]">
-              <motion.blockquote
-                key={activeIndex}
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, ease: EASE }}
-                className="font-display text-3xl leading-[1.2] tracking-tight lg:text-4xl xl:text-5xl"
-              >
-                {active.quote}
-              </motion.blockquote>
-
-              <motion.div
-                key={`attr-${activeIndex}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-                className="mt-12 flex items-center gap-6"
-              >
-                <div className="glass-panel flex h-14 w-14 items-center justify-center rounded-full">
-                  <span className="font-display text-xl">{active.who.charAt(0)}</span>
-                </div>
-                <div>
-                  <p className="text-lg font-medium">{active.who}</p>
-                  <p className="text-ink-muted-foreground">{t.introducedThrough}</p>
-                </div>
-              </motion.div>
+          <div className="mt-10 flex flex-wrap items-end justify-between gap-6 border-t border-foreground/15 pt-6">
+            <div>
+              <p className="font-display text-2xl">{active.who}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{active.city} · {t.introduced}</p>
             </div>
-          </div>
-
-          {/* City card side */}
-          <div className="flex flex-col justify-center gap-6 lg:col-span-5">
-            <motion.div
-              key={`photo-${activeIndex}`}
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.55, ease: EASE }}
-              className="relative aspect-[4/5] overflow-hidden border border-ink-border bg-black"
-            >
-              <img
-                src={active.photo}
-                alt=""
-                aria-hidden="true"
-                loading="lazy"
-                decoding="async"
-                className="h-full w-full object-cover"
-              />
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
-            </motion.div>
-
-            <motion.div
-              key={`metric-${activeIndex}`}
-              initial={{ opacity: 0, scale: 0.97 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, ease: EASE }}
-              className="glass-panel p-10"
-            >
-              <span className="mb-4 block font-display text-6xl lg:text-7xl">{active.who}</span>
-              <span className="text-lg text-ink-muted-foreground">{active.city}</span>
-            </motion.div>
-
-            {/* Progress indicators */}
             <div className="flex gap-2">
-              {testimonials.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => goTo(idx)}
-                  aria-label={t.showTestimonial(idx + 1)}
-                  className="h-1 flex-1 overflow-hidden bg-ink-border"
-                >
-                  <div
-                    className={`h-full bg-gold transition-all duration-300 ${
-                      idx === activeIndex
-                        ? "w-full"
-                        : idx < activeIndex
-                          ? "w-full opacity-40"
-                          : "w-0"
-                    }`}
-                    style={idx === activeIndex ? { animation: "progress 8s linear forwards" } : {}}
-                  />
-                </button>
-              ))}
+              <button onClick={previous} aria-label={t.previous} className="rounded-full border border-foreground/20 p-3 text-foreground transition-colors hover:border-gold hover:text-gold">
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+              <button onClick={next} aria-label={t.next} className="rounded-full border border-foreground/20 p-3 text-foreground transition-colors hover:border-gold hover:text-gold">
+                <ArrowRight className="h-5 w-5" />
+              </button>
             </div>
+          </div>
 
-            {/* City chips */}
-            <div className="mt-4 border-t border-ink-border pt-6">
-              <span className="mb-4 block font-mono text-xs tracking-widest text-ink-muted-foreground/70 uppercase">
-                {t.cities}
-              </span>
-              <div className="flex flex-wrap gap-3">
-                {testimonials.map((t, idx) => (
-                  <button
-                    key={t.city}
-                    onClick={() => goTo(idx)}
-                    className={`border px-4 py-2 text-sm transition-all ${
-                      idx === activeIndex
-                        ? "border-gold/60 text-ink-foreground"
-                        : "border-ink-border text-ink-muted-foreground hover:border-gold/30"
-                    }`}
-                  >
-                    {t.city}
-                  </button>
-                ))}
-              </div>
-            </div>
+          <div className="mt-8 flex gap-2" aria-hidden="true">
+            {testimonials.map((item, index) => (
+              <span key={item.who} className={`h-1 flex-1 rounded-full ${index === activeIndex ? "bg-gold" : "bg-foreground/15"}`} />
+            ))}
           </div>
         </div>
       </div>

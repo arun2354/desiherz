@@ -6,9 +6,8 @@ import { useLocale } from "@/lib/use-locale";
 const copy = {
   en: {
     navLinks: [
-      { name: "Journey", href: "#journey" },
-      { name: "Pledges", href: "#pledges" },
       { name: "Voices", href: "#voices" },
+      { name: "Stories", href: "#testimonials" },
       { name: "FAQ", href: "#faq" },
     ],
     enquiry: "Private enquiry",
@@ -16,9 +15,8 @@ const copy = {
   },
   de: {
     navLinks: [
-      { name: "Reise", href: "#journey" },
-      { name: "Versprechen", href: "#pledges" },
       { name: "Stimmen", href: "#voices" },
+      { name: "Erfahrungen", href: "#testimonials" },
       { name: "FAQ", href: "#faq" },
     ],
     enquiry: "Private Anfrage",
@@ -34,8 +32,7 @@ const LANGUAGES = [
 ] as const;
 
 // Plain <a> tags, not the router's client-side <Link>, are deliberate here:
-// large parts of this page (the scrollytelling frame pipeline, the hero's
-// video source swap, several IntersectionObservers) are imperative
+// the hero video source swap and several IntersectionObservers are imperative
 // mount-once effects that assume they only ever run once per page load.
 // A client-side route transition between "/" and "/de" isn't guaranteed to
 // unmount and remount that tree, which risks stale English content
@@ -44,9 +41,7 @@ const LANGUAGES = [
 // per-locale meta/hreflang/schema on the very first response.
 function LanguageSwitcher({ locale, compact }: { locale: "en" | "de"; compact: boolean }) {
   return (
-    <div
-      className={`flex items-center gap-1 font-mono text-xs tracking-wide ${compact ? "text-foreground/70" : "text-white/70"}`}
-    >
+    <div className={`flex items-center gap-1 font-mono text-xs tracking-wide ${compact ? "text-foreground/70" : "text-white/70"}`}>
       {LANGUAGES.map((lang, i) => (
         <span key={lang.code} className="flex items-center gap-1">
           {i > 0 && <span aria-hidden="true">/</span>}
@@ -76,36 +71,26 @@ export function Navigation() {
   const t = copy[locale];
 
   useEffect(() => {
-    let frame = 0;
-    const handleScroll = () => {
-      if (frame) return;
-      frame = requestAnimationFrame(() => {
-        frame = 0;
-        setIsScrolled(window.scrollY > 20);
-      });
-    };
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", handleScroll);
-    };
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   return (
     <header
-      className={`fixed z-50 md:transition-all md:duration-500 ${
+      className={`fixed z-50 transition-all duration-500 ${
         isScrolled ? "top-4 left-4 right-4" : "top-0 left-0 right-0"
       }`}
     >
       <nav
-        className={`mobile-nav-surface mx-auto md:transition-all md:duration-500 ${
+        className={`mx-auto transition-all duration-500 ${
           isScrolled || isMobileMenuOpen
-            ? "bg-background/95 md:bg-background/80 md:backdrop-blur-xl border border-foreground/10 rounded-2xl shadow-lg max-w-[1200px]"
+            ? "bg-background/80 backdrop-blur-xl border border-foreground/10 rounded-2xl shadow-lg max-w-[1200px]"
             : "bg-transparent max-w-[1400px]"
         }`}
       >
         <div
-          className={`flex items-center justify-between px-6 md:transition-all md:duration-500 lg:px-8 ${
+          className={`flex items-center justify-between transition-all duration-500 px-6 lg:px-8 ${
             isScrolled ? "h-14" : "h-20"
           }`}
         >
@@ -117,13 +102,11 @@ export function Navigation() {
                 key={link.name}
                 href={link.href}
                 className={`text-sm font-medium transition-colors duration-300 relative group ${
-                  isScrolled
-                    ? "text-foreground hover:text-gold"
-                    : "text-white hover:text-gold-light"
+                  isScrolled ? "text-foreground hover:text-gold" : "text-white hover:text-gold-light"
                 }`}
               >
                 {link.name}
-                <span className="absolute -bottom-1 left-0 w-0 h-px bg-gradient-to-r from-gold to-rose transition-all duration-300 group-hover:w-full" />
+                <span className="absolute -bottom-1 left-0 h-px w-0 bg-gold transition-all duration-300 group-hover:w-full" />
               </a>
             ))}
           </div>
@@ -204,11 +187,11 @@ function Wordmark({ compact }: { compact: boolean }) {
     <a href="#" className="flex items-center gap-2.5 group">
       <BrandMark size={compact ? 24 : 30} />
       <span
-        className={`font-display tracking-tight md:transition-all md:duration-500 ${
+        className={`font-display tracking-tight transition-all duration-500 ${
           compact ? "text-xl text-foreground" : "text-2xl text-white"
         }`}
       >
-        Desi<span className={compact ? "text-rose" : "text-[#b76e79]"}>♥</span>Herz
+        Desi<span className={compact ? "text-gold" : "text-[#d9a760]"}>♥</span>Herz
       </span>
     </a>
   );

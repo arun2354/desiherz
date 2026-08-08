@@ -10,34 +10,29 @@ const copy = {
     explore: "Explore",
     contact: "Contact",
     legal: "Legal",
-    address: "Ludwig Str. 17, 65479 Raunheim",
     byAppointment: "By appointment only",
     copied: "Copied to clipboard",
     rights: "© 2026 DesiHerz. All rights reserved.",
     bottomTagline: "Private matrimony, by design",
     navLinks: [
-      { name: "Journey", href: "#journey" },
-      { name: "Pledges", href: "#pledges" },
       { name: "Voices", href: "#voices" },
+      { name: "Stories", href: "#testimonials" },
       { name: "FAQ", href: "#faq" },
     ],
   },
   de: {
     tagline: "Privat, von Grund auf.",
-    brandLine:
-      "Private Eheanbahnung für anspruchsvolle Menschen und Familien. Nur auf Vorstellung.",
+    brandLine: "Private Eheanbahnung für anspruchsvolle Menschen und Familien. Nur auf Vorstellung.",
     explore: "Entdecken",
     contact: "Kontakt",
     legal: "Rechtliches",
-    address: "Ludwig Str. 17, 65479 Raunheim",
     byAppointment: "Nur nach Vereinbarung",
     copied: "In die Zwischenablage kopiert",
     rights: "© 2026 DesiHerz. Alle Rechte vorbehalten.",
     bottomTagline: "Private Eheanbahnung, ganz bewusst",
     navLinks: [
-      { name: "Reise", href: "#journey" },
-      { name: "Versprechen", href: "#pledges" },
       { name: "Stimmen", href: "#voices" },
+      { name: "Erfahrungen", href: "#testimonials" },
       { name: "FAQ", href: "#faq" },
     ],
   },
@@ -48,17 +43,7 @@ const copy = {
 // list does nothing — there's no way to detect or fix that from here.
 // Copying the value instead always works, so that's the primary click
 // action; the real mailto:/tel: href stays for right-click/middle-click.
-function CopyableContact({
-  value,
-  href,
-  display,
-  copiedLabel,
-}: {
-  value: string;
-  href: string;
-  display: string;
-  copiedLabel: string;
-}) {
+function CopyableContact({ value, href, display, copiedLabel }: { value: string; href: string; display: string; copiedLabel: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <a
@@ -84,14 +69,14 @@ export function FooterSection() {
   return (
     <footer className="bg-grain bg-ink-gradient relative overflow-hidden text-ink-foreground">
       {/* top hairline, gold at the centre fading to nothing at the edges */}
-      <div className="h-px w-full bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
+      <div className="h-px w-full bg-gold/35" />
 
       <div className="relative z-10 mx-auto max-w-[1400px] px-6 lg:px-12">
         {/* Brand moment, replacing the old photo banner */}
         <div className="flex flex-col items-center gap-6 py-20 text-center lg:py-28">
           <BrandMark size={40} />
           <a href="#" className="font-display text-3xl lg:text-4xl">
-            Desi<span className="text-rose">♥</span>Herz
+            Desi<span className="text-gold-light">♥</span>Herz
           </a>
           <p className="font-accent text-xl text-gold-light/80">{t.tagline}</p>
         </div>
@@ -101,23 +86,16 @@ export function FooterSection() {
           <div className="grid grid-cols-2 gap-12 md:grid-cols-5 lg:gap-8">
             {/* Brand */}
             <div className="col-span-2">
-              <p className="mb-8 max-w-xs text-sm leading-relaxed text-ink-muted-foreground">
-                {t.brandLine}
-              </p>
+              <p className="mb-8 max-w-xs text-sm leading-relaxed text-ink-muted-foreground">{t.brandLine}</p>
             </div>
 
             {/* Explore */}
             <div>
-              <h3 className="mb-6 font-mono text-xs tracking-[0.2em] text-gold-light/70 uppercase">
-                {t.explore}
-              </h3>
+              <h3 className="mb-6 font-mono text-xs tracking-[0.2em] text-gold-light/70 uppercase">{t.explore}</h3>
               <ul className="space-y-4">
                 {t.navLinks.map((link) => (
                   <li key={link.name}>
-                    <a
-                      href={link.href}
-                      className="text-sm text-ink-muted-foreground transition-colors hover:text-ink-foreground"
-                    >
+                    <a href={link.href} className="text-sm text-ink-muted-foreground transition-colors hover:text-ink-foreground">
                       {link.name}
                     </a>
                   </li>
@@ -127,11 +105,8 @@ export function FooterSection() {
 
             {/* Contact */}
             <div>
-              <h3 className="mb-6 font-mono text-xs tracking-[0.2em] text-gold-light/70 uppercase">
-                {t.contact}
-              </h3>
+              <h3 className="mb-6 font-mono text-xs tracking-[0.2em] text-gold-light/70 uppercase">{t.contact}</h3>
               <ul className="space-y-4 text-sm text-ink-muted-foreground">
-                <li>{t.address}</li>
                 <li>{t.byAppointment}</li>
                 <li>
                   <CopyableContact
@@ -142,35 +117,22 @@ export function FooterSection() {
                   />
                 </li>
                 <li>
-                  <CopyableContact
-                    href="tel:+4961429421212"
-                    value="+49 6142 9421212"
-                    display="06142 9421212"
-                    copiedLabel={t.copied}
-                  />
+                  <CopyableContact href="tel:+498000060452" value="+49 800 0060452" display="0800 0060452" copiedLabel={t.copied} />
                 </li>
               </ul>
             </div>
 
             {/* Legal */}
             <div>
-              <h3 className="mb-6 font-mono text-xs tracking-[0.2em] text-gold-light/70 uppercase">
-                {t.legal}
-              </h3>
+              <h3 className="mb-6 font-mono text-xs tracking-[0.2em] text-gold-light/70 uppercase">{t.legal}</h3>
               <ul className="space-y-4">
                 <li>
-                  <Link
-                    to="/impressum"
-                    className="text-sm text-ink-muted-foreground transition-colors hover:text-ink-foreground"
-                  >
+                  <Link to="/impressum" className="text-sm text-ink-muted-foreground transition-colors hover:text-ink-foreground">
                     Impressum
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    to="/datenschutz"
-                    className="text-sm text-ink-muted-foreground transition-colors hover:text-ink-foreground"
-                  >
+                  <Link to="/datenschutz" className="text-sm text-ink-muted-foreground transition-colors hover:text-ink-foreground">
                     Datenschutz
                   </Link>
                 </li>

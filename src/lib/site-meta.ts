@@ -70,7 +70,7 @@ export function buildHomeHead(locale: Locale) {
         type: "application/ld+json",
         children: JSON.stringify({
           "@context": "https://schema.org",
-          "@type": "LocalBusiness",
+          "@type": "Organization",
           "@id": `${perLocale.en.url}#business`,
           name: SITE.name,
           description: t.description,
@@ -88,13 +88,6 @@ export function buildHomeHead(locale: Locale) {
             name: t.offerName,
             price: "39",
             priceCurrency: "EUR",
-          },
-          address: {
-            "@type": "PostalAddress",
-            streetAddress: "Ludwig Str. 17",
-            postalCode: "65479",
-            addressLocality: "Raunheim",
-            addressCountry: "DE",
           },
           areaServed: ["Germany", "Frankfurt", "Munich", "Berlin"],
         }),
