@@ -1,4 +1,3 @@
-import { useEffect, useRef } from "react";
 import { useLocale } from "@/lib/use-locale";
 
 const films = [
@@ -36,9 +35,6 @@ function FilmCard({ film }: { film: (typeof films)[number] }) {
       className="relative overflow-hidden rounded-[2rem] border border-gold/25 bg-[#140c08]"
     >
       <video
-        autoPlay
-        muted
-        loop
         playsInline
         preload="metadata"
         controls
@@ -60,16 +56,6 @@ function FilmCard({ film }: { film: (typeof films)[number] }) {
 export function VideoRailSection() {
   const locale = useLocale();
   const t = copy[locale];
-  const railRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const playAll = () => {
-      railRef.current?.querySelectorAll("video").forEach((video) => video.play().catch(() => {}));
-    };
-    playAll();
-    document.addEventListener("visibilitychange", playAll);
-    return () => document.removeEventListener("visibilitychange", playAll);
-  }, []);
 
   return (
     <section id="voices" className="overflow-hidden bg-[#140c08] py-24 text-[#f5e9dc] lg:py-32">
@@ -87,7 +73,7 @@ export function VideoRailSection() {
       </div>
 
       <div className="mx-auto max-w-[1400px] px-6 lg:px-12" aria-label={t.eyebrow}>
-        <div ref={railRef} className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-2">
           {films.map((film) => <FilmCard key={film.key} film={film} />)}
         </div>
       </div>
