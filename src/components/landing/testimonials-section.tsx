@@ -2,17 +2,40 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useLocale } from "@/lib/use-locale";
 
-const people = ["M. & A.", "N. & R.", "S. & K."] as const;
+const people = ["M. & A.", "N. & R.", "S. & K.", "R. & P."] as const;
 const images = [
   {
-    src: "/images/testimonial-couple-1.jpg",
+    src: "/images/testimonial-new-1.jpg",
+    objectPosition: "center",
     faceCovers: [
-      { emoji: "😊", left: "39%", top: "27%" },
-      { emoji: "🥰", left: "66%", top: "39%" },
+      { emoji: "😊", left: "39%", top: "28%", size: "clamp(2.75rem, 5vw, 3.75rem)" },
+      { emoji: "🥰", left: "62%", top: "39%", size: "clamp(2.75rem, 5vw, 3.75rem)" },
     ],
   },
-  { src: "/images/testimonial-couple-seated.jpg", faceCovers: [] },
-  { src: "/images/testimonial-couple-walking.jpg", faceCovers: [] },
+  {
+    src: "/images/testimonial-new-2.jpg",
+    objectPosition: "center",
+    faceCovers: [
+      { emoji: "🥰", left: "38%", top: "31%", size: "clamp(2.75rem, 5vw, 3.75rem)" },
+      { emoji: "😊", left: "58%", top: "26%", size: "clamp(2.75rem, 5vw, 3.75rem)" },
+    ],
+  },
+  {
+    src: "/images/testimonial-new-3.jpg",
+    objectPosition: "center",
+    faceCovers: [
+      { emoji: "😊", left: "42%", top: "22%", size: "clamp(2.5rem, 4.5vw, 3.5rem)" },
+      { emoji: "🥰", left: "54%", top: "22%", size: "clamp(2.5rem, 4.5vw, 3.5rem)" },
+    ],
+  },
+  {
+    src: "/images/testimonial-new-4.jpg",
+    objectPosition: "center",
+    faceCovers: [
+      { emoji: "🥰", left: "45%", top: "49%", size: "clamp(1.35rem, 2.5vw, 2rem)" },
+      { emoji: "😊", left: "56%", top: "47%", size: "clamp(1.35rem, 2.5vw, 2rem)" },
+    ],
+  },
 ] as const;
 
 const copy = {
@@ -22,11 +45,12 @@ const copy = {
     introduced: "Introduced through DesiHerz",
     previous: "Previous testimonial",
     next: "Next testimonial",
-    imageAlt: "Two people holding hands, one wearing an engagement ring.",
+    imageAlt: "A couple photographed together with their faces covered for privacy.",
     testimonials: [
       { quote: "Private without feeling cold. We were introduced with care, and never felt pressure to perform.", city: "Frankfurt" },
       { quote: "They understood that our families mattered, without ever letting that overpower our own choice.", city: "Munich" },
       { quote: "The opposite of an app: no noise, just one introduction that made sense.", city: "Berlin" },
+      { quote: "Every step felt personal and considered. We had the space to discover the connection in our own way.", city: "Hamburg" },
     ],
   },
   de: {
@@ -35,11 +59,12 @@ const copy = {
     introduced: "Vorgestellt durch DesiHerz",
     previous: "Vorheriger Erfahrungsbericht",
     next: "Nächster Erfahrungsbericht",
-    imageAlt: "Zwei Menschen halten sich an den Händen; eine Person trägt einen Verlobungsring.",
+    imageAlt: "Ein Paar zusammen; die Gesichter sind zum Schutz der Privatsphäre verdeckt.",
     testimonials: [
       { quote: "Privat, ohne kühl zu wirken. Wir wurden mit Sorgfalt vorgestellt und fühlten uns nie unter Druck gesetzt.", city: "Frankfurt" },
       { quote: "Sie verstanden, dass unsere Familien wichtig waren, ohne unsere eigene Entscheidung zu überlagern.", city: "München" },
       { quote: "Das Gegenteil einer App: kein Lärm, nur eine Vorstellung, die wirklich Sinn ergab.", city: "Berlin" },
+      { quote: "Jeder Schritt fühlte sich persönlich und durchdacht an. Wir hatten den Raum, unsere Verbindung auf unsere Weise zu entdecken.", city: "Hamburg" },
     ],
   },
 } as const;
@@ -70,13 +95,14 @@ export function TestimonialsSection() {
             alt={t.imageAlt}
             loading="lazy"
             className="absolute inset-[4%] h-[92%] w-[92%] rounded-[52%_48%_54%_46%/46%_54%_46%_54%] object-cover object-center shadow-[0_28px_80px_rgba(73,48,26,0.18)]"
+            style={{ objectPosition: active.image.objectPosition }}
           />
           {active.image.faceCovers.map((cover) => (
             <span
               key={`${cover.left}-${cover.top}`}
               aria-hidden="true"
-              className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2 text-5xl drop-shadow-lg sm:text-6xl"
-              style={{ left: cover.left, top: cover.top }}
+              className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2 drop-shadow-lg"
+              style={{ left: cover.left, top: cover.top, fontSize: cover.size }}
             >
               {cover.emoji}
             </span>
