@@ -38,3 +38,4 @@ video-source/
 
 # Personal MCP server config — contains API keys, never share/commit
 .mcp.json
+.env*
