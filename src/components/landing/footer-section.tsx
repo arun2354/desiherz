@@ -6,7 +6,6 @@ import { useLocale } from "@/lib/use-locale";
 const copy = {
   en: {
     tagline: "Private, by design.",
-    brandLine: "Private matrimony for discerning people and families.",
     explore: "Explore",
     contact: "Contact",
     legal: "Legal",
@@ -23,7 +22,6 @@ const copy = {
   },
   de: {
     tagline: "Privat, von Grund auf.",
-    brandLine: "Private Eheanbahnung für anspruchsvolle Menschen und Familien.",
     explore: "Entdecken",
     contact: "Kontakt",
     legal: "Rechtliches",
@@ -85,12 +83,7 @@ export function FooterSection() {
 
         {/* Main footer */}
         <div className="border-t border-ink-border pt-16 pb-16 lg:pb-20">
-          <div className="grid grid-cols-2 gap-12 md:grid-cols-5 lg:gap-8">
-            {/* Brand */}
-            <div className="col-span-2">
-              <p className="mb-8 max-w-xs text-sm leading-relaxed text-ink-muted-foreground">{t.brandLine}</p>
-            </div>
-
+          <div className="grid grid-cols-2 gap-12 md:grid-cols-3 lg:gap-8">
             {/* Explore */}
             <div>
               <h3 className="mb-6 font-mono text-xs tracking-[0.2em] text-gold-light/70 uppercase">{t.explore}</h3>

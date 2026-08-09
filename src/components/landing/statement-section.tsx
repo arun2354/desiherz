@@ -4,11 +4,11 @@ import { useLocale } from "@/lib/use-locale";
 
 const copy = {
   en: {
-    heading: ["Some marriages are arranged.", "The right ones are curated."],
+    heading: ["Every soul is destined to meet its match.", "We simply help them find each other."],
     paragraph: "Meet the people behind DesiHerz and discover how a thoughtful introduction begins.",
   },
   de: {
-    heading: ["Manche Ehen werden arrangiert.", "Die richtigen werden kuratiert."],
+    heading: ["Jede Seele ist dazu bestimmt, ihrem Gegenstück zu begegnen.", "Wir helfen beiden, einander zu finden."],
     paragraph: "Lernen Sie die Menschen hinter DesiHerz kennen und erfahren Sie, wie eine sorgsame Vorstellung beginnt.",
   },
 } as const;
