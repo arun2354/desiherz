@@ -6,25 +6,12 @@ const copy = {
   en: {
     heading: ["Some marriages are arranged.", "The right ones are curated."],
     paragraph: "Meet the people behind DesiHerz and discover how a thoughtful introduction begins.",
-    marqueeItems: ["Private", "Curated by hand", "By appointment", "No profiles, no swiping", "Two families, one table"],
   },
   de: {
     heading: ["Manche Ehen werden arrangiert.", "Die richtigen werden kuratiert."],
     paragraph: "Lernen Sie die Menschen hinter DesiHerz kennen und erfahren Sie, wie eine sorgsame Vorstellung beginnt.",
-    marqueeItems: ["Privat", "Von Hand kuratiert", "Nur nach Vereinbarung", "Keine Profile, kein Wischen", "Zwei Familien, ein Tisch"],
   },
 } as const;
-
-function MarqueeRow({ items }: { items: readonly string[] }) {
-  const row = items.map((item) => (
-    <span key={item} className="mr-10 inline-flex items-center gap-10">
-      <span className="whitespace-nowrap font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground lg:text-sm">{item}</span>
-      <span className="text-gold" aria-hidden="true">✦</span>
-    </span>
-  ));
-
-  return <div className="marquee-track" aria-hidden="true">{row}{row}</div>;
-}
 
 export function StatementSection() {
   const locale = useLocale();
@@ -49,9 +36,6 @@ export function StatementSection() {
           <span className="font-accent text-gold">{t.heading[1]}</span>
         </h2>
         <p className={`mx-auto mt-8 max-w-xl text-lg text-muted-foreground transition-opacity delay-150 duration-1000 lg:text-xl ${visible ? "opacity-100" : "opacity-0"}`}>{t.paragraph}</p>
-      </div>
-      <div className={`mt-20 overflow-hidden border-y border-gold/20 py-5 transition-opacity delay-300 duration-1000 lg:mt-28 ${visible ? "opacity-100" : "opacity-0"}`}>
-        <MarqueeRow items={t.marqueeItems} />
       </div>
     </section>
   );

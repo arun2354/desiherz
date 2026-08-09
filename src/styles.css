@@ -180,13 +180,6 @@
   to { width: 100%; }
 }
 
-/* seamless marquee: content duplicated twice, track slides half its width */
-.marquee-track {
-  display: flex;
-  width: max-content;
-  animation: marquee 45s linear infinite;
-}
-
 .video-rail {
   overflow: hidden;
 }
@@ -205,15 +198,7 @@
   to { transform: translateX(calc(-50% - 0.625rem)); }
 }
 
-@keyframes marquee {
-  to { transform: translateX(-50%); }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .marquee-track {
-    animation: none;
-  }
-
   .video-rail {
     overflow-x: auto;
   }

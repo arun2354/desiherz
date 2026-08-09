@@ -4,27 +4,27 @@ import { useLocale } from "@/lib/use-locale";
 
 const copy = {
   en: {
-    eyebrow: "Private matrimony, made for each other",
+    eyebrow: "Private matrimony",
     headlineStart: "The right introduction,",
     words: ["reconsidered.", "rediscovered.", "made real.", "well matched."],
     watchJourney: "Meet the people",
     enquiry: "Private enquiry",
     stats: [
       { value: "0", label: "public profiles, ever" },
-      { value: "2–3", label: "introductions at a time" },
-      { value: "1", label: "matchmaker who sees your profile" },
+      { value: "1", label: "introduction" },
+      { value: "1", label: "personal matchmaker" },
     ],
   },
   de: {
-    eyebrow: "Private Eheanbahnung, füreinander gemacht",
+    eyebrow: "Private Eheanbahnung",
     headlineStart: "Die richtige Vorstellung,",
     words: ["neu gedacht.", "neu entdeckt.", "wahr geworden.", "gut gewählt."],
     watchJourney: "Menschen kennenlernen",
     enquiry: "Private Anfrage",
     stats: [
       { value: "0", label: "öffentliche Profile, niemals" },
-      { value: "2–3", label: "Vorstellungen gleichzeitig" },
-      { value: "1", label: "Vermittler, der Ihr Profil sieht" },
+      { value: "1", label: "Vorstellung" },
+      { value: "1", label: "persönliche Vermittlung" },
     ],
   },
 } as const;

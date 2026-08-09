@@ -6,7 +6,7 @@ import { useLocale } from "@/lib/use-locale";
 const copy = {
   en: {
     tagline: "Private, by design.",
-    brandLine: "Private matrimony for discerning people and families. By introduction only.",
+    brandLine: "Private matrimony for discerning people and families.",
     explore: "Explore",
     contact: "Contact",
     legal: "Legal",
@@ -23,7 +23,7 @@ const copy = {
   },
   de: {
     tagline: "Privat, von Grund auf.",
-    brandLine: "Private Eheanbahnung für anspruchsvolle Menschen und Familien. Nur auf Vorstellung.",
+    brandLine: "Private Eheanbahnung für anspruchsvolle Menschen und Familien.",
     explore: "Entdecken",
     contact: "Kontakt",
     legal: "Rechtliches",

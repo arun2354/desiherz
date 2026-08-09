@@ -11,8 +11,8 @@ const images = [
       { emoji: "🥰", left: "66%", top: "39%" },
     ],
   },
-  { src: "/images/testimonial-couple-2.jpg", faceCovers: [] },
-  { src: "/images/testimonial-couple-3.jpg", faceCovers: [] },
+  { src: "/images/testimonial-couple-seated.jpg", faceCovers: [] },
+  { src: "/images/testimonial-couple-walking.jpg", faceCovers: [] },
 ] as const;
 
 const copy = {
