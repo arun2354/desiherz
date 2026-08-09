@@ -128,7 +128,10 @@ function upgradeToTls(socket: net.Socket, host: string) {
 export async function sendContactEmail(message: ContactMessage) {
   const user = process.env.IONOS_SMTP_USER;
   const password = process.env.IONOS_SMTP_PASSWORD;
-  const recipient = process.env.CONTACT_EMAIL || user || "hello@desiherz.de";
+  // Website enquiries always belong in the DesiHerz mailbox. Keeping this
+  // explicit prevents an old or mistyped deployment variable from silently
+  // routing successful submissions to another address.
+  const recipient = "hello@desiherz.de";
 
   if (!user || !password) {
     throw new Error("Contact email delivery is not configured");
@@ -181,7 +184,7 @@ export async function sendContactEmail(message: ContactMessage) {
 
     socket.write(`${email}\r\n.\r\n`);
     const accepted = await smtp.command(undefined, [250]);
-    console.info(`[contact-mail] IONOS accepted ${messageId}: ${accepted.text.replace(/\s+/g, " ")}`);
+    console.info(`[contact-mail] IONOS accepted ${messageId} for ${recipient}: ${accepted.text.replace(/\s+/g, " ")}`);
     await smtp.command("QUIT", [221]);
   } finally {
     socket.end();
