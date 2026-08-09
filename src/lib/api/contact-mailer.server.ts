@@ -1,5 +1,6 @@
 import process from "node:process";
 import { randomUUID } from "node:crypto";
+import net from "node:net";
 import tls from "node:tls";
 
 type ContactMessage = {
@@ -20,10 +21,20 @@ class SmtpSession {
     reject: (error: Error) => void;
   }> = [];
 
-  constructor(private socket: tls.TLSSocket) {
-    socket.on("data", (chunk) => this.handleData(chunk.toString("utf8")));
-    socket.on("error", (error) => this.rejectAll(error));
-    socket.on("timeout", () => this.rejectAll(new Error("IONOS SMTP timed out")));
+  private readonly onData = (chunk: Buffer) => this.handleData(chunk.toString("utf8"));
+  private readonly onError = (error: Error) => this.rejectAll(error);
+  private readonly onTimeout = () => this.rejectAll(new Error("IONOS SMTP timed out"));
+
+  constructor(private socket: net.Socket | tls.TLSSocket) {
+    socket.on("data", this.onData);
+    socket.on("error", this.onError);
+    socket.on("timeout", this.onTimeout);
+  }
+
+  detach() {
+    this.socket.off("data", this.onData);
+    this.socket.off("error", this.onError);
+    this.socket.off("timeout", this.onTimeout);
   }
 
   private handleData(chunk: string) {
@@ -63,7 +74,7 @@ class SmtpSession {
     if (command) this.socket.write(`${command}\r\n`);
     const response = await this.read();
     if (!expectedCodes.includes(response.code)) {
-      throw new Error(`IONOS SMTP rejected a request (${response.code})`);
+      throw new Error(`IONOS SMTP rejected a request (${response.code}): ${response.text}`);
     }
     return response;
   }
@@ -92,6 +103,28 @@ function connectSecurely(host: string, port: number) {
   });
 }
 
+function connectPlain(host: string, port: number) {
+  return new Promise<net.Socket>((resolve, reject) => {
+    const socket = net.connect({ host, port });
+    socket.setTimeout(20_000);
+    socket.once("connect", () => resolve(socket));
+    socket.once("error", reject);
+  });
+}
+
+function upgradeToTls(socket: net.Socket, host: string) {
+  return new Promise<tls.TLSSocket>((resolve, reject) => {
+    const secureSocket = tls.connect({
+      socket,
+      servername: host,
+      rejectUnauthorized: true,
+    });
+    secureSocket.setTimeout(20_000);
+    secureSocket.once("secureConnect", () => resolve(secureSocket));
+    secureSocket.once("error", reject);
+  });
+}
+
 export async function sendContactEmail(message: ContactMessage) {
   const user = process.env.IONOS_SMTP_USER;
   const password = process.env.IONOS_SMTP_PASSWORD;
@@ -108,13 +141,23 @@ export async function sendContactEmail(message: ContactMessage) {
   const body = `${message.note}\n\n— ${message.name} (${message.email})`;
   const host = process.env.IONOS_SMTP_HOST || "smtp.ionos.de";
   const port = Number(process.env.IONOS_SMTP_PORT || 465);
+  const useImplicitTls = port === 465;
   const messageId = `<${randomUUID()}@desiherz.de>`;
-  const socket = await connectSecurely(host, port);
-  const smtp = new SmtpSession(socket);
+  let socket: net.Socket | tls.TLSSocket = useImplicitTls
+    ? await connectSecurely(host, port)
+    : await connectPlain(host, port);
+  let smtp = new SmtpSession(socket);
 
   try {
     await smtp.command(undefined, [220]);
     await smtp.command("EHLO desiherz.de", [250]);
+    if (!useImplicitTls) {
+      await smtp.command("STARTTLS", [220]);
+      smtp.detach();
+      socket = await upgradeToTls(socket, host);
+      smtp = new SmtpSession(socket);
+      await smtp.command("EHLO desiherz.de", [250]);
+    }
     await smtp.command("AUTH LOGIN", [334]);
     await smtp.command(Buffer.from(user).toString("base64"), [334]);
     await smtp.command(Buffer.from(password).toString("base64"), [235]);

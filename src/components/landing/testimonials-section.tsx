@@ -24,8 +24,8 @@ const images = [
     src: "/images/testimonial-new-3.jpg",
     objectPosition: "center",
     faceCovers: [
-      { emoji: "😊", left: "42%", top: "22%", size: "clamp(2.5rem, 4.5vw, 3.5rem)" },
-      { emoji: "🥰", left: "54%", top: "22%", size: "clamp(2.5rem, 4.5vw, 3.5rem)" },
+      { emoji: "😊", left: "51%", top: "23%", size: "clamp(2.5rem, 4.5vw, 3.5rem)" },
+      { emoji: "🥰", left: "68%", top: "22%", size: "clamp(2.5rem, 4.5vw, 3.5rem)" },
     ],
   },
   {
