@@ -13,7 +13,7 @@ const copy = {
       ["A one-to-one session", "We meet privately to understand you in depth — your personality, values, family and hopes for the future."],
       ["A considered search", "We carefully review dozens of profiles in our secure, private database. There is no public browsing or swiping."],
       ["The right introduction", "We select the strongest possible candidate and arrange a private one-to-one date so you can get to know each other."],
-      ["Your future together", "If everything feels right, we step back. The relationship belongs to you — and you can take the next step toward marriage together."],
+      ["Your future together", "If everything feels right, we step back. From there, your life together begins."],
     ],
   },
   de: {
@@ -25,7 +25,7 @@ const copy = {
       ["Persönliches Einzelgespräch", "Wir lernen Sie ausführlich kennen — Ihre Persönlichkeit, Werte, Familie und Wünsche für die Zukunft."],
       ["Sorgfältige Suche", "Wir prüfen zahlreiche Profile in unserer geschützten, privaten Datenbank. Es gibt kein öffentliches Stöbern oder Swipen."],
       ["Die passende Vorstellung", "Wir wählen die bestmögliche Person aus und organisieren ein privates Treffen, damit Sie einander kennenlernen können."],
-      ["Ihre gemeinsame Zukunft", "Wenn alles stimmig ist, ziehen wir uns zurück. Die Beziehung gehört Ihnen — und Sie können gemeinsam den nächsten Schritt in Richtung Ehe gehen."],
+      ["Ihre gemeinsame Zukunft", "Wenn alles stimmig ist, ziehen wir uns zurück. Von diesem Moment an beginnt Ihr gemeinsames Leben."],
     ],
   },
 } as const;
