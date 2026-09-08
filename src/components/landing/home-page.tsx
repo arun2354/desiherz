@@ -1,6 +1,7 @@
 import { Navigation } from "@/components/landing/navigation";
 import { HeroSection } from "@/components/landing/hero-section";
 import { StatementSection } from "@/components/landing/statement-section";
+import { HighlightVideoSection } from "@/components/landing/highlight-video-section";
 import { VideoProcessSection } from "@/components/landing/video-process-section";
 import { VideoRailSection } from "@/components/landing/video-rail-section";
 import { TestimonialsSection } from "@/components/landing/testimonials-section";
@@ -17,6 +18,7 @@ export function HomePage() {
       <Navigation />
       <HeroSection />
       <StatementSection />
+      <HighlightVideoSection />
       <VideoProcessSection />
       <VideoRailSection />
       <TestimonialsSection />
