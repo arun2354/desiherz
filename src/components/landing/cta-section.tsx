@@ -12,6 +12,7 @@ const EASE = [0.16, 1, 0.3, 1] as const;
 const copy = {
   en: {
     eyebrow: "Begin privately",
+    directEmailLabel: "Or write to us directly:",
     heading: ["Send a single line.", "We’ll write back."],
     intro: "No public profile. Your note is seen only by the principal matchmaker.",
     priceLine: ["First consultation & screening — ", "€39"],
@@ -34,6 +35,7 @@ const copy = {
   },
   de: {
     eyebrow: "Privat beginnen",
+    directEmailLabel: "Oder schreiben Sie uns direkt:",
     heading: ["Schreiben Sie eine Zeile.", "Wir schreiben zurück."],
     intro: "Kein öffentliches Profil. Ihre Nachricht sieht nur die leitende Vermittlerin.",
     priceLine: ["Erstes Beratungsgespräch & Prüfung — ", "39 €"],
@@ -165,6 +167,12 @@ export function CtaSection() {
                 <p className="font-mono text-sm text-muted-foreground">
                   {t.priceLine[0]}
                   <span className="text-gold">{t.priceLine[1]}</span>
+                </p>
+                <p className="mt-3 font-mono text-sm text-muted-foreground">
+                  {t.directEmailLabel}{" "}
+                  <a href="mailto:hello@desiherz.de" className="text-gold transition-colors hover:text-foreground">
+                    hello@desiherz.de
+                  </a>
                 </p>
               </div>
 
