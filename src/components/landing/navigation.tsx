@@ -11,7 +11,7 @@ const copy = {
       { name: "Stories", href: "#testimonials" },
       { name: "FAQ", href: "#faq" },
     ],
-    enquiry: "Private enquiry",
+    enquiry: "Contact us",
     toggleMenu: "Toggle menu",
   },
   de: {
@@ -21,7 +21,7 @@ const copy = {
       { name: "Erfahrungen", href: "#testimonials" },
       { name: "FAQ", href: "#faq" },
     ],
-    enquiry: "Private Anfrage",
+    enquiry: "Kontakt",
     toggleMenu: "Menü öffnen",
   },
 } as const;

@@ -7,20 +7,11 @@ const copy = {
     eyebrow: "Private matrimony",
     headlineStart: "The right introduction,",
     words: ["reconsidered.", "rediscovered.", "made real.", "well matched."],
-    watchJourney: "Meet the people",
-    enquiry: "Private enquiry",
-    stats: [
-      { value: "0", label: "public profiles, ever" },
-      { value: "1", label: "introduction" },
-      { value: "1", label: "personal matchmaker" },
-    ],
   },
   de: {
-    eyebrow: "Private Eheanbahnung",
+    eyebrow: "Diskrete Partnervermittlung",
     headlineStart: "Die richtige Vorstellung,",
     words: ["neu gedacht.", "neu entdeckt.", "wahr geworden.", "gut gewählt."],
-    watchJourney: "Menschen kennenlernen",
-    enquiry: "Private Anfrage",
     stats: [
       { value: "0", label: "öffentliche Profile, niemals" },
       { value: "1", label: "Vorstellung" },
@@ -237,7 +228,7 @@ export function HeroSection() {
             </span>
           </div>
 
-          <div className="mb-12">
+          <div>
             <h1
               className={`text-left text-[clamp(2.2rem,6vw,6.5rem)] font-display font-light leading-[1.02] tracking-tight text-[#f5e9dc] transition-all duration-1000 ${
                 isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
@@ -252,45 +243,9 @@ export function HeroSection() {
             </h1>
           </div>
 
-          <div
-            className={`flex flex-wrap gap-4 transition-all duration-700 delay-300 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-            }`}
-          >
-            <a
-              href="#voices"
-              className="inline-flex items-center justify-center h-12 px-8 rounded-full bg-[#f5e9dc] text-[#140c08] text-sm font-medium hover:bg-white transition-colors"
-            >
-              {t.watchJourney}
-            </a>
-            <a
-              href="#contact"
-              className="inline-flex items-center justify-center h-12 px-8 rounded-full border border-[#e9cfae]/40 text-[#f5e9dc] text-sm hover:border-[#e9cfae] transition-colors"
-            >
-              {t.enquiry}
-            </a>
-          </div>
         </div>
       </div>
 
-      {/* Stats */}
-      <div
-        className={`absolute bottom-10 left-0 right-0 px-6 lg:px-12 transition-all duration-700 delay-500 ${
-          isVisible ? "opacity-100" : "opacity-0"
-        }`}
-      >
-        <div className="max-w-[1400px] mx-auto flex items-start gap-10 lg:gap-20">
-          {t.stats.map((stat, i) => (
-            <div
-              key={stat.label}
-              className={`flex flex-col gap-2 ${i > 0 ? "border-l border-[#e9cfae]/15 pl-10 lg:pl-20" : ""}`}
-            >
-              <span className="text-3xl lg:text-4xl font-display text-[#d9a760]">{stat.value}</span>
-              <span className="text-xs text-[#e9cfae]/70 leading-tight">{stat.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
     </section>
   );
 }
